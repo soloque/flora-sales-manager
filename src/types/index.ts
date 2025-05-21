@@ -1,4 +1,5 @@
 
+
 // User roles
 export type UserRole = "owner" | "seller" | "guest";
 
@@ -116,3 +117,19 @@ export interface SalesHistoryFilters {
   status?: OrderStatus | "all";
   sellerId?: string | "all";
 }
+
+// Inventory item
+export interface InventoryItem {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  costPrice: number;
+  sellingPrice: number;
+  quantity: number;
+  reorderPoint: number;
+  supplier: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+

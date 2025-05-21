@@ -20,6 +20,8 @@ import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import CommissionSettings from "./pages/CommissionSettings";
 import CommissionDetails from "./pages/CommissionDetails";
+import Inventory from "./pages/Inventory";
+import SellerManagement from "./pages/SellerManagement";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +91,22 @@ const App = () => (
                 element={
                   <Layout>
                     <CommissionSettings />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/inventory"
+                element={
+                  <Layout>
+                    <Inventory />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/sellers"
+                element={
+                  <Layout>
+                    <SellerManagement />
                   </Layout>
                 }
               />

@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun, User, Home, FileText, Settings, Bell, LogOut, Database, BarChart } from "lucide-react";
+import { Moon, Sun, User, Home, FileText, Settings, Bell, LogOut, Database, BarChart, Calendar, Download } from "lucide-react";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -54,7 +54,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const ownerLinks = [
     { name: "Dashboard", path: "/", icon: <Home className="w-5 h-5" /> },
     { name: "Vendas", path: "/sales", icon: <FileText className="w-5 h-5" /> },
-    { name: "Financeiro", path: "/finance", icon: <BarChart className="w-5 h-5" /> },
+    { name: "Histórico", path: "/sales/history", icon: <Calendar className="w-5 h-5" /> },
+    { name: "Comissões", path: "/commissions", icon: <BarChart className="w-5 h-5" /> },
     { name: "Vendedores", path: "/sellers", icon: <User className="w-5 h-5" /> },
     { name: "Estoque", path: "/inventory", icon: <Database className="w-5 h-5" /> },
     { name: "Atualizações", path: "/updates", icon: <Bell className="w-5 h-5" /> },
@@ -65,6 +66,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { name: "Dashboard", path: "/", icon: <Home className="w-5 h-5" /> },
     { name: "Vendas", path: "/sales", icon: <FileText className="w-5 h-5" /> },
     { name: "Nova Venda", path: "/sales/new", icon: <FileText className="w-5 h-5" /> },
+    { name: "Histórico", path: "/sales/history", icon: <Calendar className="w-5 h-5" /> },
     { name: "Comissões", path: "/commissions", icon: <BarChart className="w-5 h-5" /> },
     { name: "Atualizações", path: "/updates", icon: <Bell className="w-5 h-5" /> },
     { name: "Configurações", path: "/settings", icon: <Settings className="w-5 h-5" /> },

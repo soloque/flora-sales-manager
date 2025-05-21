@@ -3,68 +3,12 @@ import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { BarChart, FileText, Plus, DollarSign, Users, Calendar, TrendingUp, Bell } from "lucide-react";
+import { BarChart, FileText, Plus, DollarSign, Users, Calendar, TrendingUp, Bell, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Sale, Update } from "@/types";
 
 // Mock data for demonstration
-const mockSales: Sale[] = [
-  {
-    id: "1",
-    date: new Date(),
-    description: "Venda de plantas ornamentais",
-    quantity: 3,
-    unitPrice: 50,
-    totalPrice: 150,
-    sellerId: "2",
-    sellerName: "Gabriel Silva",
-    commission: 30,
-    commissionRate: 20,
-    status: "delivered",
-    observations: "",
-    customerInfo: {
-      name: "Antônio Santos",
-      phone: "21991372565",
-      address: "Rua Capitulino, 96",
-      city: "Rio de Janeiro",
-      state: "RJ",
-      zipCode: "20960-120",
-      order: "3 Plantas de Jibóia"
-    },
-    costPrice: 90,
-    profit: 60,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: "2",
-    date: new Date(),
-    description: "Venda de plantas frutíferas",
-    quantity: 4,
-    unitPrice: 45,
-    totalPrice: 180,
-    sellerId: "2",
-    sellerName: "Gabriel Silva",
-    commission: 36,
-    commissionRate: 20,
-    status: "delivered",
-    observations: "",
-    customerInfo: {
-      name: "Maria Oliveira",
-      phone: "21987654321",
-      address: "Av. Brasil, 500",
-      city: "Rio de Janeiro",
-      state: "RJ",
-      zipCode: "21000-000",
-      order: "1 Pé de Limão, 1 Mangueira, 2 Jabuticabeiras"
-    },
-    costPrice: 120,
-    profit: 60,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-];
-
+import { mockSalesData } from "@/data/mockSales";
 const mockUpdates: Update[] = [
   {
     id: "1",
@@ -94,7 +38,8 @@ const Dashboard = () => {
 
   useEffect(() => {
     // In a real app, this would fetch data from an API
-    setRecentSales(mockSales);
+    // Get only the 5 most recent sales
+    setRecentSales(mockSalesData.slice(0, 5));
     setUpdates(mockUpdates);
   }, []);
 
@@ -219,6 +164,16 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
+        <Card>
+          <CardContent className="p-6 flex flex-col items-center justify-center min-h-[150px]">
+            <Calendar className="h-10 w-10 text-primary mb-4" />
+            <h3 className="text-xl font-bold mb-2">Histórico de Vendas</h3>
+            <Button asChild variant="outline">
+              <Link to="/sales/history">Ver Histórico</Link>
+            </Button>
+          </CardContent>
+        </Card>
+        
         {isOwner && (
           <Card>
             <CardContent className="p-6 flex flex-col items-center justify-center min-h-[150px]">
@@ -230,6 +185,16 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         )}
+        
+        <Card>
+          <CardContent className="p-6 flex flex-col items-center justify-center min-h-[150px]">
+            <BarChart className="h-10 w-10 text-primary mb-4" />
+            <h3 className="text-xl font-bold mb-2">Comissões</h3>
+            <Button asChild variant="outline">
+              <Link to="/commissions">{isOwner ? "Configurar" : "Ver Detalhes"}</Link>
+            </Button>
+          </CardContent>
+        </Card>
         
         <Card>
           <CardContent className="p-6 flex flex-col items-center justify-center min-h-[150px]">
@@ -247,7 +212,15 @@ const Dashboard = () => {
         {/* Recent Sales */}
         <Card>
           <CardHeader>
-            <CardTitle>Vendas Recentes</CardTitle>
+            <CardTitle className="flex justify-between items-center">
+              <span>Vendas Recentes</span>
+              <Button asChild variant="ghost" size="sm" className="flex items-center gap-1">
+                <Link to="/sales/history">
+                  <Download className="h-4 w-4" />
+                  <span>Histórico Completo</span>
+                </Link>
+              </Button>
+            </CardTitle>
             <CardDescription>
               As últimas vendas registradas no sistema
             </CardDescription>

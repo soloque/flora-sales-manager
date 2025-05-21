@@ -13,10 +13,13 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import SalesList from "./pages/SalesList";
+import SalesHistory from "./pages/SalesHistory";
 import NewSale from "./pages/NewSale";
 import Updates from "./pages/Updates";
 import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
+import CommissionSettings from "./pages/CommissionSettings";
+import CommissionDetails from "./pages/CommissionDetails";
 
 const queryClient = new QueryClient();
 
@@ -57,10 +60,35 @@ const App = () => (
                 }
               />
               <Route
+                path="/sales/history"
+                element={
+                  <Layout>
+                    <SalesHistory />
+                  </Layout>
+                }
+              />
+              <Route
                 path="/updates"
                 element={
                   <Layout>
                     <Updates />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/commissions"
+                element={
+                  <Layout>
+                    {/* Conditionally render based on user role - handled in component */}
+                    <CommissionDetails />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/commission-settings"
+                element={
+                  <Layout>
+                    <CommissionSettings />
                   </Layout>
                 }
               />

@@ -6,148 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
 import { Sale, OrderStatus } from "@/types";
-import { Plus, Search, FileText, Edit, Trash } from "lucide-react";
+import { Plus, Search, FileText, Edit } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 // Mock sales data
-const mockSales: Sale[] = [
-  {
-    id: "1",
-    date: new Date(),
-    description: "Venda de plantas ornamentais",
-    quantity: 3,
-    unitPrice: 50,
-    totalPrice: 150,
-    sellerId: "2",
-    sellerName: "Gabriel Silva",
-    commission: 30,
-    commissionRate: 20,
-    status: "delivered",
-    observations: "",
-    customerInfo: {
-      name: "Antônio Santos",
-      phone: "21991372565",
-      address: "Rua Capitulino, 96",
-      city: "Rio de Janeiro",
-      state: "RJ",
-      zipCode: "20960-120",
-      order: "3 Plantas de Jibóia"
-    },
-    costPrice: 90,
-    profit: 60,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: "2",
-    date: new Date(),
-    description: "Venda de plantas frutíferas",
-    quantity: 4,
-    unitPrice: 45,
-    totalPrice: 180,
-    sellerId: "2",
-    sellerName: "Gabriel Silva",
-    commission: 36,
-    commissionRate: 20,
-    status: "pending",
-    observations: "",
-    customerInfo: {
-      name: "Maria Oliveira",
-      phone: "21987654321",
-      address: "Av. Brasil, 500",
-      city: "Rio de Janeiro",
-      state: "RJ",
-      zipCode: "21000-000",
-      order: "1 Pé de Limão, 1 Mangueira, 2 Jabuticabeiras"
-    },
-    costPrice: 120,
-    profit: 60,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: "3",
-    date: new Date(),
-    description: "Venda de plantas aquáticas",
-    quantity: 2,
-    unitPrice: 35,
-    totalPrice: 70,
-    sellerId: "2",
-    sellerName: "Gabriel Silva",
-    commission: 14,
-    commissionRate: 20,
-    status: "paid",
-    observations: "",
-    customerInfo: {
-      name: "Carlos Mendes",
-      phone: "21999998888",
-      address: "Rua das Flores, 123",
-      city: "Rio de Janeiro",
-      state: "RJ",
-      zipCode: "22000-000",
-      order: "2 Vitória-régia"
-    },
-    costPrice: 40,
-    profit: 30,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: "4",
-    date: new Date(),
-    description: "Venda de plantas suculentas",
-    quantity: 6,
-    unitPrice: 20,
-    totalPrice: 120,
-    sellerId: "2",
-    sellerName: "Gabriel Silva",
-    commission: 24,
-    commissionRate: 20,
-    status: "cancelled",
-    observations: "Cliente desistiu da compra",
-    customerInfo: {
-      name: "Ana Silva",
-      phone: "21977776666",
-      address: "Av. Atlântica, 1000",
-      city: "Rio de Janeiro",
-      state: "RJ",
-      zipCode: "23000-000",
-      order: "6 Suculentas variadas"
-    },
-    costPrice: 60,
-    profit: 60,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: "5",
-    date: new Date(Date.now() - 86400000 * 2), // 2 days ago
-    description: "Venda de árvores frutíferas",
-    quantity: 3,
-    unitPrice: 80,
-    totalPrice: 240,
-    sellerId: "2",
-    sellerName: "Gabriel Silva",
-    commission: 48,
-    commissionRate: 20,
-    status: "problem",
-    observations: "Uma planta chegou danificada",
-    customerInfo: {
-      name: "Antonio",
-      phone: "21991372565",
-      address: "Rua capitulino 96 Rocha",
-      city: "Rio de Janeiro",
-      state: "RJ",
-      zipCode: "20960-120",
-      order: "Caju, Acerola e Jabuticaba",
-      observations: "X Cancelado(NÃO ENTREGA MAIS EM ANGRA )"
-    },
-    costPrice: 150,
-    profit: 90,
-    createdAt: new Date(Date.now() - 86400000 * 2),
-    updatedAt: new Date()
-  }
-];
+import { mockSalesData } from "@/data/mockSales";
 
 const SalesList = () => {
   const { user } = useAuth();
@@ -161,10 +33,10 @@ const SalesList = () => {
     // In a real app, this would fetch data from an API
     // For now, we'll use mock data
     if (isOwner) {
-      setSales(mockSales);
+      setSales(mockSalesData);
     } else {
       // Filter sales for this specific seller
-      setSales(mockSales.filter(sale => sale.sellerId === user?.id));
+      setSales(mockSalesData.filter(sale => sale.sellerId === user?.id));
     }
   }, [isOwner, user?.id]);
   
@@ -224,6 +96,10 @@ const SalesList = () => {
       return sale;
     });
     setSales(updatedSales);
+    toast({
+      title: "Status atualizado",
+      description: "O status da venda foi atualizado com sucesso."
+    });
   };
 
   return (
@@ -291,43 +167,43 @@ const SalesList = () => {
         </Card>
       ) : (
         <div className="overflow-x-auto">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Cliente</th>
-                <th>Pedido</th>
-                {isOwner && <th>Vendedor</th>}
-                <th>Valor</th>
-                {!isOwner && <th>Comissão</th>}
-                {isOwner && <th>Custo</th>}
-                {isOwner && <th>Lucro</th>}
-                <th>Status</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Data</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Pedido</TableHead>
+                {isOwner && <TableHead>Vendedor</TableHead>}
+                <TableHead>Valor</TableHead>
+                {!isOwner && <TableHead>Comissão</TableHead>}
+                {isOwner && <TableHead>Custo</TableHead>}
+                {isOwner && <TableHead>Lucro</TableHead>}
+                <TableHead>Status</TableHead>
+                <TableHead>Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filteredSales.map((sale) => (
-                <tr key={sale.id}>
-                  <td>{new Date(sale.date).toLocaleDateString("pt-BR")}</td>
-                  <td>
+                <TableRow key={sale.id}>
+                  <TableCell>{new Date(sale.date).toLocaleDateString("pt-BR")}</TableCell>
+                  <TableCell>
                     <div>
                       <p className="font-medium">{sale.customerInfo.name}</p>
                       <p className="text-sm text-muted-foreground">{sale.customerInfo.phone}</p>
                     </div>
-                  </td>
-                  <td>
+                  </TableCell>
+                  <TableCell>
                     <div className="max-w-xs overflow-hidden text-ellipsis">
                       {sale.customerInfo.order}
                     </div>
-                  </td>
-                  {isOwner && <td>{sale.sellerName}</td>}
-                  <td>{formatCurrency(sale.totalPrice)}</td>
-                  {!isOwner && <td>{formatCurrency(sale.commission)}</td>}
-                  {isOwner && <td>{formatCurrency(sale.costPrice || 0)}</td>}
-                  {isOwner && <td>{formatCurrency(sale.profit || 0)}</td>}
-                  <td>{getStatusBadge(sale.status)}</td>
-                  <td>
+                  </TableCell>
+                  {isOwner && <TableCell>{sale.sellerName}</TableCell>}
+                  <TableCell>{formatCurrency(sale.totalPrice)}</TableCell>
+                  {!isOwner && <TableCell>{formatCurrency(sale.commission)}</TableCell>}
+                  {isOwner && <TableCell>{formatCurrency(sale.costPrice || 0)}</TableCell>}
+                  {isOwner && <TableCell>{formatCurrency(sale.profit || 0)}</TableCell>}
+                  <TableCell>{getStatusBadge(sale.status)}</TableCell>
+                  <TableCell>
                     <div className="flex items-center space-x-2">
                       {/* View/Edit button */}
                       <Button variant="outline" size="icon" asChild>
@@ -352,11 +228,11 @@ const SalesList = () => {
                         </select>
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

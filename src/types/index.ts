@@ -93,3 +93,26 @@ export interface SubscriptionTier {
   maxSellers: number;
   features: string[];
 }
+
+// Commission settings
+export interface CommissionSettings {
+  id: string;
+  ownerId: string;
+  defaultRate: number; // Default commission percentage
+  sellerSpecificRates: {
+    [sellerId: string]: number;
+  };
+  updatedAt: Date;
+}
+
+// Sales history period
+export type SalesHistoryPeriod = "7days" | "30days" | "90days" | "custom";
+
+// Sales history filters
+export interface SalesHistoryFilters {
+  period: SalesHistoryPeriod;
+  startDate?: Date;
+  endDate?: Date;
+  status?: OrderStatus | "all";
+  sellerId?: string | "all";
+}

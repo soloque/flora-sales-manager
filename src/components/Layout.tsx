@@ -4,7 +4,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun, User, Home, FileText, Settings, Bell, LogOut, Database, BarChart, Calendar, Download } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Moon, Sun, UserRound, Home, FileText, Settings, Bell, LogOut, Database, BarChart, Calendar, Download } from "lucide-react";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -14,6 +15,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -29,6 +31,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     // Close mobile sidebar when navigating
     setMobileSidebarOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    // Set avatar URL from user data
+    if (user?.avatar_url) {
+      setAvatarUrl(user.avatar_url);
+    }
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -51,12 +60,22 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     return <>{children}</>;
   }
 
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
   const ownerLinks = [
     { name: "Dashboard", path: "/", icon: <Home className="w-5 h-5" /> },
     { name: "Vendas", path: "/sales", icon: <FileText className="w-5 h-5" /> },
     { name: "Histórico", path: "/sales/history", icon: <Calendar className="w-5 h-5" /> },
     { name: "Comissões", path: "/commissions", icon: <BarChart className="w-5 h-5" /> },
-    { name: "Vendedores", path: "/sellers", icon: <User className="w-5 h-5" /> },
+    { name: "Vendedores", path: "/sellers", icon: <UserRound className="w-5 h-5" /> },
     { name: "Estoque", path: "/inventory", icon: <Database className="w-5 h-5" /> },
     { name: "Atualizações", path: "/updates", icon: <Bell className="w-5 h-5" /> },
     { name: "Configurações", path: "/settings", icon: <Settings className="w-5 h-5" /> },
@@ -138,25 +157,39 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           </div>
 
           <div className="p-4 border-t border-sidebar-border">
-            <div className={`flex items-center ${isSidebarCollapsed ? "justify-center" : "justify-between"}`}>
+            <Link to="/settings" className={`flex items-center ${isSidebarCollapsed ? "justify-center" : "justify-between"}`}>
               {!isSidebarCollapsed && (
-                <div>
-                  <p className="font-medium">{user?.name}</p>
-                  <p className="text-sm opacity-75">
-                    {user?.role === "owner" ? "Administrador" : "Vendedor"}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={avatarUrl || ""} alt={user?.name} />
+                    <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium text-sm">{user?.name}</p>
+                    <p className="text-xs opacity-75">
+                      {user?.role === "owner" ? "Administrador" : "Vendedor"}
+                    </p>
+                  </div>
                 </div>
               )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                title="Logout"
-              >
-                <LogOut className="h-5 w-5" />
-              </Button>
-            </div>
+              {isSidebarCollapsed && (
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={avatarUrl || ""} alt={user?.name} />
+                  <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
+                </Avatar>
+              )}
+              {!isSidebarCollapsed && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleLogout}
+                  className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  title="Logout"
+                >
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              )}
+            </Link>
           </div>
         </div>
       </aside>
@@ -178,14 +211,26 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           <h1 className="text-2xl font-bold">
             {links.find((link) => link.path === location.pathname)?.name || "Dashboard"}
           </h1>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={toggleTheme}
-            className="ml-auto"
-          >
-            {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-          </Button>
+          <div className="flex items-center gap-3">
+            {isSidebarCollapsed && !isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-foreground"
+                title="Logout"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleTheme}
+            >
+              {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </Button>
+          </div>
         </header>
 
         {/* Content */}

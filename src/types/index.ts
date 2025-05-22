@@ -1,5 +1,3 @@
-
-
 // User roles
 export type UserRole = "owner" | "seller" | "guest";
 
@@ -10,6 +8,7 @@ export interface User {
   email: string;
   role: UserRole;
   createdAt: Date;
+  avatar_url?: string;
 }
 
 // Sale/Order status
@@ -132,4 +131,3 @@ export interface InventoryItem {
   createdAt: Date;
   updatedAt: Date;
 }
-

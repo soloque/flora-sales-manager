@@ -22,6 +22,7 @@ import CommissionSettings from "./pages/CommissionSettings";
 import CommissionDetails from "./pages/CommissionDetails";
 import Inventory from "./pages/Inventory";
 import SellerManagement from "./pages/SellerManagement";
+import UserSettings from "./pages/UserSettings";
 
 const queryClient = new QueryClient();
 
@@ -81,7 +82,6 @@ const App = () => (
                 path="/commissions"
                 element={
                   <Layout>
-                    {/* Conditionally render based on user role - handled in component */}
                     <CommissionDetails />
                   </Layout>
                 }
@@ -107,6 +107,14 @@ const App = () => (
                 element={
                   <Layout>
                     <SellerManagement />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <Layout>
+                    <UserSettings />
                   </Layout>
                 }
               />

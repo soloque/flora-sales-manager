@@ -13,6 +13,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   register: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -89,6 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             ...prev,
             name: data.name || prev.name,
             role: data.role as UserRole || prev.role,
+            avatar_url: data.avatar_url || undefined,
           };
         });
       }
@@ -170,6 +172,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const updateProfile = async (data: Partial<User>) => {
+    if (!user?.id) {
+      return Promise.reject(new Error("Usuário não autenticado"));
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(data)
+        .eq('id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Atualizar o usuário local
+      setUser(prev => {
+        if (!prev) return null;
+        return { ...prev, ...data };
+      });
+
+      toast({
+        title: "Perfil atualizado",
+        description: "Seus dados foram atualizados com sucesso.",
+      });
+
+      return Promise.resolve();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar perfil",
+        description: error.message || "Ocorreu um erro ao atualizar seus dados.",
+      });
+      return Promise.reject(error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -180,6 +219,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         login,
         logout,
         register,
+        updateProfile,
       }}
     >
       {children}

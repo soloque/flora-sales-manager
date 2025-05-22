@@ -17,7 +17,7 @@ import { DateRange } from "react-day-picker";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { exportToCSV } from "@/utils/exportUtils";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, mapDatabaseSaleToSale } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
 const CommissionDetails = () => {
@@ -61,7 +61,9 @@ const CommissionDetails = () => {
         }
         
         if (data) {
-          setSales(data as Sale[]);
+          // Map database objects to frontend Sales type
+          const mappedSales = data.map(mapDatabaseSaleToSale);
+          setSales(mappedSales);
         }
       } catch (error) {
         console.error("Error in fetchSales:", error);

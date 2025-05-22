@@ -13,7 +13,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    storage: localStorage
+    storage: typeof localStorage !== 'undefined' ? localStorage : undefined
   },
   global: {
     headers: {
@@ -21,3 +21,33 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     },
   }
 });
+
+// Helper function to map database sale objects to our frontend Sale type
+export const mapDatabaseSaleToSale = (dbSale: any) => {
+  return {
+    id: dbSale.id,
+    date: new Date(dbSale.date),
+    description: dbSale.description || "",
+    quantity: dbSale.quantity || 0,
+    unitPrice: dbSale.unit_price || 0,
+    totalPrice: dbSale.total_price || 0,
+    sellerId: dbSale.seller_id || "",
+    sellerName: dbSale.seller_name || "",
+    commission: dbSale.commission || 0,
+    commissionRate: dbSale.commission_rate || 0,
+    status: dbSale.status || "pending",
+    observations: dbSale.observations || "",
+    customerInfo: {
+      name: "Cliente", // This would typically come from a join with customer_info
+      phone: "",
+      address: "",
+      city: "",
+      zipCode: "",
+      order: ""
+    },
+    costPrice: dbSale.cost_price,
+    profit: dbSale.profit,
+    createdAt: new Date(dbSale.created_at),
+    updatedAt: new Date(dbSale.updated_at)
+  };
+};

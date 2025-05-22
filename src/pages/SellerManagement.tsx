@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { 
@@ -52,41 +51,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-
-// Mock data for demonstration
-import { mockSalesData } from "@/data/mockSales";
-
-const mockSellers: UserType[] = [
-  {
-    id: "2",
-    name: "Gabriel Silva",
-    email: "gabriel@example.com",
-    role: "seller",
-    createdAt: new Date(2023, 1, 15),
-  },
-  {
-    id: "3",
-    name: "Marina Oliveira",
-    email: "marina@example.com",
-    role: "seller",
-    createdAt: new Date(2023, 3, 10),
-  },
-  {
-    id: "4",
-    name: "Ricardo Almeida",
-    email: "ricardo@example.com",
-    role: "seller",
-    createdAt: new Date(2023, 6, 22),
-  },
-  {
-    id: "5",
-    name: "Ana Santos",
-    email: "ana@example.com",
-    role: "seller",
-    createdAt: new Date(2023, 8, 5),
-  },
-];
+import { supabase, mapDatabaseSaleToSale } from "@/integrations/supabase/client";
 
 // Colors for the chart
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82CA9D"];
@@ -163,7 +128,9 @@ const SellerManagement = () => {
         }
         
         if (salesData) {
-          setSales(salesData);
+          // Map database objects to frontend Sales type
+          const mappedSales = salesData.map(mapDatabaseSaleToSale);
+          setSales(mappedSales);
         }
       } catch (error) {
         console.error("Error in fetchSales:", error);
@@ -255,10 +222,10 @@ const SellerManagement = () => {
   // Calculate performance metrics
   const calculatePerformanceData = () => {
     return sellers.map(seller => {
-      const sellerSales = sales.filter(sale => sale.seller_id === seller.id);
+      const sellerSales = sales.filter(sale => sale.sellerId === seller.id);
       const totalSales = sellerSales.length;
-      const totalRevenue = sellerSales.reduce((sum, sale) => sum + (sale.total_price || 0), 0);
-      const totalCommission = sellerSales.reduce((sum, sale) => sum + (sale.commission || 0), 0);
+      const totalRevenue = sellerSales.reduce((sum, sale) => sum + sale.totalPrice, 0);
+      const totalCommission = sellerSales.reduce((sum, sale) => sum + sale.commission, 0);
       
       return {
         id: seller.id,
@@ -274,7 +241,7 @@ const SellerManagement = () => {
   
   // Calculate seller statistics for the selected seller
   const calculateSellerStatistics = (sellerId: string) => {
-    const sellerSales = sales.filter(sale => sale.seller_id === sellerId);
+    const sellerSales = sales.filter(sale => sale.sellerId === sellerId);
     
     if (sellerSales.length === 0) {
       return {
@@ -288,15 +255,15 @@ const SellerManagement = () => {
     }
     
     const totalSales = sellerSales.length;
-    const totalRevenue = sellerSales.reduce((sum, sale) => sum + (sale.total_price || 0), 0);
+    const totalRevenue = sellerSales.reduce((sum, sale) => sum + sale.totalPrice, 0);
     const avgOrderValue = totalSales > 0 ? totalRevenue / totalSales : 0;
-    const commissionEarned = sellerSales.reduce((sum, sale) => sum + (sale.commission || 0), 0);
-    const commissionRate = totalSales > 0 ? sellerSales.reduce((sum, sale) => sum + (sale.commission_rate || 0), 0) / totalSales : 0;
+    const commissionEarned = sellerSales.reduce((sum, sale) => sum + sale.commission, 0);
+    const commissionRate = totalSales > 0 ? sellerSales.reduce((sum, sale) => sum + sale.commissionRate, 0) / totalSales : 0;
     
     // Calculate status distribution
     const statusCounts: Record<string, number> = {};
     sellerSales.forEach(sale => {
-      statusCounts[sale.status || "pending"] = (statusCounts[sale.status || "pending"] || 0) + 1;
+      statusCounts[sale.status] = (statusCounts[sale.status] || 0) + 1;
     });
     
     const statusDistribution = Object.entries(statusCounts).map(([status, count]) => ({
@@ -370,11 +337,15 @@ const SellerManagement = () => {
     }
     
     try {
+      // Generate a unique ID for the new seller
+      const newId = crypto.randomUUID();
+      
       // In a real application, this would create a new user in the auth system
       // and then create a profile. For the mock, we'll just create a profile.
       const { data, error } = await supabase
         .from('profiles')
         .insert({
+          id: newId,
           name: newSeller.name,
           email: newSeller.email,
           role: newSeller.role
@@ -394,8 +365,8 @@ const SellerManagement = () => {
       if (data) {
         const newUser: UserType = {
           id: data.id,
-          name: data.name,
-          email: data.email,
+          name: data.name || "",
+          email: data.email || "",
           role: data.role as "seller" | "guest" | "owner",
           createdAt: new Date(data.created_at),
         };

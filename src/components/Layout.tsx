@@ -5,7 +5,20 @@ import { useTheme } from "@/context/ThemeContext";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Moon, Sun, UserRound, Home, FileText, Settings, Bell, LogOut, Database, BarChart, Calendar, Download } from "lucide-react";
+import { 
+  Moon, 
+  Sun, 
+  UserRound, 
+  Home, 
+  FileText, 
+  Settings, 
+  Bell, 
+  LogOut, 
+  Database, 
+  BarChart, 
+  Calendar, 
+  Users 
+} from "lucide-react";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -76,6 +89,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { name: "Histórico", path: "/sales/history", icon: <Calendar className="w-5 h-5" /> },
     { name: "Comissões", path: "/commissions", icon: <BarChart className="w-5 h-5" /> },
     { name: "Vendedores", path: "/sellers", icon: <UserRound className="w-5 h-5" /> },
+    { name: "Times", path: "/teams", icon: <Users className="w-5 h-5" /> },
     { name: "Estoque", path: "/inventory", icon: <Database className="w-5 h-5" /> },
     { name: "Atualizações", path: "/updates", icon: <Bell className="w-5 h-5" /> },
     { name: "Configurações", path: "/settings", icon: <Settings className="w-5 h-5" /> },
@@ -87,6 +101,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { name: "Nova Venda", path: "/sales/new", icon: <FileText className="w-5 h-5" /> },
     { name: "Histórico", path: "/sales/history", icon: <Calendar className="w-5 h-5" /> },
     { name: "Comissões", path: "/commissions", icon: <BarChart className="w-5 h-5" /> },
+    { name: "Time", path: "/teams", icon: <Users className="w-5 h-5" /> },
     { name: "Atualizações", path: "/updates", icon: <Bell className="w-5 h-5" /> },
     { name: "Configurações", path: "/settings", icon: <Settings className="w-5 h-5" /> },
   ];

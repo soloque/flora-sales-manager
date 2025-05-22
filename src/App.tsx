@@ -1,130 +1,62 @@
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "./context/ThemeContext";
-import { AuthProvider } from "./context/AuthContext";
-import { Toaster } from "./components/ui/toaster";
-import { Toaster as Sonner } from "./components/ui/sonner";
-import { TooltipProvider } from "./components/ui/tooltip";
-import Layout from "./components/Layout";
+import Layout from "@/components/Layout";
+import Index from "@/pages/Index";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import NotFound from "@/pages/NotFound";
+import Dashboard from "@/pages/Dashboard";
+import SalesList from "@/pages/SalesList";
+import SalesHistory from "@/pages/SalesHistory";
+import NewSale from "@/pages/NewSale";
+import CommissionDetails from "@/pages/CommissionDetails";
+import CommissionSettings from "@/pages/CommissionSettings";
+import SellerManagement from "@/pages/SellerManagement"; 
+import TeamManagement from "@/pages/TeamManagement";
+import Inventory from "@/pages/Inventory";
+import Updates from "@/pages/Updates";
+import UserSettings from "@/pages/UserSettings";
+import Pricing from "@/pages/Pricing";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { Toaster } from "@/components/ui/toaster";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Pages
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import SalesList from "./pages/SalesList";
-import SalesHistory from "./pages/SalesHistory";
-import NewSale from "./pages/NewSale";
-import Updates from "./pages/Updates";
-import Pricing from "./pages/Pricing";
-import NotFound from "./pages/NotFound";
-import CommissionSettings from "./pages/CommissionSettings";
-import CommissionDetails from "./pages/CommissionDetails";
-import Inventory from "./pages/Inventory";
-import SellerManagement from "./pages/SellerManagement";
-import UserSettings from "./pages/UserSettings";
-
+// Create a client
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light">
+        <AuthProvider>
           <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route
-                path="/"
-                element={
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/sales"
-                element={
-                  <Layout>
-                    <SalesList />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/sales/new"
-                element={
-                  <Layout>
-                    <NewSale />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/sales/history"
-                element={
-                  <Layout>
-                    <SalesHistory />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/updates"
-                element={
-                  <Layout>
-                    <Updates />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/commissions"
-                element={
-                  <Layout>
-                    <CommissionDetails />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/commission-settings"
-                element={
-                  <Layout>
-                    <CommissionSettings />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/inventory"
-                element={
-                  <Layout>
-                    <Inventory />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/sellers"
-                element={
-                  <Layout>
-                    <SellerManagement />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <Layout>
-                    <UserSettings />
-                  </Layout>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <Toaster />
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/sales" element={<SalesList />} />
+                <Route path="/sales/new" element={<NewSale />} />
+                <Route path="/sales/history" element={<SalesHistory />} />
+                <Route path="/commissions" element={<CommissionDetails />} />
+                <Route path="/commission-settings" element={<CommissionSettings />} />
+                <Route path="/sellers" element={<SellerManagement />} />
+                <Route path="/teams" element={<TeamManagement />} />
+                <Route path="/inventory" element={<Inventory />} />
+                <Route path="/updates" element={<Updates />} />
+                <Route path="/settings" element={<UserSettings />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Layout>
           </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

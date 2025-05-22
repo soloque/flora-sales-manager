@@ -17,9 +17,7 @@ import {
 import { Sale, OrderStatus } from "@/types";
 import { Plus, Search, FileText, Edit } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-
-// Mock sales data
-import { mockSalesData } from "@/data/mockSales";
+import { supabase } from "@/integrations/supabase/client";
 
 const SalesList = () => {
   const { user } = useAuth();
@@ -28,17 +26,74 @@ const SalesList = () => {
   const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | "all">("all");
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    // In a real app, this would fetch data from an API
-    // For now, we'll use mock data
-    if (isOwner) {
-      setSales(mockSalesData);
-    } else {
-      // Filter sales for this specific seller
-      setSales(mockSalesData.filter(sale => sale.sellerId === user?.id));
+    if (user) {
+      fetchSales();
     }
-  }, [isOwner, user?.id]);
+  }, [user]);
+  
+  const fetchSales = async () => {
+    setIsLoading(true);
+    try {
+      let query = supabase.from('sales').select(`
+        *,
+        customer_info(*)
+      `);
+      
+      // Não precisa filtrar por vendedor aqui, as RLS policies já tratam disso
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        // Convert Supabase data to our Sale type
+        const formattedSales: Sale[] = data.map((item: any) => ({
+          id: item.id,
+          date: new Date(item.date),
+          description: item.description || "",
+          quantity: item.quantity || 0,
+          unitPrice: item.unit_price || 0,
+          totalPrice: item.total_price || 0,
+          sellerId: item.seller_id || "",
+          sellerName: item.seller_name || "",
+          commission: item.commission || 0,
+          commissionRate: item.commission_rate || 0,
+          status: item.status as OrderStatus || "pending",
+          observations: item.observations || "",
+          customerInfo: {
+            name: item.customer_info?.name || "",
+            phone: item.customer_info?.phone || "",
+            address: item.customer_info?.address || "",
+            city: item.customer_info?.city || "",
+            state: item.customer_info?.state || "",
+            zipCode: item.customer_info?.zip_code || "",
+            order: item.customer_info?.order_details || "",
+            observations: item.customer_info?.observations || "",
+          },
+          costPrice: item.cost_price,
+          profit: item.profit,
+          createdAt: new Date(item.created_at),
+          updatedAt: new Date(item.updated_at),
+        }));
+        
+        setSales(formattedSales);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar vendas:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar as vendas."
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   useEffect(() => {
     let result = sales;
@@ -87,19 +142,42 @@ const SalesList = () => {
     }
   };
 
-  const updateSaleStatus = (saleId: string, newStatus: OrderStatus) => {
-    // In a real app, this would call an API to update the status
-    const updatedSales = sales.map(sale => {
-      if (sale.id === saleId) {
-        return { ...sale, status: newStatus, updatedAt: new Date() };
+  const updateSaleStatus = async (saleId: string, newStatus: OrderStatus) => {
+    try {
+      const { error } = await supabase
+        .from('sales')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', saleId);
+        
+      if (error) {
+        throw error;
       }
-      return sale;
-    });
-    setSales(updatedSales);
-    toast({
-      title: "Status atualizado",
-      description: "O status da venda foi atualizado com sucesso."
-    });
+      
+      // Atualiza localmente
+      const updatedSales = sales.map(sale => {
+        if (sale.id === saleId) {
+          return { ...sale, status: newStatus, updatedAt: new Date() };
+        }
+        return sale;
+      });
+      
+      setSales(updatedSales);
+      
+      toast({
+        title: "Status atualizado",
+        description: "O status da venda foi atualizado com sucesso."
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível atualizar o status da venda."
+      });
+    }
   };
 
   return (
@@ -145,7 +223,16 @@ const SalesList = () => {
         </div>
       </div>
       
-      {filteredSales.length === 0 ? (
+      {isLoading ? (
+        <Card>
+          <CardContent className="flex items-center justify-center p-6">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2">Carregando vendas...</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : filteredSales.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-10">
             <FileText className="h-16 w-16 text-muted-foreground mb-4" />

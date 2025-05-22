@@ -24,7 +24,7 @@ const Register = () => {
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
 
-  // If already authenticated, redirect to home
+  // Se já estiver autenticado, redireciona para a página inicial
   if (isAuthenticated) {
     navigate("/");
   }
@@ -45,17 +45,9 @@ const Register = () => {
 
     try {
       await register(email, password, name, role);
-      toast({
-        title: "Registro bem-sucedido",
-        description: "Sua conta foi criada com sucesso.",
-      });
       navigate("/");
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Falha no registro",
-        description: "Não foi possível criar sua conta. Tente novamente.",
-      });
+      // O erro já será tratado no AuthContext
     } finally {
       setIsLoading(false);
     }

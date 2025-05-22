@@ -1,9 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, UserRole } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { Session } from "@supabase/supabase-js";
+import { toast } from "@/components/ui/use-toast";
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -11,99 +15,155 @@ interface AuthContextType {
   register: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
 }
 
-// Mock user data for demonstration
-const mockUsers = [
-  {
-    id: "1",
-    name: "Admin User",
-    email: "admin@example.com",
-    password: "password123",
-    role: "owner" as UserRole,
-    createdAt: new Date(),
-  },
-  {
-    id: "2",
-    name: "Gabriel Silva",
-    email: "seller@example.com",
-    password: "password123",
-    role: "seller" as UserRole,
-    createdAt: new Date(),
-  },
-];
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        if (session?.user) {
+          // Buscar perfil do usuário apenas com os dados básicos
+          setUser({
+            id: session.user.id,
+            name: session.user.user_metadata.name || session.user.email?.split('@')[0] || '',
+            email: session.user.email || '',
+            role: session.user.user_metadata.role as UserRole || 'guest',
+            createdAt: new Date(session.user.created_at || Date.now()),
+          });
+        } else {
+          setUser(null);
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          name: session.user.user_metadata.name || session.user.email?.split('@')[0] || '',
+          email: session.user.email || '',
+          role: session.user.user_metadata.role as UserRole || 'guest',
+          createdAt: new Date(session.user.created_at || Date.now()),
+        });
+
+        // Carregar perfil completo em um setTimeout para evitar deadlock
+        setTimeout(() => {
+          fetchUserProfile(session.user.id);
+        }, 0);
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const login = async (email: string, password: string) => {
-    // Simulate API request
-    setLoading(true);
+  const fetchUserProfile = async (userId: string) => {
     try {
-      // Find user in mock data
-      const foundUser = mockUsers.find(
-        (u) => u.email === email && u.password === password
-      );
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-      if (!foundUser) {
-        throw new Error("Invalid credentials");
+      if (error) {
+        console.error('Erro ao buscar perfil:', error);
+        return;
       }
 
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem("user", JSON.stringify(userWithoutPassword));
-      return Promise.resolve();
+      if (data) {
+        setUser(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            name: data.name || prev.name,
+            role: data.role as UserRole || prev.role,
+          };
+        });
+      }
     } catch (error) {
+      console.error('Erro ao buscar perfil:', error);
+    }
+  };
+
+  const login = async (email: string, password: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return Promise.resolve();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro de login",
+        description: error.message || "Ocorreu um erro ao fazer login.",
+      });
       return Promise.reject(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
   };
 
   const register = async (email: string, password: string, name: string, role: UserRole) => {
-    // Simulate API request
     setLoading(true);
     try {
-      // Check if user already exists
-      const existingUser = mockUsers.find((u) => u.email === email);
-      if (existingUser) {
-        throw new Error("User already exists");
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            role,
+          },
+        }
+      });
+
+      if (error) {
+        throw error;
       }
 
-      // Create new user (in a real app, this would be an API call)
-      const newUser = {
-        id: `${mockUsers.length + 1}`,
-        name,
-        email,
-        role,
-        createdAt: new Date(),
-      };
+      // No trigger automaticamente irá criar o perfil do usuário
 
-      // In a real app, you would save the user to the database
-      mockUsers.push({ ...newUser, password });
-
-      // Log the user in
-      setUser(newUser);
-      localStorage.setItem("user", JSON.stringify(newUser));
+      toast({
+        title: "Registro bem-sucedido",
+        description: "Sua conta foi criada com sucesso.",
+      });
+      
       return Promise.resolve();
-    } catch (error) {
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Falha no registro",
+        description: error.message || "Não foi possível criar sua conta.",
+      });
       return Promise.reject(error);
     } finally {
       setLoading(false);
@@ -114,7 +174,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        session,
+        isAuthenticated: !!user && !!session,
         loading,
         login,
         logout,

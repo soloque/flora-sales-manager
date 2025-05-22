@@ -29,6 +29,8 @@ import {
   User,
   BarChart,
   PieChart as PieChartIcon,
+  Copy,
+  Check,
 } from "lucide-react";
 import { User as UserType, Sale } from "@/types";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
@@ -39,6 +41,18 @@ import {
 } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { Link } from "react-router-dom";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 // Mock data for demonstration
 import { mockSalesData } from "@/data/mockSales";
@@ -85,15 +99,82 @@ const SellerManagement = () => {
   const [filteredSellers, setFilteredSellers] = useState<UserType[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSeller, setSelectedSeller] = useState<UserType | null>(null);
+  const [searchById, setSearchById] = useState("");
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newSeller, setNewSeller] = useState({
+    name: "",
+    email: "",
+    role: "seller" as "seller" | "guest" | "owner"
+  });
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [sellerCount, setSellerCount] = useState(0);
   
   // Sales data
   const [sales, setSales] = useState<Sale[]>([]);
   
   useEffect(() => {
-    // In a real app, these would be API calls
-    setSellers(mockSellers);
-    setSales(mockSalesData);
-  }, []);
+    // Fetch sellers from Supabase
+    const fetchSellers = async () => {
+      try {
+        const { data: profilesData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('role', ['seller', 'guest']);
+          
+        if (error) {
+          console.error("Error fetching sellers:", error);
+          toast({
+            title: "Erro ao carregar vendedores",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (profilesData) {
+          const formattedSellers = profilesData.map(profile => ({
+            id: profile.id,
+            name: profile.name || "Sem nome",
+            email: profile.email || "Sem email",
+            role: profile.role as "seller" | "guest" | "owner",
+            createdAt: new Date(profile.created_at),
+            avatar_url: profile.avatar_url
+          }));
+          
+          setSellers(formattedSellers);
+          setSellerCount(formattedSellers.length);
+        }
+      } catch (error) {
+        console.error("Error in fetchSellers:", error);
+      }
+    };
+    
+    // Fetch sales data from Supabase
+    const fetchSales = async () => {
+      try {
+        const { data: salesData, error } = await supabase
+          .from('sales')
+          .select('*');
+          
+        if (error) {
+          console.error("Error fetching sales:", error);
+          return;
+        }
+        
+        if (salesData) {
+          setSales(salesData);
+        }
+      } catch (error) {
+        console.error("Error in fetchSales:", error);
+      }
+    };
+    
+    if (isOwner) {
+      fetchSellers();
+      fetchSales();
+    }
+  }, [isOwner]);
   
   useEffect(() => {
     // Apply search filter
@@ -111,13 +192,73 @@ const SellerManagement = () => {
     setFilteredSellers(filtered);
   }, [sellers, searchTerm]);
   
+  const handleSearchById = async () => {
+    if (!searchById.trim()) {
+      toast({
+        title: "ID não informado",
+        description: "Por favor, insira um ID de vendedor para pesquisar",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', searchById)
+        .single();
+      
+      if (error) {
+        toast({
+          title: "Vendedor não encontrado",
+          description: "Nenhum vendedor encontrado com este ID",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (data) {
+        const sellerExists = sellers.some(seller => seller.id === data.id);
+        
+        if (sellerExists) {
+          toast({
+            title: "Vendedor já adicionado",
+            description: "Este vendedor já faz parte do seu time",
+          });
+          return;
+        }
+        
+        const newSeller: UserType = {
+          id: data.id,
+          name: data.name || "Sem nome",
+          email: data.email || "Sem email",
+          role: data.role as "seller" | "guest" | "owner",
+          createdAt: new Date(data.created_at),
+          avatar_url: data.avatar_url
+        };
+        
+        setSellers(prev => [...prev, newSeller]);
+        
+        toast({
+          title: "Vendedor encontrado",
+          description: `${newSeller.name} foi adicionado ao seu time de vendedores`,
+        });
+        
+        setSearchById("");
+      }
+    } catch (error) {
+      console.error("Error searching seller by ID:", error);
+    }
+  };
+  
   // Calculate performance metrics
   const calculatePerformanceData = () => {
     return sellers.map(seller => {
-      const sellerSales = sales.filter(sale => sale.sellerId === seller.id);
+      const sellerSales = sales.filter(sale => sale.seller_id === seller.id);
       const totalSales = sellerSales.length;
-      const totalRevenue = sellerSales.reduce((sum, sale) => sum + sale.totalPrice, 0);
-      const totalCommission = sellerSales.reduce((sum, sale) => sum + sale.commission, 0);
+      const totalRevenue = sellerSales.reduce((sum, sale) => sum + (sale.total_price || 0), 0);
+      const totalCommission = sellerSales.reduce((sum, sale) => sum + (sale.commission || 0), 0);
       
       return {
         id: seller.id,
@@ -133,7 +274,7 @@ const SellerManagement = () => {
   
   // Calculate seller statistics for the selected seller
   const calculateSellerStatistics = (sellerId: string) => {
-    const sellerSales = sales.filter(sale => sale.sellerId === sellerId);
+    const sellerSales = sales.filter(sale => sale.seller_id === sellerId);
     
     if (sellerSales.length === 0) {
       return {
@@ -147,15 +288,15 @@ const SellerManagement = () => {
     }
     
     const totalSales = sellerSales.length;
-    const totalRevenue = sellerSales.reduce((sum, sale) => sum + sale.totalPrice, 0);
-    const avgOrderValue = totalRevenue / totalSales;
-    const commissionEarned = sellerSales.reduce((sum, sale) => sum + sale.commission, 0);
-    const commissionRate = sellerSales.reduce((sum, sale) => sum + sale.commissionRate, 0) / totalSales;
+    const totalRevenue = sellerSales.reduce((sum, sale) => sum + (sale.total_price || 0), 0);
+    const avgOrderValue = totalSales > 0 ? totalRevenue / totalSales : 0;
+    const commissionEarned = sellerSales.reduce((sum, sale) => sum + (sale.commission || 0), 0);
+    const commissionRate = totalSales > 0 ? sellerSales.reduce((sum, sale) => sum + (sale.commission_rate || 0), 0) / totalSales : 0;
     
     // Calculate status distribution
     const statusCounts: Record<string, number> = {};
     sellerSales.forEach(sale => {
-      statusCounts[sale.status] = (statusCounts[sale.status] || 0) + 1;
+      statusCounts[sale.status || "pending"] = (statusCounts[sale.status || "pending"] || 0) + 1;
     });
     
     const statusDistribution = Object.entries(statusCounts).map(([status, count]) => ({
@@ -171,6 +312,118 @@ const SellerManagement = () => {
       commissionRate,
       statusDistribution,
     };
+  };
+
+  // Handle seller role update
+  const handleUpdateRole = async () => {
+    if (!selectedSeller) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: selectedSeller.role })
+        .eq('id', selectedSeller.id);
+      
+      if (error) {
+        toast({
+          title: "Erro ao atualizar cargo",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Cargo atualizado",
+        description: `O cargo de ${selectedSeller.name} foi atualizado para ${selectedSeller.role}`,
+      });
+      
+      setShowRoleDialog(false);
+      
+      // Update seller in the local state
+      setSellers(sellers.map(seller => 
+        seller.id === selectedSeller.id ? { ...seller, role: selectedSeller.role } : seller
+      ));
+    } catch (error) {
+      console.error("Error updating role:", error);
+    }
+  };
+  
+  const handleAddSeller = async () => {
+    if (!newSeller.name || !newSeller.email) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Nome e email são obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check if we've reached the seller limit (10)
+    if (sellerCount >= 10) {
+      toast({
+        title: "Limite de vendedores atingido",
+        description: "Você atingiu o limite de 10 vendedores. Considere fazer upgrade do seu plano para adicionar mais vendedores.",
+        variant: "warning",
+      });
+      return;
+    }
+    
+    try {
+      // In a real application, this would create a new user in the auth system
+      // and then create a profile. For the mock, we'll just create a profile.
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          name: newSeller.name,
+          email: newSeller.email,
+          role: newSeller.role
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        toast({
+          title: "Erro ao adicionar vendedor",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (data) {
+        const newUser: UserType = {
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          role: data.role as "seller" | "guest" | "owner",
+          createdAt: new Date(data.created_at),
+        };
+        
+        setSellers([...sellers, newUser]);
+        setSellerCount(prev => prev + 1);
+        setNewSeller({ name: "", email: "", role: "seller" });
+        setShowAddDialog(false);
+        
+        toast({
+          title: "Vendedor adicionado",
+          description: `${newSeller.name} foi adicionado como vendedor com o ID: ${data.id}`,
+        });
+      }
+    } catch (error) {
+      console.error("Error in handleAddSeller:", error);
+    }
+  };
+  
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(text);
+    setTimeout(() => setCopiedId(null), 2000);
+    
+    toast({
+      title: "ID copiado",
+      description: "ID do vendedor copiado para a área de transferência",
+    });
   };
   
   const formatCurrency = (value: number) => {
@@ -189,6 +442,15 @@ const SellerManagement = () => {
       case "cancelled": return "Cancelado";
       case "problem": return "Problema";
       default: return status;
+    }
+  };
+  
+  const roleLabel = (role: string) => {
+    switch (role) {
+      case "seller": return "Vendedor";
+      case "owner": return "Administrador";
+      case "guest": return "Convidado";
+      default: return role;
     }
   };
   
@@ -336,26 +598,47 @@ const SellerManagement = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Lista de Vendedores</CardTitle>
+            <CardTitle>Lista de Vendedores ({sellerCount}/10)</CardTitle>
             <CardDescription>
               Gerencie os vendedores cadastrados no sistema
             </CardDescription>
           </div>
-          <Button>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Novo Vendedor
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowAddDialog(true)} 
+              disabled={sellerCount >= 10}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Novo Vendedor
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/commission-settings">
+                Configurar Comissões
+              </Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          {/* Search */}
-          <div className="relative mb-6">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar vendedores..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          {/* Search and Add by ID */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar vendedores..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Adicionar vendedor por ID..."
+                value={searchById}
+                onChange={(e) => setSearchById(e.target.value)}
+                className="flex-1"
+              />
+              <Button onClick={handleSearchById}>Adicionar</Button>
+            </div>
           </div>
           
           {/* Sellers Table */}
@@ -366,6 +649,8 @@ const SellerManagement = () => {
                   <TableHead>Nome</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Cadastrado em</TableHead>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Cargo</TableHead>
                   <TableHead>Vendas</TableHead>
                   <TableHead>Comissão</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -374,7 +659,7 @@ const SellerManagement = () => {
               <TableBody>
                 {filteredSellers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={8} className="h-24 text-center">
                       Nenhum vendedor encontrado.
                     </TableCell>
                   </TableRow>
@@ -399,18 +684,58 @@ const SellerManagement = () => {
                           </div>
                         </TableCell>
                         <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs truncate max-w-[80px]">{seller.id}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => copyToClipboard(seller.id)}
+                            >
+                              {copiedId === seller.id ? (
+                                <Check className="h-3 w-3" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            seller.role === "owner" 
+                              ? "default" 
+                              : seller.role === "seller" 
+                                ? "secondary" 
+                                : "outline"
+                          }>
+                            {roleLabel(seller.role)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
                           <Badge variant="secondary">{stats.totalSales}</Badge>
                         </TableCell>
                         <TableCell>{formatCurrency(stats.commissionEarned)}</TableCell>
                         <TableCell className="text-right">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setSelectedSeller(seller)}
-                          >
-                            <BarChart className="h-4 w-4 mr-2" />
-                            Detalhes
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedSeller(seller);
+                                setShowRoleDialog(true);
+                              }}
+                            >
+                              Cargo
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setSelectedSeller(seller)}
+                            >
+                              <BarChart className="h-4 w-4 mr-2" />
+                              Detalhes
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -478,11 +803,9 @@ const SellerManagement = () => {
                     </Card>
                     
                     <Card>
-                      <CardContent className="pt-6 flex items-center justify-center">
-                        <Button variant="outline" className="w-full">
-                          <Mail className="h-4 w-4 mr-2" />
-                          Enviar Email
-                        </Button>
+                      <CardContent className="pt-6">
+                        <div className="text-2xl font-bold truncate">{selectedSeller.id}</div>
+                        <p className="text-sm text-muted-foreground">ID do Vendedor</p>
                       </CardContent>
                     </Card>
                   </>
@@ -572,6 +895,96 @@ const SellerManagement = () => {
           </CardFooter>
         </Card>
       )}
+
+      {/* Add Seller Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adicionar Novo Vendedor</DialogTitle>
+            <DialogDescription>
+              Preencha os dados do novo vendedor para adicioná-lo à sua equipe.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome</Label>
+              <Input
+                id="name"
+                value={newSeller.name}
+                onChange={(e) => setNewSeller({...newSeller, name: e.target.value})}
+                placeholder="Nome completo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={newSeller.email}
+                onChange={(e) => setNewSeller({...newSeller, email: e.target.value})}
+                placeholder="email@exemplo.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Cargo</Label>
+              <Select
+                value={newSeller.role}
+                onValueChange={(val) => setNewSeller({
+                  ...newSeller, 
+                  role: val as "seller" | "guest" | "owner"
+                })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um cargo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="seller">Vendedor</SelectItem>
+                  <SelectItem value="guest">Convidado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancelar</Button>
+            <Button onClick={handleAddSeller}>Adicionar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Role Dialog */}
+      <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Atualizar Cargo</DialogTitle>
+            <DialogDescription>
+              Selecione o novo cargo para {selectedSeller?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="role">Cargo</Label>
+              <Select
+                value={selectedSeller?.role}
+                onValueChange={(val) => setSelectedSeller(prev => 
+                  prev ? {...prev, role: val as "seller" | "guest" | "owner"} : null
+                )}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um cargo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="seller">Vendedor</SelectItem>
+                  <SelectItem value="guest">Convidado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRoleDialog(false)}>Cancelar</Button>
+            <Button onClick={handleUpdateRole}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

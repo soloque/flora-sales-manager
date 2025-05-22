@@ -31,39 +31,9 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock sellers for demonstration
-const mockSellers: User[] = [
-  {
-    id: "2",
-    name: "Gabriel Silva",
-    email: "seller@example.com",
-    role: "seller",
-    createdAt: new Date(),
-  },
-  {
-    id: "3",
-    name: "Marina Oliveira",
-    email: "marina@example.com",
-    role: "seller",
-    createdAt: new Date(),
-  },
-  {
-    id: "4",
-    name: "Ricardo Almeida",
-    email: "ricardo@example.com",
-    role: "seller",
-    createdAt: new Date(),
-  },
-];
-
-// Mock sales data for performance chart
-const mockSellerPerformance = [
-  { name: "Gabriel Silva", value: 42, sales: 15 },
-  { name: "Marina Oliveira", value: 28, sales: 10 },
-  { name: "Ricardo Almeida", value: 30, sales: 11 },
-];
-
+// Colors for the performance chart
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82ca9d"];
 
 const CommissionSettings = () => {
@@ -72,25 +42,157 @@ const CommissionSettings = () => {
   const [defaultRate, setDefaultRate] = useState<number>(20);
   const [sellerRates, setSellerRates] = useState<Record<string, number>>({});
   const [sellers, setSellers] = useState<User[]>([]);
+  const [sellerPerformance, setSellerPerformance] = useState<any[]>([]);
   const [newSeller, setNewSeller] = useState({ name: "", email: "" });
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [sellerToRemove, setSellerToRemove] = useState<User | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [settingsId, setSettingsId] = useState<string | null>(null);
 
   useEffect(() => {
-    // In a real app, this would fetch data from an API
-    // For now, we'll use mock data
     if (isOwner) {
-      setSellers(mockSellers);
-      
-      // Initialize with default rates for each seller
-      const initialRates: Record<string, number> = {};
-      mockSellers.forEach((seller) => {
-        initialRates[seller.id] = 20; // Default 20%
-      });
-      setSellerRates(initialRates);
+      fetchSettings();
+      fetchSellers();
+      fetchSalesData();
     }
   }, [isOwner]);
+
+  const fetchSettings = async () => {
+    try {
+      // Get commission settings
+      const { data: settings, error } = await supabase
+        .from('commission_settings')
+        .select('*')
+        .eq('owner_id', user?.id)
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error fetching commission settings:", error);
+        return;
+      }
+      
+      if (settings) {
+        setDefaultRate(settings.default_rate || 20);
+        setSettingsId(settings.id);
+        
+        // Get seller-specific rates
+        const { data: sellerRatesData, error: sellerRatesError } = await supabase
+          .from('seller_commission_rates')
+          .select('*')
+          .eq('settings_id', settings.id);
+        
+        if (sellerRatesError) {
+          console.error("Error fetching seller rates:", sellerRatesError);
+          return;
+        }
+        
+        if (sellerRatesData) {
+          const rates: Record<string, number> = {};
+          sellerRatesData.forEach((rate) => {
+            rates[rate.seller_id] = rate.rate;
+          });
+          setSellerRates(rates);
+        }
+      } else {
+        // Create default settings if none exist
+        const { data: newSettings, error: createError } = await supabase
+          .from('commission_settings')
+          .insert({
+            owner_id: user?.id,
+            default_rate: 20
+          })
+          .select()
+          .single();
+        
+        if (createError) {
+          console.error("Error creating commission settings:", createError);
+          return;
+        }
+        
+        if (newSettings) {
+          setSettingsId(newSettings.id);
+          setDefaultRate(newSettings.default_rate || 20);
+        }
+      }
+    } catch (error) {
+      console.error("Error in fetchSettings:", error);
+    }
+  };
+
+  const fetchSellers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('role', ['seller', 'guest']);
+      
+      if (error) {
+        console.error("Error fetching sellers:", error);
+        return;
+      }
+      
+      if (data) {
+        const formattedSellers: User[] = data.map(profile => ({
+          id: profile.id,
+          name: profile.name || "Sem nome",
+          email: profile.email || "Sem email",
+          role: profile.role as "seller" | "guest" | "owner",
+          createdAt: new Date(profile.created_at),
+          avatar_url: profile.avatar_url
+        }));
+        
+        setSellers(formattedSellers);
+      }
+    } catch (error) {
+      console.error("Error in fetchSellers:", error);
+    }
+  };
+
+  const fetchSalesData = async () => {
+    try {
+      // Get all sales
+      const { data: salesData, error } = await supabase
+        .from('sales')
+        .select('*');
+      
+      if (error) {
+        console.error("Error fetching sales:", error);
+        return;
+      }
+      
+      if (salesData && salesData.length > 0) {
+        // Get all sellers
+        const { data: sellersData, error: sellersError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('role', ['seller']);
+        
+        if (sellersError) {
+          console.error("Error fetching sellers for performance:", sellersError);
+          return;
+        }
+        
+        if (sellersData) {
+          // Calculate performance data
+          const performance = sellersData.map(seller => {
+            const sellerSales = salesData.filter(sale => sale.seller_id === seller.id);
+            const totalValue = sellerSales.reduce((sum, sale) => sum + (sale.total_price || 0), 0);
+            
+            return {
+              name: seller.name || "Sem nome",
+              value: totalValue,
+              sales: sellerSales.length
+            };
+          }).filter(seller => seller.sales > 0); // Only include sellers with sales
+          
+          setSellerPerformance(performance);
+        }
+      }
+    } catch (error) {
+      console.error("Error in fetchSalesData:", error);
+    }
+  };
 
   const handleDefaultRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
@@ -118,12 +220,73 @@ const CommissionSettings = () => {
     });
   };
 
-  const handleSaveSettings = () => {
-    // In a real app, this would save to an API/database
-    toast({
-      title: "Configurações salvas",
-      description: "As taxas de comissão foram atualizadas com sucesso.",
-    });
+  const handleSaveSettings = async () => {
+    setLoading(true);
+    try {
+      // Update or create commission settings
+      if (settingsId) {
+        await supabase
+          .from('commission_settings')
+          .update({
+            default_rate: defaultRate,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', settingsId);
+      } else {
+        const { data, error } = await supabase
+          .from('commission_settings')
+          .insert({
+            owner_id: user?.id,
+            default_rate: defaultRate
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          throw error;
+        }
+        
+        if (data) {
+          setSettingsId(data.id);
+        }
+      }
+      
+      // Update or create seller-specific rates
+      if (settingsId) {
+        // First, delete existing rates
+        await supabase
+          .from('seller_commission_rates')
+          .delete()
+          .eq('settings_id', settingsId);
+        
+        // Then insert new rates
+        const ratesToInsert = Object.entries(sellerRates).map(([sellerId, rate]) => ({
+          settings_id: settingsId,
+          seller_id: sellerId,
+          rate: rate
+        }));
+        
+        if (ratesToInsert.length > 0) {
+          await supabase
+            .from('seller_commission_rates')
+            .insert(ratesToInsert);
+        }
+      }
+      
+      toast({
+        title: "Configurações salvas",
+        description: "As taxas de comissão foram atualizadas com sucesso.",
+      });
+    } catch (error: any) {
+      console.error("Error saving settings:", error);
+      toast({
+        title: "Erro ao salvar configurações",
+        description: error.message || "Ocorreu um erro ao salvar as configurações.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddSeller = () => {
@@ -151,10 +314,11 @@ const CommissionSettings = () => {
 
   const handleRemoveSeller = () => {
     if (sellerToRemove) {
-      // In a real app, this would deactivate the user in the database
+      // Remove seller from the UI
       const updatedSellers = sellers.filter(seller => seller.id !== sellerToRemove.id);
       setSellers(updatedSellers);
       
+      // Remove seller's commission rate
       const updatedRates = { ...sellerRates };
       delete updatedRates[sellerToRemove.id];
       setSellerRates(updatedRates);
@@ -193,51 +357,57 @@ const CommissionSettings = () => {
         </CardHeader>
         <CardContent>
           <div className="h-[300px]">
-            <ChartContainer 
-              config={{
-                sales: { label: "Vendas" },
-              }}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={mockSellerPerformance}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {mockSellerPerformance.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={COLORS[index % COLORS.length]} 
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    content={({ active, payload }) => {
-                      if (active && payload?.length) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="rounded-lg border bg-background p-2 shadow-sm">
-                            <div className="font-medium">{data.name}</div>
-                            <div className="text-xs text-muted-foreground">Vendas: {data.sales}</div>
-                            <div className="text-xs">
-                              Participação: {((data.value / mockSellerPerformance.reduce((a, b) => a + b.value, 0)) * 100).toFixed(1)}%
+            {sellerPerformance.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                Nenhum dado de vendas disponível para exibir.
+              </div>
+            ) : (
+              <ChartContainer 
+                config={{
+                  sales: { label: "Vendas" },
+                }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={sellerPerformance}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {sellerPerformance.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={COLORS[index % COLORS.length]} 
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      content={({ active, payload }) => {
+                        if (active && payload?.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="rounded-lg border bg-background p-2 shadow-sm">
+                              <div className="font-medium">{data.name}</div>
+                              <div className="text-xs text-muted-foreground">Vendas: {data.sales}</div>
+                              <div className="text-xs">
+                                Participação: {((data.value / sellerPerformance.reduce((a, b) => a + b.value, 0)) * 100).toFixed(1)}%
+                              </div>
                             </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -275,53 +445,6 @@ const CommissionSettings = () => {
           </div>
 
           <Separator />
-
-          {/* Add Seller Button */}
-          <div className="flex justify-end">
-            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  <span>Adicionar Vendedor</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Adicionar Novo Vendedor</DialogTitle>
-                  <DialogDescription>
-                    Preencha os detalhes do novo vendedor. Eles receberão um convite por email.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome</Label>
-                    <Input
-                      id="name"
-                      value={newSeller.name}
-                      onChange={(e) => setNewSeller({ ...newSeller, name: e.target.value })}
-                      placeholder="Nome completo"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newSeller.email}
-                      onChange={(e) => setNewSeller({ ...newSeller, email: e.target.value })}
-                      placeholder="email@exemplo.com"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleAddSeller}>Adicionar</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
 
           {/* Individual seller rates */}
           <div className="space-y-4">
@@ -367,9 +490,13 @@ const CommissionSettings = () => {
           </div>
         </CardContent>
         <CardFooter className="flex justify-end">
-          <Button onClick={handleSaveSettings} className="flex items-center gap-2">
+          <Button 
+            onClick={handleSaveSettings} 
+            className="flex items-center gap-2"
+            disabled={loading}
+          >
             <Save className="h-4 w-4" />
-            <span>Salvar Configurações</span>
+            <span>{loading ? "Salvando..." : "Salvar Configurações"}</span>
           </Button>
         </CardFooter>
       </Card>

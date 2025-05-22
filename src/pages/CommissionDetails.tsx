@@ -12,13 +12,13 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Sale } from "@/types";
-import { Calendar, Download, ArrowUp, ArrowDown } from "lucide-react";
+import { Download, ArrowUp, ArrowDown } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { exportToCSV } from "@/utils/exportUtils";
-
-// Mock data
-import { mockSalesData } from "@/data/mockSales";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
 const CommissionDetails = () => {
   const { user } = useAuth();
@@ -35,18 +35,40 @@ const CommissionDetails = () => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
-    // In a real app, this would be an API call
-    // Filter to only include paid and delivered orders
-    const paidDeliveredSales = mockSalesData.filter(
-      sale => sale.status === "paid" || sale.status === "delivered"
-    );
+    // Fetch sales data from Supabase
+    const fetchSales = async () => {
+      try {
+        let query = supabase
+          .from('sales')
+          .select('*')
+          .in('status', ['paid', 'delivered']);
+        
+        // Filter by seller if not owner
+        if (!isOwner && user) {
+          query = query.eq('seller_id', user.id);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error("Error fetching sales:", error);
+          toast({
+            title: "Erro ao carregar vendas",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (data) {
+          setSales(data as Sale[]);
+        }
+      } catch (error) {
+        console.error("Error in fetchSales:", error);
+      }
+    };
     
-    // Filter by seller if not owner
-    if (!isOwner && user) {
-      setSales(paidDeliveredSales.filter(sale => sale.sellerId === user.id));
-    } else {
-      setSales(paidDeliveredSales);
-    }
+    fetchSales();
   }, [isOwner, user]);
 
   useEffect(() => {
@@ -139,7 +161,25 @@ const CommissionDetails = () => {
 
   return (
     <div className="space-y-6">
-      {!isOwner ? (
+      {isOwner ? (
+        // Owner view
+        <Card>
+          <CardHeader>
+            <CardTitle>Gerenciamento de Comissões</CardTitle>
+            <CardDescription>
+              Como administrador, você pode configurar as taxas de comissão para cada vendedor
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p>Use esta página para visualizar e ajustar as taxas de comissão dos vendedores.</p>
+            <div className="flex justify-end">
+              <Button asChild>
+                <Link to="/commission-settings">Configurar Comissões</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
         // Seller view
         <>
           <Card>
@@ -221,7 +261,7 @@ const CommissionDetails = () => {
                           <TableCell>
                             {new Date(sale.date).toLocaleDateString("pt-BR")}
                           </TableCell>
-                          <TableCell>{sale.customerInfo.name}</TableCell>
+                          <TableCell>{sale.customerInfo?.name || "Cliente"}</TableCell>
                           <TableCell>{sale.description}</TableCell>
                           <TableCell>{formatCurrency(sale.totalPrice)}</TableCell>
                           <TableCell>{sale.commissionRate}%</TableCell>
@@ -238,29 +278,9 @@ const CommissionDetails = () => {
             </CardContent>
           </Card>
         </>
-      ) : (
-        // Owner view - redirect to commission settings
-        <Card>
-          <CardHeader>
-            <CardTitle>Gerenciamento de Comissões</CardTitle>
-            <CardDescription>
-              Como administrador, você pode configurar as taxas de comissão para cada vendedor
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <p>Use esta página para visualizar e ajustar as taxas de comissão dos vendedores.</p>
-            <div className="flex justify-end">
-              <Button asChild>
-                <Link to="/commissions">Configurar Comissões</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       )}
     </div>
   );
 };
-
-import { Link } from "react-router-dom";
 
 export default CommissionDetails;

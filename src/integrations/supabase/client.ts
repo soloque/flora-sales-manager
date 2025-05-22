@@ -51,3 +51,22 @@ export const mapDatabaseSaleToSale = (dbSale: any) => {
     updatedAt: new Date(dbSale.updated_at)
   };
 };
+
+// Helper function to adapt database fields when needed
+export const mapDatabaseFields = <T extends Record<string, any>>(data: any[], fieldMappings: Record<string, string>): T[] => {
+  return data.map(item => {
+    const mappedItem: Record<string, any> = {};
+    
+    // Copy all original properties
+    Object.keys(item).forEach(key => {
+      mappedItem[key] = item[key];
+    });
+    
+    // Map specific fields
+    Object.entries(fieldMappings).forEach(([toField, fromField]) => {
+      mappedItem[toField] = item[fromField];
+    });
+    
+    return mappedItem as T;
+  });
+};

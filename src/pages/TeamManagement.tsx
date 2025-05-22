@@ -94,24 +94,22 @@ const TeamManagement = () => {
     const fetchTeamData = async () => {
       if (isOwner) {
         // Fetch team members for owner
-        const { data: members, error: membersError } = await supabase
-          .from('team_members')
-          .select('*, profile:seller_id(*)')
-          .eq('owner_id', user.id);
+        const { data, error } = await supabase
+          .rpc('get_team_members', { owner_id_param: user.id });
           
-        if (membersError) {
-          console.error("Error fetching team members:", membersError);
+        if (error) {
+          console.error("Error fetching team members:", error);
           return;
         }
         
-        if (members) {
-          const formattedMembers = members.map(member => ({
-            id: member.profile.id,
-            name: member.profile.name || "Sem nome",
-            email: member.profile.email || "Sem email",
-            role: member.profile.role as "seller" | "guest" | "owner",
-            createdAt: new Date(member.profile.created_at),
-            avatar_url: member.profile.avatar_url
+        if (data) {
+          const formattedMembers = data.map((member: any) => ({
+            id: member.id,
+            name: member.name || "Sem nome",
+            email: member.email || "Sem email",
+            role: member.role as "seller" | "guest" | "owner",
+            createdAt: new Date(member.created_at),
+            avatar_url: member.avatar_url
           }));
           
           setTeamMembers(formattedMembers);
@@ -119,10 +117,7 @@ const TeamManagement = () => {
         
         // Fetch team requests for owner
         const { data: requests, error: requestsError } = await supabase
-          .from('team_requests')
-          .select('*, seller:seller_id(email)')
-          .eq('owner_id', user.id)
-          .eq('status', 'pending');
+          .rpc('get_team_requests', { owner_id_param: user.id });
           
         if (requestsError) {
           console.error("Error fetching team requests:", requestsError);
@@ -130,18 +125,12 @@ const TeamManagement = () => {
         }
         
         if (requests) {
-          const formattedRequests = requests.map(req => ({
-            ...req,
-            seller_email: req.seller?.email
-          }));
-          setTeamRequests(formattedRequests);
+          setTeamRequests(requests as TeamRequest[]);
         }
       } else {
         // Fetch team for seller
         const { data: team, error: teamError } = await supabase
-          .from('team_members')
-          .select('*, owner:owner_id(*)')
-          .eq('seller_id', user.id);
+          .rpc('get_seller_team', { seller_id_param: user.id });
           
         if (teamError) {
           console.error("Error fetching team:", teamError);
@@ -150,7 +139,7 @@ const TeamManagement = () => {
         
         if (team && team.length > 0) {
           // Set owner information
-          const owner = team[0].owner;
+          const owner = team[0];
           if (owner) {
             const ownerUser: UserType = {
               id: owner.id,
@@ -226,9 +215,10 @@ const TeamManagement = () => {
       
       // Update request status
       const { error: updateError } = await supabase
-        .from('team_requests')
-        .update({ status })
-        .eq('id', requestId);
+        .rpc('update_team_request', {
+          request_id_param: requestId,
+          status_param: status
+        });
         
       if (updateError) {
         throw updateError;
@@ -237,10 +227,9 @@ const TeamManagement = () => {
       if (status === 'approved') {
         // Add seller to team members
         const { error: teamError } = await supabase
-          .from('team_members')
-          .insert({
-            owner_id: request.owner_id,
-            seller_id: request.seller_id
+          .rpc('add_team_member', {
+            owner_id_param: request.owner_id,
+            seller_id_param: request.seller_id
           });
           
         if (teamError) {
@@ -293,13 +282,11 @@ const TeamManagement = () => {
     
     try {
       const { error } = await supabase
-        .from('direct_messages')
-        .insert({
-          sender_id: user.id,
-          sender_name: user.name,
-          receiver_id: selectedTeamMember.id,
-          message: newMessage,
-          read: false
+        .rpc('send_direct_message', {
+          sender_id_param: user.id,
+          sender_name_param: user.name,
+          receiver_id_param: selectedTeamMember.id,
+          message_param: newMessage
         });
         
       if (error) {
@@ -329,10 +316,7 @@ const TeamManagement = () => {
     
     const fetchMessages = async () => {
       const { data, error } = await supabase
-        .from('direct_messages')
-        .select('*')
-        .eq('receiver_id', user.id)
-        .order('created_at', { ascending: false });
+        .rpc('get_user_messages', { user_id_param: user.id });
         
       if (error) {
         console.error("Error fetching messages:", error);
@@ -340,8 +324,8 @@ const TeamManagement = () => {
       }
       
       if (data) {
-        setDirectMessages(data);
-        const unread = data.filter(msg => !msg.read).length;
+        setDirectMessages(data as DirectMessage[]);
+        const unread = data.filter((msg: DirectMessage) => !msg.read).length;
         setUnreadCount(unread);
       }
     };
@@ -380,9 +364,7 @@ const TeamManagement = () => {
   const markMessageAsRead = async (messageId: string) => {
     try {
       const { error } = await supabase
-        .from('direct_messages')
-        .update({ read: true })
-        .eq('id', messageId);
+        .rpc('mark_message_as_read', { message_id_param: messageId });
         
       if (error) {
         console.error("Error marking message as read:", error);

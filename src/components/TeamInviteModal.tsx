@@ -9,8 +9,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +33,7 @@ const TeamInviteModal = ({ isOpen, onClose, teamId, ownerId, ownerName }: TeamIn
     setIsSubmitting(true);
     
     try {
+      // Use raw SQL query since team_requests table is not in the generated types yet
       const { error } = await supabase
         .from('team_requests')
         .insert({
@@ -83,7 +82,6 @@ const TeamInviteModal = ({ isOpen, onClose, teamId, ownerId, ownerName }: TeamIn
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="message">Mensagem (opcional)</Label>
             <Textarea
               id="message"
               placeholder="Escreva uma mensagem para o proprietário"

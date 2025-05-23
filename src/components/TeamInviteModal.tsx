@@ -33,8 +33,7 @@ const TeamInviteModal = ({ isOpen, onClose, teamId, ownerId, ownerName }: TeamIn
     setIsSubmitting(true);
     
     try {
-      // Insert directly to team_requests table
-      // Use raw SQL query since team_requests isn't in the types yet
+      // Insert directly to team_requests table using the SQL function
       const { error } = await supabase.rpc('send_team_request', {
         seller_id_param: user.id,
         seller_name_param: user.name || '',

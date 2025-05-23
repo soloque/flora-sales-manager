@@ -59,6 +59,16 @@ interface DirectMessage {
   read: boolean;
 }
 
+// Interface for team owner or member data returned from RPC functions
+interface TeamUserData {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: string | null;
+  created_at: string;
+  avatar_url: string | null;
+}
+
 const TeamManagement = () => {
   const { user } = useAuth();
   const isOwner = user?.role === "owner";
@@ -86,7 +96,7 @@ const TeamManagement = () => {
       try {
         if (isOwner) {
           // Fetch team members for owner using SQL function
-          const { data: membersData, error: membersError } = await supabase.rpc('get_team_members', {
+          const { data: membersData, error: membersError } = await supabase.rpc<TeamUserData>('get_team_members', {
             owner_id_param: user.id
           });
             
@@ -100,7 +110,7 @@ const TeamManagement = () => {
               id: member.id,
               name: member.name || "Sem nome",
               email: member.email || "Sem email",
-              role: member.role as "seller" | "guest" | "owner",
+              role: (member.role || "seller") as "seller" | "guest" | "owner",
               createdAt: new Date(member.created_at),
               avatar_url: member.avatar_url
             }));
@@ -109,7 +119,7 @@ const TeamManagement = () => {
           }
           
           // Fetch team requests for owner using SQL function
-          const { data: requestsData, error: requestsError } = await supabase.rpc('get_team_requests', {
+          const { data: requestsData, error: requestsError } = await supabase.rpc<TeamRequest>('get_team_requests', {
             owner_id_param: user.id
           });
             
@@ -119,11 +129,11 @@ const TeamManagement = () => {
           }
           
           if (requestsData) {
-            setTeamRequests(requestsData as TeamRequest[]);
+            setTeamRequests(requestsData);
           }
         } else {
           // For sellers, fetch their owner using SQL function
-          const { data: teamData, error: teamError } = await supabase.rpc('get_seller_team', {
+          const { data: teamData, error: teamError } = await supabase.rpc<TeamUserData>('get_seller_team', {
             seller_id_param: user.id
           });
             
@@ -243,7 +253,7 @@ const TeamManagement = () => {
             id: sellerData.id,
             name: sellerData.name || request.seller_name,
             email: sellerData.email || "",
-            role: sellerData.role as "seller" | "guest" | "owner",
+            role: (sellerData.role as "seller" | "guest" | "owner") || "seller",
             createdAt: new Date(sellerData.created_at),
             avatar_url: sellerData.avatar_url
           };
@@ -309,7 +319,7 @@ const TeamManagement = () => {
     
     const fetchMessages = async () => {
       // Get user messages using SQL function
-      const { data, error } = await supabase.rpc('get_user_messages', {
+      const { data, error } = await supabase.rpc<DirectMessage>('get_user_messages', {
         user_id_param: user.id
       });
         
@@ -319,7 +329,7 @@ const TeamManagement = () => {
       }
       
       if (data) {
-        setDirectMessages(data as DirectMessage[]);
+        setDirectMessages(data);
         const unread = data.filter(msg => !msg.read).length;
         setUnreadCount(unread);
       }

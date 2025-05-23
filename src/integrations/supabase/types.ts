@@ -85,6 +85,36 @@ export type Database = {
           },
         ]
       }
+      direct_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          read: boolean | null
+          receiver_id: string
+          sender_id: string
+          sender_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          receiver_id: string
+          sender_id: string
+          sender_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          receiver_id?: string
+          sender_id?: string
+          sender_name?: string | null
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           category: string | null
@@ -258,12 +288,169 @@ export type Database = {
           },
         ]
       }
+      team_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          owner_id: string
+          seller_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          owner_id: string
+          seller_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          owner_id?: string
+          seller_id?: string
+        }
+        Relationships: []
+      }
+      team_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string | null
+          owner_id: string
+          seller_id: string
+          seller_name: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          owner_id: string
+          seller_id: string
+          seller_name?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          owner_id?: string
+          seller_id?: string
+          seller_name?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      updates: {
+        Row: {
+          author_id: string | null
+          author_name: string | null
+          content: string
+          created_at: string | null
+          id: string
+          is_highlighted: boolean | null
+          title: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_name?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          is_highlighted?: boolean | null
+          title: string
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_highlighted?: boolean | null
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_team_member: {
+        Args: { owner_id_param: string; seller_id_param: string }
+        Returns: undefined
+      }
+      get_seller_team: {
+        Args: { seller_id_param: string }
+        Returns: {
+          id: string
+          name: string
+          email: string
+          role: string
+          created_at: string
+          avatar_url: string
+        }[]
+      }
+      get_team_members: {
+        Args: { owner_id_param: string }
+        Returns: {
+          id: string
+          name: string
+          email: string
+          role: string
+          created_at: string
+          avatar_url: string
+        }[]
+      }
+      get_team_requests: {
+        Args: { owner_id_param: string }
+        Returns: {
+          id: string
+          seller_id: string
+          seller_name: string
+          seller_email: string
+          owner_id: string
+          message: string
+          status: string
+          created_at: string
+        }[]
+      }
+      get_user_messages: {
+        Args: { user_id_param: string }
+        Returns: {
+          id: string
+          sender_id: string
+          sender_name: string
+          receiver_id: string
+          message: string
+          read: boolean
+          created_at: string
+        }[]
+      }
+      mark_message_as_read: {
+        Args: { message_id_param: string }
+        Returns: undefined
+      }
+      send_direct_message: {
+        Args: {
+          sender_id_param: string
+          sender_name_param: string
+          receiver_id_param: string
+          message_param: string
+        }
+        Returns: undefined
+      }
+      send_team_request: {
+        Args: {
+          seller_id_param: string
+          seller_name_param: string
+          owner_id_param: string
+          message_param: string
+        }
+        Returns: undefined
+      }
+      update_team_request: {
+        Args: { request_id_param: string; status_param: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

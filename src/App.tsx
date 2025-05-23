@@ -14,7 +14,6 @@ import CommissionSettings from "@/pages/CommissionSettings";
 import SellerManagement from "@/pages/SellerManagement"; 
 import TeamManagement from "@/pages/TeamManagement";
 import Inventory from "@/pages/Inventory";
-import Updates from "@/pages/Updates";
 import UserSettings from "@/pages/UserSettings";
 import Pricing from "@/pages/Pricing";
 import { ThemeProvider } from "@/context/ThemeContext";
@@ -34,7 +33,7 @@ function App() {
             <Toaster />
             <Layout>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<Dashboard />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -46,7 +45,6 @@ function App() {
                 <Route path="/sellers" element={<SellerManagement />} />
                 <Route path="/teams" element={<TeamManagement />} />
                 <Route path="/inventory" element={<Inventory />} />
-                <Route path="/updates" element={<Updates />} />
                 <Route path="/settings" element={<UserSettings />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="*" element={<NotFound />} />

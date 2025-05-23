@@ -12,7 +12,6 @@ import {
   Home, 
   FileText, 
   Settings, 
-  Bell, 
   LogOut, 
   Database, 
   BarChart, 
@@ -91,7 +90,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { name: "Vendedores", path: "/sellers", icon: <UserRound className="w-5 h-5" /> },
     { name: "Times", path: "/teams", icon: <Users className="w-5 h-5" /> },
     { name: "Estoque", path: "/inventory", icon: <Database className="w-5 h-5" /> },
-    { name: "Atualizações", path: "/updates", icon: <Bell className="w-5 h-5" /> },
     { name: "Configurações", path: "/settings", icon: <Settings className="w-5 h-5" /> },
   ];
 
@@ -102,7 +100,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { name: "Histórico", path: "/sales/history", icon: <Calendar className="w-5 h-5" /> },
     { name: "Comissões", path: "/commissions", icon: <BarChart className="w-5 h-5" /> },
     { name: "Time", path: "/teams", icon: <Users className="w-5 h-5" /> },
-    { name: "Atualizações", path: "/updates", icon: <Bell className="w-5 h-5" /> },
     { name: "Configurações", path: "/settings", icon: <Settings className="w-5 h-5" /> },
   ];
 

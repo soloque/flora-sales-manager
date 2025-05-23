@@ -119,16 +119,18 @@ const TeamManagement = () => {
       try {
         if (isOwner) {
           // Fetch team members for owner using SQL function
-          const { data: membersData, error: membersError } = await supabase.rpc<TeamUserData, {}>('get_team_members', {
-            owner_id_param: user.id
-          });
+          const { data, error: membersError } = await supabase.rpc(
+            'get_team_members',
+            { owner_id_param: user.id }
+          );
             
           if (membersError) {
             console.error("Error fetching team members:", membersError);
             return;
           }
           
-          if (membersData) {
+          if (data) {
+            const membersData = data as TeamUserData[];
             const formattedMembers = membersData.map(member => ({
               id: member.id,
               name: member.name || "Sem nome",
@@ -142,16 +144,18 @@ const TeamManagement = () => {
           }
           
           // Fetch team requests for owner using SQL function
-          const { data: requestsData, error: requestsError } = await supabase.rpc<TeamRequestData, {}>('get_team_requests', {
-            owner_id_param: user.id
-          });
+          const { data: requests, error: requestsError } = await supabase.rpc(
+            'get_team_requests',
+            { owner_id_param: user.id }
+          );
             
           if (requestsError) {
             console.error("Error fetching team requests:", requestsError);
             return;
           }
           
-          if (requestsData) {
+          if (requests) {
+            const requestsData = requests as TeamRequestData[];
             const mappedRequests: TeamRequest[] = requestsData.map(req => ({
               id: req.id,
               seller_id: req.seller_id,
@@ -166,16 +170,18 @@ const TeamManagement = () => {
           }
         } else {
           // For sellers, fetch their owner using SQL function
-          const { data: teamData, error: teamError } = await supabase.rpc<TeamUserData, {}>('get_seller_team', {
-            seller_id_param: user.id
-          });
+          const { data, error: teamError } = await supabase.rpc(
+            'get_seller_team',
+            { seller_id_param: user.id }
+          );
             
           if (teamError) {
             console.error("Error fetching team:", teamError);
             return;
           }
           
-          if (teamData && teamData.length > 0) {
+          if (data && Array.isArray(data) && data.length > 0) {
+            const teamData = data as TeamUserData[];
             const ownerUser: User = {
               id: teamData[0].id,
               name: teamData[0].name || "Proprietário",
@@ -352,9 +358,10 @@ const TeamManagement = () => {
     
     const fetchMessages = async () => {
       // Get user messages using SQL function
-      const { data, error } = await supabase.rpc<DirectMessageData, {}>('get_user_messages', {
-        user_id_param: user.id
-      });
+      const { data, error } = await supabase.rpc(
+        'get_user_messages',
+        { user_id_param: user.id }
+      );
         
       if (error) {
         console.error("Error fetching messages:", error);
@@ -362,7 +369,8 @@ const TeamManagement = () => {
       }
       
       if (data) {
-        const mappedMessages: DirectMessage[] = data.map(msg => ({
+        const messagesData = data as DirectMessageData[];
+        const mappedMessages: DirectMessage[] = messagesData.map(msg => ({
           id: msg.id,
           sender_id: msg.sender_id,
           sender_name: msg.sender_name,

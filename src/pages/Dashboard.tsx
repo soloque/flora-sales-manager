@@ -3,11 +3,21 @@ import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { BarChart, FileText, Plus, DollarSign, Users, Calendar, TrendingUp, Bell, Clock, CheckCircle2, XCircle, AlertCircle, Loader2 } from "lucide-react";
+import { BarChart, FileText, Plus, DollarSign, Users, Calendar, TrendingUp, Bell, Clock, CheckCircle2, XCircle, AlertCircle, Loader2, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Sale } from "@/types";
+import { Sale, Update } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { mapDatabaseSaleToSale } from "@/utils/dataMappers";
+
+interface DirectMessage {
+  id: string;
+  sender_id: string;
+  sender_name: string;
+  receiver_id: string;
+  message: string;
+  created_at: string;
+  read: boolean;
+}
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -20,6 +30,11 @@ const Dashboard = () => {
     totalCount: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [hasTeam, setHasTeam] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [teamRequests, setTeamRequests] = useState([]);
+  const [updates, setUpdates] = useState<Update[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -58,6 +73,67 @@ const Dashboard = () => {
             });
           }
         }
+
+        // Check if user is in a team
+        if (isOwner) {
+          const { data: teamData, error: teamError } = await supabase.rpc('get_team_members', { 
+            owner_id_param: user.id 
+          });
+          
+          if (!teamError && teamData && Array.isArray(teamData)) {
+            setHasTeam(teamData.length > 0);
+            setTeamMembers(teamData);
+          }
+          
+          // Get team requests for owner
+          const { data: requestsData, error: requestsError } = await supabase.rpc('get_team_requests', {
+            owner_id_param: user.id
+          });
+          
+          if (!requestsError && requestsData) {
+            setTeamRequests(requestsData);
+          }
+        } else {
+          // Check if seller is in a team
+          const { data: ownerData, error: ownerError } = await supabase.rpc('get_seller_team', {
+            seller_id_param: user.id
+          });
+          
+          if (!ownerError && ownerData && Array.isArray(ownerData) && ownerData.length > 0) {
+            setHasTeam(true);
+          }
+        }
+        
+        // Get unread messages count
+        const { data: messagesData, error: messagesError } = await supabase.rpc('get_user_messages', {
+          user_id_param: user.id
+        });
+        
+        if (!messagesError && messagesData) {
+          const messages = messagesData as DirectMessage[];
+          setUnreadMessagesCount(messages.filter(msg => !msg.read).length);
+        }
+        
+        // Fetch updates from the database
+        const { data: updatesData, error: updatesError } = await supabase
+          .from('updates')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(3);
+          
+        if (!updatesError && updatesData) {
+          const formattedUpdates = updatesData.map(update => ({
+            id: update.id,
+            title: update.title,
+            content: update.content,
+            createdAt: new Date(update.created_at),
+            authorId: update.author_id || "",
+            authorName: update.author_name || "Admin",
+            isHighlighted: update.is_highlighted || false
+          }));
+          setUpdates(formattedUpdates);
+        }
+        
       } catch (error) {
         console.error("Error loading dashboard data:", error);
       } finally {
@@ -66,7 +142,7 @@ const Dashboard = () => {
     };
 
     loadDashboardData();
-  }, [user]);
+  }, [user, isOwner]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -221,6 +297,181 @@ const Dashboard = () => {
           </Card>
         )}
       </div>
+
+      {/* Team Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Resumo do Time</CardTitle>
+          <CardDescription>
+            {hasTeam 
+              ? "Informações sobre seu time de vendas" 
+              : isOwner 
+                ? "Você ainda não possui vendedores no seu time" 
+                : "Você ainda não está associado a um time"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-pulse text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                <p className="text-muted-foreground mt-2">Carregando dados...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {hasTeam ? (
+                <div>
+                  {isOwner ? (
+                    <div className="space-y-6">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium">Membros do Time ({teamMembers.length})</h3>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to="/teams">Gerenciar Time</Link>
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Card className="bg-muted/30">
+                          <CardContent className="p-4 space-y-2">
+                            <div className="flex justify-between items-center">
+                              <h4 className="font-medium">Mensagens não lidas</h4>
+                              <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">{unreadMessagesCount}</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {unreadMessagesCount > 0 
+                                ? `Você tem ${unreadMessagesCount} mensagens não lidas do seu time.` 
+                                : "Você não tem mensagens não lidas."}
+                            </p>
+                            <Button variant="ghost" size="sm" className="w-full mt-2" asChild>
+                              <Link to="/teams">
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                Ver Mensagens
+                              </Link>
+                            </Button>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="bg-muted/30">
+                          <CardContent className="p-4 space-y-2">
+                            <div className="flex justify-between items-center">
+                              <h4 className="font-medium">Solicitações pendentes</h4>
+                              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">{teamRequests.length}</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {teamRequests.length > 0 
+                                ? `Você tem ${teamRequests.length} solicitações pendentes de integração.` 
+                                : "Você não tem solicitações pendentes."}
+                            </p>
+                            <Button variant="ghost" size="sm" className="w-full mt-2" asChild>
+                              <Link to="/teams">
+                                <Users className="h-4 w-4 mr-2" />
+                                Ver Solicitações
+                              </Link>
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium">Seu Time</h3>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to="/teams">Ver Detalhes</Link>
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Card className="bg-muted/30">
+                          <CardContent className="p-4 space-y-2">
+                            <div className="flex justify-between items-center">
+                              <h4 className="font-medium">Mensagens não lidas</h4>
+                              <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">{unreadMessagesCount}</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {unreadMessagesCount > 0 
+                                ? `Você tem ${unreadMessagesCount} mensagens não lidas.` 
+                                : "Você não tem mensagens não lidas."}
+                            </p>
+                            <Button variant="ghost" size="sm" className="w-full mt-2" asChild>
+                              <Link to="/teams">
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                Ver Mensagens
+                              </Link>
+                            </Button>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="bg-muted/30">
+                          <CardContent className="p-4">
+                            <h4 className="font-medium mb-2">Desempenho</h4>
+                            <p className="text-sm text-muted-foreground">
+                              Você registrou {salesStats.totalCount} vendas até o momento.
+                            </p>
+                            <Button variant="ghost" size="sm" className="w-full mt-2" asChild>
+                              <Link to="/sales/history">
+                                <FileText className="h-4 w-4 mr-2" />
+                                Ver Histórico de Vendas
+                              </Link>
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                  <p className="text-muted-foreground mt-2">
+                    {isOwner 
+                      ? "Você ainda não tem vendedores em seu time." 
+                      : "Você ainda não está associado a um time."}
+                  </p>
+                  <Button asChild variant="outline" size="sm" className="mt-4">
+                    <Link to="/teams">
+                      {isOwner ? "Gerenciar Time" : "Encontrar um Time"}
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Team Updates/Communications */}
+      {hasTeam && updates.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Comunicados do Time</CardTitle>
+            <CardDescription>
+              Informações importantes compartilhadas pelo proprietário
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {updates.map((update) => (
+                <div key={update.id} className={`p-4 rounded-lg border ${update.isHighlighted ? 'border-primary bg-primary/5' : ''}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    {update.isHighlighted && (
+                      <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                        Importante
+                      </span>
+                    )}
+                    <h3 className="font-medium">{update.title}</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">{update.content}</p>
+                  <div className="text-xs text-muted-foreground">
+                    Por {update.authorName} • {update.createdAt.toLocaleDateString('pt-BR')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

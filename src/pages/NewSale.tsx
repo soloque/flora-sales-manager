@@ -17,6 +17,7 @@ const NewSale = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
+  const isOwner = user?.role === "owner";
   
   // Form state
   const [customerName, setCustomerName] = useState("");
@@ -98,15 +99,18 @@ const NewSale = () => {
       const commissionRate = parseFloat(commission);
       const calculatedCommission = (totalPriceValue * commissionRate) / 100;
       
-      // Calculate profit if cost price is provided
-      const costPriceValue = costPrice ? parseFloat(costPrice) : 0;
-      const profit = costPriceValue > 0 ? totalPriceValue - costPriceValue - calculatedCommission : 0;
+      // Only calculate profit if cost price is provided and user is owner
+      const costPriceValue = isOwner && costPrice ? parseFloat(costPrice) : 0;
+      const profit = isOwner && costPriceValue > 0 ? totalPriceValue - costPriceValue - calculatedCommission : 0;
+      
+      // Format the date properly as a string for Supabase
+      const currentDate = new Date().toISOString();
       
       // Insert the sale into the database
       const { data: saleData, error: saleError } = await supabase
         .from('sales')
         .insert({
-          date: new Date(),
+          date: currentDate,
           description: `Venda para ${customerName}`,
           quantity: 1,
           unit_price: totalPriceValue,
@@ -117,8 +121,8 @@ const NewSale = () => {
           commission_rate: commissionRate,
           status: "pending",
           observations: observations,
-          cost_price: costPriceValue > 0 ? costPriceValue : null,
-          profit: profit > 0 ? profit : null
+          cost_price: isOwner ? costPriceValue || null : null,
+          profit: isOwner ? profit || null : null
         })
         .select()
         .single();
@@ -302,7 +306,7 @@ const NewSale = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Valores e Comissão</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="totalValue">Valor Total (R$) *</Label>
                   <Input
@@ -317,18 +321,20 @@ const NewSale = () => {
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="costPrice">Custo (R$)</Label>
-                  <Input
-                    id="costPrice"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={costPrice}
-                    onChange={(e) => setCostPrice(e.target.value)}
-                    placeholder="ex: 120"
-                  />
-                </div>
+                {isOwner && (
+                  <div className="space-y-2">
+                    <Label htmlFor="costPrice">Custo (R$)</Label>
+                    <Input
+                      id="costPrice"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={costPrice}
+                      onChange={(e) => setCostPrice(e.target.value)}
+                      placeholder="ex: 120"
+                    />
+                  </div>
+                )}
                 
                 <div className="space-y-2">
                   <Label htmlFor="commission">Taxa de Comissão (%)</Label>
@@ -346,7 +352,7 @@ const NewSale = () => {
                 </div>
               </div>
               
-              {costPrice && totalValue && (
+              {isOwner && costPrice && totalValue && (
                 <div className="p-4 bg-muted/20 rounded-md">
                   <p className="text-sm">
                     <strong>Lucro estimado:</strong> R$ {

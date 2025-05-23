@@ -3,9 +3,9 @@ import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { BarChart, FileText, Plus, DollarSign, Users, Calendar, TrendingUp, Bell, Download } from "lucide-react";
+import { BarChart, FileText, Plus, DollarSign, Users, Calendar, TrendingUp, Bell, Clock, CheckCircle2, XCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Sale, Update } from "@/types";
+import { Sale } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { mapDatabaseSaleToSale } from "@/utils/dataMappers";
 
@@ -13,7 +13,12 @@ const Dashboard = () => {
   const { user } = useAuth();
   const isOwner = user?.role === "owner";
   const [recentSales, setRecentSales] = useState<Sale[]>([]);
-  const [updates, setUpdates] = useState<Update[]>([]);
+  const [salesStats, setSalesStats] = useState({
+    pending: 0,
+    delivered: 0,
+    cancelled: 0,
+    totalCount: 0
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -34,29 +39,24 @@ const Dashboard = () => {
         } else if (salesData) {
           const formattedSales = salesData.map(sale => mapDatabaseSaleToSale(sale));
           setRecentSales(formattedSales);
-        }
-
-        // Fetch updates (you would need to create this table)
-        const { data: updatesData, error: updatesError } = await supabase
-          .from('updates')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(2);
-
-        if (updatesError) {
-          console.error("Error fetching updates:", updatesError);
-        } else if (updatesData) {
-          // Map updates data
-          const formattedUpdates: Update[] = updatesData.map((update: any) => ({
-            id: update.id,
-            title: update.title,
-            content: update.content,
-            createdAt: new Date(update.created_at),
-            authorId: update.author_id,
-            authorName: update.author_name,
-            isHighlighted: update.is_highlighted
-          }));
-          setUpdates(formattedUpdates);
+          
+          // Fetch sales stats
+          const { data: statsData, error: statsError } = await supabase
+            .from('sales')
+            .select('status', { count: 'exact' });
+            
+          if (!statsError && statsData) {
+            const pending = statsData.filter(sale => sale.status === 'pending').length;
+            const delivered = statsData.filter(sale => sale.status === 'delivered').length;
+            const cancelled = statsData.filter(sale => sale.status === 'cancelled').length;
+            
+            setSalesStats({
+              pending,
+              delivered,
+              cancelled,
+              totalCount: statsData.length
+            });
+          }
         }
       } catch (error) {
         console.error("Error loading dashboard data:", error);
@@ -86,13 +86,31 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Quick stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Dashboard Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Bem-vindo de volta, {user?.name || ""}
+          </p>
+        </div>
+        
+        {!isOwner && (
+          <Button asChild>
+            <Link to="/sales/new">
+              <Plus className="mr-2 h-4 w-4" /> Nova Venda
+            </Link>
+          </Button>
+        )}
+      </div>
+
+      {/* Status cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6 flex justify-between items-center">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Vendas Totais</p>
-              <h3 className="text-2xl font-bold mt-1">{totalSales}</h3>
+              <h3 className="text-2xl font-bold mt-1">{salesStats.totalCount}</h3>
             </div>
             <div className="bg-primary/10 p-3 rounded-full">
               <FileText className="h-6 w-6 text-primary" />
@@ -100,6 +118,45 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardContent className="p-6 flex justify-between items-center">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Pendentes</p>
+              <h3 className="text-2xl font-bold mt-1">{salesStats.pending}</h3>
+            </div>
+            <div className="bg-yellow-500/10 p-3 rounded-full">
+              <Clock className="h-6 w-6 text-yellow-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 flex justify-between items-center">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Entregues</p>
+              <h3 className="text-2xl font-bold mt-1">{salesStats.delivered}</h3>
+            </div>
+            <div className="bg-green-500/10 p-3 rounded-full">
+              <CheckCircle2 className="h-6 w-6 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 flex justify-between items-center">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Canceladas</p>
+              <h3 className="text-2xl font-bold mt-1">{salesStats.cancelled}</h3>
+            </div>
+            <div className="bg-red-500/10 p-3 rounded-full">
+              <XCircle className="h-6 w-6 text-red-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Financial summary */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-6 flex justify-between items-center">
             <div>
@@ -116,11 +173,11 @@ const Dashboard = () => {
           <Card>
             <CardContent className="p-6 flex justify-between items-center">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Custos Totais</p>
-                <h3 className="text-2xl font-bold mt-1">{formatCurrency(totalCosts)}</h3>
+                <p className="text-sm font-medium text-muted-foreground">Comissões Pagas</p>
+                <h3 className="text-2xl font-bold mt-1">{formatCurrency(totalCommissions)}</h3>
               </div>
-              <div className="bg-destructive/10 p-3 rounded-full">
-                <TrendingUp className="h-6 w-6 text-destructive" />
+              <div className="bg-blue-500/10 p-3 rounded-full">
+                <Users className="h-6 w-6 text-blue-500" />
               </div>
             </CardContent>
           </Card>
@@ -221,29 +278,27 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-6 flex flex-col items-center justify-center min-h-[150px]">
-            <Bell className="h-10 w-10 text-primary mb-4" />
-            <h3 className="text-xl font-bold mb-2">Atualizações</h3>
-            <Button asChild variant="outline">
-              <Link to="/updates">{isOwner ? "Gerenciar" : "Ver Todas"}</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        {isOwner && (
+          <Card>
+            <CardContent className="p-6 flex flex-col items-center justify-center min-h-[150px]">
+              <Users className="h-10 w-10 text-primary mb-4" />
+              <h3 className="text-xl font-bold mb-2">Time de Vendas</h3>
+              <Button asChild variant="outline">
+                <Link to="/teams">Gerenciar Time</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Recentes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Sales */}
+      <div>
         <Card>
           <CardHeader>
             <CardTitle className="flex justify-between items-center">
               <span>Vendas Recentes</span>
               <Button asChild variant="ghost" size="sm" className="flex items-center gap-1">
-                <Link to="/sales/history">
-                  <Download className="h-4 w-4" />
-                  <span>Histórico Completo</span>
-                </Link>
+                <Link to="/sales/history">Ver Mais</Link>
               </Button>
             </CardTitle>
             <CardDescription>
@@ -254,107 +309,59 @@ const Dashboard = () => {
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <div className="animate-pulse text-center">
-                  <p className="text-muted-foreground">Carregando dados...</p>
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                  <p className="text-muted-foreground mt-2">Carregando dados...</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
                 {recentSales.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-4">
-                    Nenhuma venda registrada.
-                  </p>
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                    <p className="text-muted-foreground mt-2">Nenhuma venda registrada</p>
+                    <Button asChild variant="outline" size="sm" className="mt-4">
+                      <Link to="/sales/new">Registrar Nova Venda</Link>
+                    </Button>
+                  </div>
                 ) : (
-                  recentSales.map((sale) => (
-                    <div
-                      key={sale.id}
-                      className="flex items-center justify-between border-b pb-4"
-                    >
-                      <div>
-                        <p className="font-medium">{sale.customerInfo.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {sale.customerInfo.order}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {sale.date.toLocaleDateString("pt-BR")}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">
-                          {formatCurrency(sale.totalPrice)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {sale.status === "paid"
-                            ? "Pago"
-                            : sale.status === "delivered"
-                            ? "Entregue"
-                            : sale.status === "cancelled"
-                            ? "Cancelado"
-                            : sale.status === "problem"
-                            ? "Problema"
-                            : "Pendente"}
-                        </p>
-                      </div>
+                  <>
+                    <div className="grid grid-cols-4 text-sm font-medium text-muted-foreground mb-2">
+                      <div>Cliente</div>
+                      <div>Data</div>
+                      <div>Valor</div>
+                      <div className="text-right">Status</div>
                     </div>
-                  ))
+                    {recentSales.map((sale) => (
+                      <div
+                        key={sale.id}
+                        className="grid grid-cols-4 items-center border-b pb-2"
+                      >
+                        <div className="font-medium">{sale.customerInfo.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {sale.date.toLocaleDateString("pt-BR")}
+                        </div>
+                        <div>
+                          {formatCurrency(sale.totalPrice)}
+                        </div>
+                        <div className="text-right">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            ${sale.status === "delivered" ? "bg-green-100 text-green-800" : 
+                              sale.status === "cancelled" ? "bg-red-100 text-red-800" : 
+                              sale.status === "problem" ? "bg-orange-100 text-orange-800" : 
+                              "bg-yellow-100 text-yellow-800"}`
+                          }>
+                            {sale.status === "delivered" ? "Entregue" : 
+                              sale.status === "cancelled" ? "Cancelado" : 
+                              sale.status === "problem" ? "Problema" : 
+                              "Pendente"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </>
                 )}
               </div>
             )}
-            {recentSales.length > 0 && (
-              <div className="mt-6 text-center">
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/sales">Ver todas as vendas</Link>
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Updates */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Atualizações</CardTitle>
-            <CardDescription>
-              Comunicados e novidades para a equipe
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-pulse text-center">
-                    <p className="text-muted-foreground">Carregando dados...</p>
-                  </div>
-                </div>
-              ) : updates.length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">
-                  Nenhuma atualização disponível.
-                </p>
-              ) : (
-                updates.map((update) => (
-                  <div
-                    key={update.id}
-                    className={`p-4 rounded-lg ${
-                      update.isHighlighted
-                        ? "border-2 border-primary bg-primary/5"
-                        : "border"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold">{update.title}</h3>
-                      <span className="text-xs text-muted-foreground">
-                        {update.createdAt.toLocaleDateString("pt-BR")}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm">{update.content}</p>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="mt-6 text-center">
-              <Button asChild variant="outline" size="sm">
-                <Link to="/updates">Ver todas as atualizações</Link>
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>

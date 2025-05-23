@@ -17,14 +17,14 @@ export const mapDatabaseSaleToSale = (dbSale: any): Sale => {
     status: dbSale.status || "pending",
     observations: dbSale.observations || "",
     customerInfo: {
-      name: dbSale.customer_name || "Cliente",
-      phone: dbSale.customer_phone || "",
-      address: dbSale.customer_address || "",
-      city: dbSale.customer_city || "",
-      state: dbSale.customer_state || "",
-      zipCode: dbSale.customer_zipcode || "",
-      order: dbSale.customer_order || "",
-      observations: dbSale.customer_observations || ""
+      name: dbSale.customer_info?.name || dbSale.customer_name || "Cliente",
+      phone: dbSale.customer_info?.phone || dbSale.customer_phone || "",
+      address: dbSale.customer_info?.address || dbSale.customer_address || "",
+      city: dbSale.customer_info?.city || dbSale.customer_city || "",
+      state: dbSale.customer_info?.state || dbSale.customer_state || "",
+      zipCode: dbSale.customer_info?.zip_code || dbSale.customer_zipcode || "",
+      order: dbSale.customer_info?.order_details || dbSale.customer_order || "",
+      observations: dbSale.customer_info?.observations || dbSale.customer_observations || ""
     },
     costPrice: dbSale.cost_price || 0,
     profit: dbSale.profit || 0,

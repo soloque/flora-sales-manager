@@ -26,9 +26,20 @@ export const mapDatabaseSaleToSale = (dbSale: any): Sale => {
       order: dbSale.customer_info?.order_details || dbSale.customer_order || "",
       observations: dbSale.customer_info?.observations || dbSale.customer_observations || ""
     },
-    costPrice: dbSale.cost_price || 0,
-    profit: dbSale.profit || 0,
+    // For sellers, no cost price should be exposed
     createdAt: new Date(dbSale.created_at),
     updatedAt: new Date(dbSale.updated_at)
+  };
+};
+
+// Map database sale objects to frontend Sale type with additional owner data
+export const mapDatabaseSaleToOwnerSale = (dbSale: any): Sale => {
+  const baseSale = mapDatabaseSaleToSale(dbSale);
+  
+  // Add owner-specific fields
+  return {
+    ...baseSale,
+    costPrice: dbSale.cost_price || 0,
+    profit: dbSale.profit || 0
   };
 };

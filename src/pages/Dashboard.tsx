@@ -6,42 +6,67 @@ import { Link } from "react-router-dom";
 import { BarChart, FileText, Plus, DollarSign, Users, Calendar, TrendingUp, Bell, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Sale, Update } from "@/types";
-
-// Mock data for demonstration
-import { mockSalesData } from "@/data/mockSales";
-const mockUpdates: Update[] = [
-  {
-    id: "1",
-    title: "Novas plantas disponíveis",
-    content: "Temos novos tipos de plantas frutíferas disponíveis para venda, incluindo pitanga e acerola.",
-    createdAt: new Date(),
-    authorId: "1",
-    authorName: "Admin User",
-    isHighlighted: true
-  },
-  {
-    id: "2",
-    title: "Atualização de comissões",
-    content: "A partir do próximo mês, as comissões serão atualizadas para 22%.",
-    createdAt: new Date(Date.now() - 86400000 * 2), // 2 days ago
-    authorId: "1",
-    authorName: "Admin User",
-    isHighlighted: false
-  }
-];
+import { supabase } from "@/integrations/supabase/client";
+import { mapDatabaseSaleToSale } from "@/utils/dataMappers";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const isOwner = user?.role === "owner";
   const [recentSales, setRecentSales] = useState<Sale[]>([]);
   const [updates, setUpdates] = useState<Update[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, this would fetch data from an API
-    // Get only the 5 most recent sales
-    setRecentSales(mockSalesData.slice(0, 5));
-    setUpdates(mockUpdates);
-  }, []);
+    if (!user) return;
+
+    const loadDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch recent sales
+        const { data: salesData, error: salesError } = await supabase
+          .from('sales')
+          .select('*, customer_info(*)')
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (salesError) {
+          console.error("Error fetching sales:", salesError);
+        } else if (salesData) {
+          const formattedSales = salesData.map(sale => mapDatabaseSaleToSale(sale));
+          setRecentSales(formattedSales);
+        }
+
+        // Fetch updates (you would need to create this table)
+        const { data: updatesData, error: updatesError } = await supabase
+          .from('updates')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(2);
+
+        if (updatesError) {
+          console.error("Error fetching updates:", updatesError);
+        } else if (updatesData) {
+          // Map updates data
+          const formattedUpdates: Update[] = updatesData.map((update: any) => ({
+            id: update.id,
+            title: update.title,
+            content: update.content,
+            createdAt: new Date(update.created_at),
+            authorId: update.author_id,
+            authorName: update.author_name,
+            isHighlighted: update.is_highlighted
+          }));
+          setUpdates(formattedUpdates);
+        }
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, [user]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -226,46 +251,54 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentSales.length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">
-                  Nenhuma venda registrada.
-                </p>
-              ) : (
-                recentSales.map((sale) => (
-                  <div
-                    key={sale.id}
-                    className="flex items-center justify-between border-b pb-4"
-                  >
-                    <div>
-                      <p className="font-medium">{sale.customerInfo.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {sale.customerInfo.order}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(sale.date).toLocaleDateString("pt-BR")}
-                      </p>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-pulse text-center">
+                  <p className="text-muted-foreground">Carregando dados...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentSales.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">
+                    Nenhuma venda registrada.
+                  </p>
+                ) : (
+                  recentSales.map((sale) => (
+                    <div
+                      key={sale.id}
+                      className="flex items-center justify-between border-b pb-4"
+                    >
+                      <div>
+                        <p className="font-medium">{sale.customerInfo.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {sale.customerInfo.order}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {sale.date.toLocaleDateString("pt-BR")}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">
+                          {formatCurrency(sale.totalPrice)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {sale.status === "paid"
+                            ? "Pago"
+                            : sale.status === "delivered"
+                            ? "Entregue"
+                            : sale.status === "cancelled"
+                            ? "Cancelado"
+                            : sale.status === "problem"
+                            ? "Problema"
+                            : "Pendente"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">
-                        {formatCurrency(sale.totalPrice)}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {sale.status === "paid"
-                          ? "Pago"
-                          : sale.status === "delivered"
-                          ? "Entregue"
-                          : sale.status === "cancelled"
-                          ? "Cancelado"
-                          : sale.status === "problem"
-                          ? "Problema"
-                          : "Pendente"}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+                  ))
+                )}
+              </div>
+            )}
             {recentSales.length > 0 && (
               <div className="mt-6 text-center">
                 <Button asChild variant="outline" size="sm">
@@ -286,7 +319,13 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {updates.length === 0 ? (
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-pulse text-center">
+                    <p className="text-muted-foreground">Carregando dados...</p>
+                  </div>
+                </div>
+              ) : updates.length === 0 ? (
                 <p className="text-center text-muted-foreground py-4">
                   Nenhuma atualização disponível.
                 </p>
@@ -303,7 +342,7 @@ const Dashboard = () => {
                     <div className="flex justify-between items-start">
                       <h3 className="font-bold">{update.title}</h3>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(update.createdAt).toLocaleDateString("pt-BR")}
+                        {update.createdAt.toLocaleDateString("pt-BR")}
                       </span>
                     </div>
                     <p className="mt-2 text-sm">{update.content}</p>

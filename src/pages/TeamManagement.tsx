@@ -7,7 +7,6 @@ import {
   CardTitle, 
   CardDescription, 
   CardContent,
-  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,29 +19,14 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/use-toast";
-import {
-  UserPlus,
-  Users,
-  Mail,
-  Clock,
-  Check,
-  X,
-  MessageSquare,
-} from "lucide-react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { User as UserType } from "@/types";
+import { User } from "@/types";
 import TeamInviteModal from "@/components/TeamInviteModal";
+import TeamMembersList from "@/components/TeamMembersList";
+import TeamRequestsList from "@/components/TeamRequestsList";
+import DirectMessageList from "@/components/DirectMessageList";
 
 // Interface for team request
 interface TeamRequest {
@@ -72,17 +56,16 @@ const TeamManagement = () => {
   const isOwner = user?.role === "owner";
   
   // State for team members and requests
-  const [teamMembers, setTeamMembers] = useState<UserType[]>([]);
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
   const [teamRequests, setTeamRequests] = useState<TeamRequest[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
-  const [ownerSearchResults, setOwnerSearchResults] = useState<UserType[]>([]);
+  const [ownerSearchResults, setOwnerSearchResults] = useState<User[]>([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [selectedOwner, setSelectedOwner] = useState<UserType | null>(null);
+  const [selectedOwner, setSelectedOwner] = useState<User | null>(null);
   
   // State for direct messaging
   const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
-  const [selectedTeamMember, setSelectedTeamMember] = useState<UserType | null>(null);
+  const [selectedTeamMember, setSelectedTeamMember] = useState<User | null>(null);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
@@ -92,65 +75,89 @@ const TeamManagement = () => {
     if (!user) return;
     
     const fetchTeamData = async () => {
-      if (isOwner) {
-        // Fetch team members for owner
-        const { data, error } = await supabase
-          .rpc('get_team_members', { owner_id_param: user.id });
+      try {
+        if (isOwner) {
+          // Fetch team members for owner using raw SQL query
+          const { data: membersData, error: membersError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('role', 'seller');
+            
+          if (membersError) {
+            console.error("Error fetching team members:", membersError);
+            return;
+          }
           
-        if (error) {
-          console.error("Error fetching team members:", error);
-          return;
-        }
-        
-        if (data) {
-          const formattedMembers = data.map((member: any) => ({
-            id: member.id,
-            name: member.name || "Sem nome",
-            email: member.email || "Sem email",
-            role: member.role as "seller" | "guest" | "owner",
-            createdAt: new Date(member.created_at),
-            avatar_url: member.avatar_url
-          }));
+          if (membersData) {
+            const formattedMembers = membersData.map(member => ({
+              id: member.id,
+              name: member.name || "Sem nome",
+              email: member.email || "Sem email",
+              role: member.role as "seller" | "guest" | "owner",
+              createdAt: new Date(member.created_at),
+              avatar_url: member.avatar_url
+            }));
+            
+            setTeamMembers(formattedMembers);
+          }
           
-          setTeamMembers(formattedMembers);
-        }
-        
-        // Fetch team requests for owner
-        const { data: requests, error: requestsError } = await supabase
-          .rpc('get_team_requests', { owner_id_param: user.id });
+          // Fetch team requests for owner using raw SQL query
+          const { data: requestsData, error: requestsError } = await supabase
+            .from('team_requests')
+            .select('*')
+            .eq('owner_id', user.id)
+            .eq('status', 'pending');
+            
+          if (requestsError) {
+            console.error("Error fetching team requests:", requestsError);
+            return;
+          }
           
-        if (requestsError) {
-          console.error("Error fetching team requests:", requestsError);
-          return;
-        }
-        
-        if (requests) {
-          setTeamRequests(requests as TeamRequest[]);
-        }
-      } else {
-        // Fetch team for seller
-        const { data: team, error: teamError } = await supabase
-          .rpc('get_seller_team', { seller_id_param: user.id });
+          if (requestsData) {
+            setTeamRequests(requestsData as TeamRequest[]);
+          }
+        } else {
+          // For sellers, fetch their owner
+          const { data: teamData, error: teamError } = await supabase
+            .from('team_members')
+            .select('*')
+            .eq('seller_id', user.id);
+            
+          if (teamError) {
+            console.error("Error fetching team:", teamError);
+            return;
+          }
           
-        if (teamError) {
-          console.error("Error fetching team:", teamError);
-          return;
-        }
-        
-        if (team && team.length > 0) {
-          // Set owner information
-          const owner = team[0];
-          if (owner) {
-            const ownerUser: UserType = {
-              id: owner.id,
-              name: owner.name || "Proprietário",
-              email: owner.email || "",
-              role: "owner",
-              createdAt: new Date(owner.created_at)
-            };
-            setSelectedOwner(ownerUser);
+          if (teamData && teamData.length > 0) {
+            const ownerId = teamData[0].owner_id;
+            
+            // Fetch owner details
+            const { data: ownerData, error: ownerError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', ownerId)
+              .single();
+              
+            if (ownerError) {
+              console.error("Error fetching owner details:", ownerError);
+              return;
+            }
+            
+            if (ownerData) {
+              const ownerUser: User = {
+                id: ownerData.id,
+                name: ownerData.name || "Proprietário",
+                email: ownerData.email || "",
+                role: "owner",
+                createdAt: new Date(ownerData.created_at),
+                avatar_url: ownerData.avatar_url
+              };
+              setSelectedOwner(ownerUser);
+            }
           }
         }
+      } catch (error) {
+        console.error("Error fetching team data:", error);
       }
     };
     
@@ -215,10 +222,9 @@ const TeamManagement = () => {
       
       // Update request status
       const { error: updateError } = await supabase
-        .rpc('update_team_request', {
-          request_id_param: requestId,
-          status_param: status
-        });
+        .from('team_requests')
+        .update({ status })
+        .eq('id', requestId);
         
       if (updateError) {
         throw updateError;
@@ -227,9 +233,10 @@ const TeamManagement = () => {
       if (status === 'approved') {
         // Add seller to team members
         const { error: teamError } = await supabase
-          .rpc('add_team_member', {
-            owner_id_param: request.owner_id,
-            seller_id_param: request.seller_id
+          .from('team_members')
+          .insert({
+            owner_id: request.owner_id,
+            seller_id: request.seller_id
           });
           
         if (teamError) {
@@ -246,7 +253,7 @@ const TeamManagement = () => {
         if (sellerError) {
           console.error("Error fetching seller details:", sellerError);
         } else if (sellerData) {
-          const newTeamMember: UserType = {
+          const newTeamMember: User = {
             id: sellerData.id,
             name: sellerData.name || request.seller_name,
             email: sellerData.email || "",
@@ -282,11 +289,13 @@ const TeamManagement = () => {
     
     try {
       const { error } = await supabase
-        .rpc('send_direct_message', {
-          sender_id_param: user.id,
-          sender_name_param: user.name,
-          receiver_id_param: selectedTeamMember.id,
-          message_param: newMessage
+        .from('direct_messages')
+        .insert({
+          sender_id: user.id,
+          sender_name: user.name || '',
+          receiver_id: selectedTeamMember.id,
+          message: newMessage,
+          read: false
         });
         
       if (error) {
@@ -316,7 +325,10 @@ const TeamManagement = () => {
     
     const fetchMessages = async () => {
       const { data, error } = await supabase
-        .rpc('get_user_messages', { user_id_param: user.id });
+        .from('direct_messages')
+        .select('*')
+        .eq('receiver_id', user.id)
+        .order('created_at', { ascending: false });
         
       if (error) {
         console.error("Error fetching messages:", error);
@@ -325,7 +337,7 @@ const TeamManagement = () => {
       
       if (data) {
         setDirectMessages(data as DirectMessage[]);
-        const unread = data.filter((msg: DirectMessage) => !msg.read).length;
+        const unread = data.filter(msg => !msg.read).length;
         setUnreadCount(unread);
       }
     };
@@ -364,7 +376,9 @@ const TeamManagement = () => {
   const markMessageAsRead = async (messageId: string) => {
     try {
       const { error } = await supabase
-        .rpc('mark_message_as_read', { message_id_param: messageId });
+        .from('direct_messages')
+        .update({ read: true })
+        .eq('id', messageId);
         
       if (error) {
         console.error("Error marking message as read:", error);
@@ -399,113 +413,20 @@ const TeamManagement = () => {
             // Owner view
             <div className="space-y-8">
               {/* Team Members section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Membros do Time</h3>
-                {teamMembers.length === 0 ? (
-                  <div className="text-center py-8 border rounded-md">
-                    <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <p className="mt-2 text-muted-foreground">Seu time ainda não possui membros.</p>
-                  </div>
-                ) : (
-                  <div className="border rounded-md">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Desde</TableHead>
-                          <TableHead className="text-right">Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {teamMembers.map((member) => (
-                          <TableRow key={member.id}>
-                            <TableCell>{member.name}</TableCell>
-                            <TableCell>{member.email}</TableCell>
-                            <TableCell>{format(new Date(member.createdAt), 'dd/MM/yyyy')}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end space-x-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedTeamMember(member);
-                                    setShowMessageDialog(true);
-                                  }}
-                                >
-                                  <MessageSquare className="h-4 w-4 mr-1" />
-                                  Mensagem
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </div>
+              <TeamMembersList 
+                teamMembers={teamMembers} 
+                onSendMessage={(member) => {
+                  setSelectedTeamMember(member);
+                  setShowMessageDialog(true);
+                }}
+              />
               
               {/* Team Requests section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Solicitações de Integração</h3>
-                {teamRequests.length === 0 ? (
-                  <div className="text-center py-8 border rounded-md">
-                    <Clock className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <p className="mt-2 text-muted-foreground">Não há solicitações pendentes.</p>
-                  </div>
-                ) : (
-                  <div className="border rounded-md">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Vendedor</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Data</TableHead>
-                          <TableHead>Mensagem</TableHead>
-                          <TableHead className="text-right">Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {teamRequests.map((request) => (
-                          <TableRow key={request.id}>
-                            <TableCell>{request.seller_name}</TableCell>
-                            <TableCell>{request.seller_email}</TableCell>
-                            <TableCell>{format(new Date(request.created_at), 'dd/MM/yyyy')}</TableCell>
-                            <TableCell>
-                              {request.message 
-                                ? request.message.substring(0, 30) + (request.message.length > 30 ? '...' : '')
-                                : 'Sem mensagem'}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end space-x-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleRequestResponse(request.id, 'approved')}
-                                  className="bg-green-50 hover:bg-green-100 text-green-600"
-                                >
-                                  <Check className="h-4 w-4 mr-1" />
-                                  Aprovar
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleRequestResponse(request.id, 'rejected')}
-                                  className="bg-red-50 hover:bg-red-100 text-red-600"
-                                >
-                                  <X className="h-4 w-4 mr-1" />
-                                  Rejeitar
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </div>
+              <TeamRequestsList 
+                requests={teamRequests}
+                onApprove={(requestId) => handleRequestResponse(requestId, 'approved')}
+                onReject={(requestId) => handleRequestResponse(requestId, 'rejected')}
+              />
             </div>
           ) : (
             // Seller view
@@ -527,7 +448,7 @@ const TeamManagement = () => {
                           setShowMessageDialog(true);
                         }}
                       >
-                        <MessageSquare className="h-4 w-4 mr-2" />
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-square h-4 w-4 mr-2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                         Enviar Mensagem
                       </Button>
                     </div>
@@ -588,51 +509,11 @@ const TeamManagement = () => {
               )}
               
               {/* Messages section for seller */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium">Mensagens</h3>
-                  {unreadCount > 0 && (
-                    <Badge variant="secondary">{unreadCount} não lidas</Badge>
-                  )}
-                </div>
-                
-                {directMessages.length === 0 ? (
-                  <div className="text-center py-8 border rounded-md">
-                    <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <p className="mt-2 text-muted-foreground">Você não tem mensagens.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {directMessages.map((message) => (
-                      <Card 
-                        key={message.id} 
-                        className={`${!message.read ? 'border-primary/50 bg-primary/5' : ''}`}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium">{message.sender_name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {format(new Date(message.created_at), 'dd/MM/yyyy HH:mm')}
-                              </p>
-                              <p className="mt-2">{message.message}</p>
-                            </div>
-                            {!message.read && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => markMessageAsRead(message.id)}
-                              >
-                                Marcar como lida
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <DirectMessageList 
+                messages={directMessages} 
+                unreadCount={unreadCount} 
+                onMarkAsRead={markMessageAsRead}
+              />
             </div>
           )}
         </CardContent>

@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { fetchAddressByCep } from "@/services/cepService";
-import { Address } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
 
 const NewSale = () => {
   const { user } = useAuth();
@@ -29,6 +29,7 @@ const NewSale = () => {
   const [observations, setObservations] = useState("");
   const [totalValue, setTotalValue] = useState("");
   const [commission, setCommission] = useState("20"); // Default 20%
+  const [costPrice, setCostPrice] = useState("");
   
   const handleCepSearch = async () => {
     if (customerZipCode.length < 8) {
@@ -73,7 +74,7 @@ const NewSale = () => {
     }
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
@@ -88,49 +89,79 @@ const NewSale = () => {
       return;
     }
     
-    // Calculate commission
-    const calculatedCommission = (parseFloat(totalValue) * parseInt(commission)) / 100;
-    
-    // Create sale object
-    const newSale = {
-      id: `sale-${Date.now()}`,
-      date: new Date(),
-      description: `Venda para ${customerName}`,
-      quantity: 1,
-      unitPrice: parseFloat(totalValue),
-      totalPrice: parseFloat(totalValue),
-      sellerId: user?.id || "",
-      sellerName: user?.name || "",
-      commission: calculatedCommission,
-      commissionRate: parseInt(commission),
-      status: "pending" as const,
-      observations,
-      customerInfo: {
-        name: customerName,
-        phone: customerPhone,
-        address: customerAddress,
-        city: customerCity,
-        state: customerState,
-        zipCode: customerZipCode,
-        order: orderDetails,
-        observations,
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    
-    // In a real app, this would send data to an API
-    console.log("New Sale:", newSale);
-    
-    // Simulate API request delay
-    setTimeout(() => {
+    try {
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
+      
+      const totalPriceValue = parseFloat(totalValue);
+      const commissionRate = parseFloat(commission);
+      const calculatedCommission = (totalPriceValue * commissionRate) / 100;
+      
+      // Calculate profit if cost price is provided
+      const costPriceValue = costPrice ? parseFloat(costPrice) : 0;
+      const profit = costPriceValue > 0 ? totalPriceValue - costPriceValue - calculatedCommission : 0;
+      
+      // Insert the sale into the database
+      const { data: saleData, error: saleError } = await supabase
+        .from('sales')
+        .insert({
+          date: new Date(),
+          description: `Venda para ${customerName}`,
+          quantity: 1,
+          unit_price: totalPriceValue,
+          total_price: totalPriceValue,
+          seller_id: user.id,
+          seller_name: user.name,
+          commission: calculatedCommission,
+          commission_rate: commissionRate,
+          status: "pending",
+          observations: observations,
+          cost_price: costPriceValue > 0 ? costPriceValue : null,
+          profit: profit > 0 ? profit : null
+        })
+        .select()
+        .single();
+        
+      if (saleError) {
+        throw saleError;
+      }
+      
+      // Insert customer information
+      const { error: customerError } = await supabase
+        .from('customer_info')
+        .insert({
+          name: customerName,
+          phone: customerPhone,
+          address: customerAddress,
+          city: customerCity,
+          state: customerState,
+          zip_code: customerZipCode,
+          order_details: orderDetails,
+          observations: observations,
+          sale_id: saleData?.id
+        });
+        
+      if (customerError) {
+        throw customerError;
+      }
+      
       toast({
         title: "Venda registrada com sucesso",
         description: `Venda para ${customerName} no valor de R$ ${totalValue} registrada.`,
       });
-      setIsLoading(false);
+      
       navigate("/sales");
-    }, 1000);
+    } catch (error: any) {
+      console.error("Error registering sale:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao registrar venda",
+        description: error.message || "Ocorreu um erro ao registrar a venda.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const formatZipCode = (value: string) => {
@@ -271,7 +302,7 @@ const NewSale = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Valores e Comissão</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="totalValue">Valor Total (R$) *</Label>
                   <Input
@@ -287,6 +318,19 @@ const NewSale = () => {
                 </div>
                 
                 <div className="space-y-2">
+                  <Label htmlFor="costPrice">Custo (R$)</Label>
+                  <Input
+                    id="costPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={costPrice}
+                    onChange={(e) => setCostPrice(e.target.value)}
+                    placeholder="ex: 120"
+                  />
+                </div>
+                
+                <div className="space-y-2">
                   <Label htmlFor="commission">Taxa de Comissão (%)</Label>
                   <Input
                     id="commission"
@@ -297,10 +341,20 @@ const NewSale = () => {
                     onChange={(e) => setCommission(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Comissão calculada: R$ {totalValue ? ((parseFloat(totalValue) * parseInt(commission)) / 100).toFixed(2) : "0.00"}
+                    Comissão calculada: R$ {totalValue ? ((parseFloat(totalValue) * parseFloat(commission)) / 100).toFixed(2) : "0.00"}
                   </p>
                 </div>
               </div>
+              
+              {costPrice && totalValue && (
+                <div className="p-4 bg-muted/20 rounded-md">
+                  <p className="text-sm">
+                    <strong>Lucro estimado:</strong> R$ {
+                      (parseFloat(totalValue) - parseFloat(costPrice) - ((parseFloat(totalValue) * parseFloat(commission)) / 100)).toFixed(2)
+                    }
+                  </p>
+                </div>
+              )}
             </div>
             
             <CardFooter className="flex justify-between px-0 pt-4">

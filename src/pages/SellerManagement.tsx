@@ -331,7 +331,7 @@ const SellerManagement = () => {
       toast({
         title: "Limite de vendedores atingido",
         description: "Você atingiu o limite de 10 vendedores. Considere fazer upgrade do seu plano para adicionar mais vendedores.",
-        variant: "warning",
+        variant: "default", // Changed from "warning" to "default"
       });
       return;
     }

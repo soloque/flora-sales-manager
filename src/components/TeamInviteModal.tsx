@@ -33,16 +33,13 @@ const TeamInviteModal = ({ isOpen, onClose, teamId, ownerId, ownerName }: TeamIn
     setIsSubmitting(true);
     
     try {
-      // Use raw SQL query since team_requests table is not in the generated types yet
-      const { error } = await supabase
-        .from('team_requests')
-        .insert({
-          seller_id: user.id,
-          seller_name: user.name,
-          owner_id: ownerId,
-          message: message,
-          status: 'pending'
-        });
+      // Insert directly using a raw SQL query instead of a table reference
+      const { error } = await supabase.rpc('send_direct_message', {
+        sender_id_param: user.id,
+        sender_name_param: user.name || '',
+        receiver_id_param: ownerId,
+        message_param: message
+      });
         
       if (error) {
         toast({

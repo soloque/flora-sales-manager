@@ -146,9 +146,9 @@ const SalesList = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Histórico de Vendas (Últimos 3 meses)</CardTitle>
+            <CardTitle>Vendas (Últimos 3 meses)</CardTitle>
             <CardDescription>
-              Visualize as vendas registradas nos últimos 90 dias
+              Visualize e gerencie as vendas registradas nos últimos 90 dias
             </CardDescription>
           </div>
           <Button size="sm" asChild>

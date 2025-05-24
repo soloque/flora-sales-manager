@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { toast } from "@/components/ui/use-toast";
-import { Eye, Edit, Trash2, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Eye, Edit, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createNotification } from "@/services/notificationService";
 
@@ -49,7 +49,7 @@ export function SalesView({ sales, isOwner, onUpdateSale }: SalesViewProps) {
     status: "pending",
     observations: "",
     commission: 0,
-    commissionRate: 0
+    commissionRate: 20 // Changed default to 20%
   });
   
   const formatCurrency = (value: number) => {

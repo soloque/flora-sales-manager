@@ -10,6 +10,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/services/notificationService";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const NewSale = () => {
   const { user } = useAuth();
@@ -90,8 +92,8 @@ const NewSale = () => {
       // Calculate total price and commission
       const totalPrice = sale.quantity * sale.unitPrice;
       
-      // Default commission rate (10%)
-      const commissionRate = 10;
+      // Default commission rate (20%) - Changed from 10% to 20%
+      const commissionRate = 20;
       const commission = totalPrice * (commissionRate / 100);
       
       const { data, error } = await supabase
@@ -176,13 +178,21 @@ const NewSale = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Atenção!</AlertTitle>
+            <AlertDescription>
+              Para registrar vendas, você precisa fazer parte de um time de vendas.
+              Entre em contato com um proprietário para se vincular a um time.
+            </AlertDescription>
+          </Alert>
+          
           <div className="flex flex-col items-center py-6">
             <div className="text-6xl mb-4">🔒</div>
             <p className="text-center mb-4">
-              Para registrar vendas, você precisa fazer parte de um time de vendas.
-              Acesse o gerenciamento de time para se vincular a um proprietário.
+              Acesse o gerenciamento de time para solicitar vínculo a um proprietário.
             </p>
-            <Button onClick={() => navigate("/team")}>
+            <Button onClick={() => navigate("/teams")}>
               Gerenciar Time
             </Button>
           </div>
@@ -200,7 +210,7 @@ const NewSale = () => {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
+            <Label htmlFor="description">Descrição da Venda</Label>
             <Input
               id="description"
               name="description"
@@ -210,7 +220,7 @@ const NewSale = () => {
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="quantity">Quantidade</Label>
               <Input
@@ -246,6 +256,7 @@ const NewSale = () => {
               value={sale.observations}
               onChange={handleInputChange}
               placeholder="Observações adicionais sobre a venda"
+              className="min-h-[100px]"
             />
           </div>
           <div className="border p-4 rounded-md bg-muted/30">
@@ -256,8 +267,11 @@ const NewSale = () => {
               </span>
             </div>
             <div className="flex justify-between items-center mt-2">
-              <Label>Comissão Padrão (10%):</Label>
-              <span>R$ {((sale.quantity * sale.unitPrice) * 0.1).toFixed(2)}</span>
+              <Label>Comissão ({isOwner ? 'personalizada' : 'padrão'}) (20%):</Label>
+              <span>R$ {((sale.quantity * sale.unitPrice) * 0.2).toFixed(2)}</span>
+            </div>
+            <div className="mt-4 text-sm text-muted-foreground">
+              {!isOwner && "Apenas o proprietário pode ajustar a taxa de comissão."}
             </div>
           </div>
         </CardContent>

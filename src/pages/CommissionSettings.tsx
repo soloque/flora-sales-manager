@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/use-toast";
-import { User, CommissionSettings as CommissionSettingsType } from "@/types";
+import { User, CommissionSettings as CommissionSettingsType, UserRole } from "@/types";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { 
   ChartContainer,
@@ -39,7 +39,7 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82ca9d"
 const CommissionSettings = () => {
   const { user } = useAuth();
   const isOwner = user?.role === "owner";
-  const [defaultRate, setDefaultRate] = useState<number>(20);
+  const [defaultRate, setDefaultRate] = useState<number>(20); // Changed default to 20%
   const [sellerRates, setSellerRates] = useState<Record<string, number>>({});
   const [sellers, setSellers] = useState<User[]>([]);
   const [sellerPerformance, setSellerPerformance] = useState<any[]>([]);
@@ -125,7 +125,7 @@ const CommissionSettings = () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .in('role', ['seller', 'guest']);
+        .in('role', ['seller', 'inactive']);
       
       if (error) {
         console.error("Error fetching sellers:", error);
@@ -137,7 +137,7 @@ const CommissionSettings = () => {
           id: profile.id,
           name: profile.name || "Sem nome",
           email: profile.email || "Sem email",
-          role: profile.role as "seller" | "guest" | "owner",
+          role: profile.role as UserRole,
           createdAt: new Date(profile.created_at),
           avatar_url: profile.avatar_url
         }));

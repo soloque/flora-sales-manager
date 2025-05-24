@@ -1,387 +1,280 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
-import { fetchAddressByCep } from "@/services/cepService";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { createNotification } from "@/services/notificationService";
 
 const NewSale = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const [isOwner, setIsOwner] = useState(false);
+  const [hasOwner, setHasOwner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isFetchingCep, setIsFetchingCep] = useState(false);
-  const isOwner = user?.role === "owner";
+  const [isCheckingTeam, setIsCheckingTeam] = useState(true);
   
-  // Form state
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [customerZipCode, setCustomerZipCode] = useState("");
-  const [customerAddress, setCustomerAddress] = useState("");
-  const [customerCity, setCustomerCity] = useState("");
-  const [customerState, setCustomerState] = useState("");
-  const [orderDetails, setOrderDetails] = useState("");
-  const [observations, setObservations] = useState("");
-  const [totalValue, setTotalValue] = useState("");
-  const [commission, setCommission] = useState("20"); // Default 20%
-  const [costPrice, setCostPrice] = useState("");
-  
-  const handleCepSearch = async () => {
-    if (customerZipCode.length < 8) {
-      toast({
-        variant: "destructive",
-        title: "CEP inválido",
-        description: "O CEP deve ter pelo menos 8 dígitos.",
-      });
-      return;
-    }
+  const [sale, setSale] = useState({
+    description: "",
+    quantity: 1,
+    unitPrice: 0,
+    observations: ""
+  });
+
+  useEffect(() => {
+    if (!user) return;
     
-    setIsFetchingCep(true);
+    setIsOwner(user.role === "owner");
     
-    try {
-      const address = await fetchAddressByCep(customerZipCode);
-      setCustomerAddress(address.logradouro);
-      setCustomerCity(address.localidade);
-      setCustomerState(address.uf);
-      
-      toast({
-        title: "CEP encontrado",
-        description: "Endereço preenchido automaticamente.",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao buscar CEP",
-        description: error instanceof Error ? error.message : "Falha ao buscar o endereço.",
-      });
-    } finally {
-      setIsFetchingCep(false);
-    }
+    // Check if seller is linked to an owner
+    const checkSellerTeam = async () => {
+      try {
+        if (user.role === "seller") {
+          const { data, error } = await supabase.rpc(
+            'get_seller_team', 
+            { seller_id_param: user.id }
+          );
+          
+          if (error) throw error;
+          
+          setHasOwner(data && data.length > 0);
+        } else if (user.role === "owner") {
+          setHasOwner(true);
+        }
+      } catch (error) {
+        console.error("Error checking seller team:", error);
+      } finally {
+        setIsCheckingTeam(false);
+      }
+    };
+    
+    checkSellerTeam();
+  }, [user]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setSale({
+      ...sale,
+      [name]: name === "quantity" || name === "unitPrice" ? parseFloat(value) || 0 : value
+    });
   };
-  
-  const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Allow only numbers
-    const value = e.target.value.replace(/\D/g, "");
-    
-    // Format the phone number (Brazilian format)
-    if (value.length <= 11) {
-      setCustomerPhone(value);
-    }
-  };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
-    // Validate required fields
-    if (!customerName || !customerPhone || !customerZipCode || !customerAddress || !customerCity || !orderDetails || !totalValue) {
+    if (!user) {
       toast({
         variant: "destructive",
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos obrigatórios.",
+        title: "Erro",
+        description: "Você precisa estar logado para registrar uma venda."
       });
-      setIsLoading(false);
       return;
     }
     
+    if (!hasOwner) {
+      toast({
+        variant: "destructive",
+        title: "Sem vínculo com proprietário",
+        description: "Você precisa estar vinculado a um proprietário para registrar vendas."
+      });
+      return;
+    }
+    
+    setIsLoading(true);
     try {
-      if (!user) {
-        throw new Error("Usuário não autenticado");
-      }
+      // Calculate total price and commission
+      const totalPrice = sale.quantity * sale.unitPrice;
       
-      const totalPriceValue = parseFloat(totalValue);
-      const commissionRate = parseFloat(commission);
-      const calculatedCommission = (totalPriceValue * commissionRate) / 100;
+      // Default commission rate (10%)
+      const commissionRate = 10;
+      const commission = totalPrice * (commissionRate / 100);
       
-      // Only calculate profit if cost price is provided and user is owner
-      const costPriceValue = isOwner && costPrice ? parseFloat(costPrice) : 0;
-      const profit = isOwner && costPriceValue > 0 ? totalPriceValue - costPriceValue - calculatedCommission : 0;
-      
-      // Format the date properly as a string for Supabase
-      const currentDate = new Date().toISOString();
-      
-      // Insert the sale into the database
-      const { data: saleData, error: saleError } = await supabase
+      const { data, error } = await supabase
         .from('sales')
         .insert({
-          date: currentDate,
-          description: `Venda para ${customerName}`,
-          quantity: 1,
-          unit_price: totalPriceValue,
-          total_price: totalPriceValue,
+          date: new Date().toISOString(),
+          description: sale.description,
+          quantity: sale.quantity,
+          unit_price: sale.unitPrice,
+          total_price: totalPrice,
           seller_id: user.id,
           seller_name: user.name,
-          commission: calculatedCommission,
+          commission: commission,
           commission_rate: commissionRate,
           status: "pending",
-          observations: observations,
-          cost_price: isOwner ? costPriceValue || null : null,
-          profit: isOwner ? profit || null : null
+          observations: sale.observations
         })
         .select()
         .single();
         
-      if (saleError) {
-        throw saleError;
-      }
+      if (error) throw error;
       
-      // Insert customer information
-      const { error: customerError } = await supabase
-        .from('customer_info')
-        .insert({
-          name: customerName,
-          phone: customerPhone,
-          address: customerAddress,
-          city: customerCity,
-          state: customerState,
-          zip_code: customerZipCode,
-          order_details: orderDetails,
-          observations: observations,
-          sale_id: saleData?.id
-        });
+      // Find owner to send notification
+      let ownerId = user.id;
+      
+      if (!isOwner) {
+        const { data: teamData } = await supabase.rpc(
+          'get_seller_team',
+          { seller_id_param: user.id }
+        );
         
-      if (customerError) {
-        throw customerError;
+        if (teamData && teamData.length > 0) {
+          ownerId = teamData[0].id;
+          
+          // Send notification to owner about new sale
+          await createNotification(
+            ownerId,
+            "Nova venda registrada",
+            `${user.name} registrou uma nova venda no valor de R$ ${totalPrice.toFixed(2)}`,
+            "new_sale",
+            data.id
+          );
+        }
       }
       
       toast({
-        title: "Venda registrada com sucesso",
-        description: `Venda para ${customerName} no valor de R$ ${totalValue} registrada.`,
+        title: "Venda registrada",
+        description: "A venda foi registrada com sucesso."
       });
       
       navigate("/sales");
-    } catch (error: any) {
-      console.error("Error registering sale:", error);
+    } catch (error) {
+      console.error("Error submitting sale:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao registrar venda",
-        description: error.message || "Ocorreu um erro ao registrar a venda.",
+        title: "Erro",
+        description: "Não foi possível registrar a venda. Tente novamente."
       });
     } finally {
       setIsLoading(false);
     }
   };
-  
-  const formatZipCode = (value: string) => {
-    const cleanValue = value.replace(/\D/g, "");
-    if (cleanValue.length <= 8) {
-      setCustomerZipCode(cleanValue);
-    }
-  };
 
-  return (
-    <div className="max-w-3xl mx-auto">
+  if (isCheckingTeam) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Verificando vínculo com proprietário...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasOwner) {
+    return (
       <Card>
         <CardHeader>
-          <CardTitle>Registrar Nova Venda</CardTitle>
+          <CardTitle>Registro de Vendas Indisponível</CardTitle>
           <CardDescription>
-            Preencha os dados abaixo para registrar uma nova venda
+            Você precisa estar vinculado a um proprietário para registrar vendas.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Informações do Cliente</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="customerName">Nome do Cliente *</Label>
-                  <Input
-                    id="customerName"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="ex: Antonio"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="customerPhone">Telefone *</Label>
-                  <Input
-                    id="customerPhone"
-                    value={customerPhone}
-                    onChange={handlePhoneInput}
-                    placeholder="ex: 21991372565"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-end gap-4">
-                  <div className="flex-1">
-                    <Label htmlFor="customerZipCode">CEP *</Label>
-                    <Input
-                      id="customerZipCode"
-                      value={customerZipCode}
-                      onChange={(e) => formatZipCode(e.target.value)}
-                      placeholder="ex: 20960120"
-                      required
-                    />
-                  </div>
-                  <Button 
-                    type="button" 
-                    onClick={handleCepSearch} 
-                    disabled={isFetchingCep || customerZipCode.length < 8}
-                  >
-                    {isFetchingCep ? "Buscando..." : "Buscar CEP"}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Digite o CEP para buscar o endereço automaticamente
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="customerAddress">Endereço *</Label>
-                <Input
-                  id="customerAddress"
-                  value={customerAddress}
-                  onChange={(e) => setCustomerAddress(e.target.value)}
-                  placeholder="ex: Rua capitulino 96 Rocha"
-                  required
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="customerCity">Cidade *</Label>
-                  <Input
-                    id="customerCity"
-                    value={customerCity}
-                    onChange={(e) => setCustomerCity(e.target.value)}
-                    placeholder="ex: Rio de Janeiro"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="customerState">Estado</Label>
-                  <Input
-                    id="customerState"
-                    value={customerState}
-                    onChange={(e) => setCustomerState(e.target.value)}
-                    placeholder="ex: RJ"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Detalhes do Pedido</h3>
-              
-              <div className="space-y-2">
-                <Label htmlFor="orderDetails">Plantas/Produtos *</Label>
-                <Textarea
-                  id="orderDetails"
-                  value={orderDetails}
-                  onChange={(e) => setOrderDetails(e.target.value)}
-                  placeholder="ex: Caju, Acerola e Jabuticaba"
-                  className="min-h-[100px]"
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Descreva detalhadamente as plantas ou produtos vendidos
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="observations">Observações</Label>
-                <Textarea
-                  id="observations"
-                  value={observations}
-                  onChange={(e) => setObservations(e.target.value)}
-                  placeholder="Informações adicionais sobre a venda ou entrega"
-                  className="min-h-[80px]"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Valores e Comissão</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="totalValue">Valor Total (R$) *</Label>
-                  <Input
-                    id="totalValue"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={totalValue}
-                    onChange={(e) => setTotalValue(e.target.value)}
-                    placeholder="ex: 240"
-                    required
-                  />
-                </div>
-                
-                {isOwner && (
-                  <div className="space-y-2">
-                    <Label htmlFor="costPrice">Custo (R$)</Label>
-                    <Input
-                      id="costPrice"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={costPrice}
-                      onChange={(e) => setCostPrice(e.target.value)}
-                      placeholder="ex: 120"
-                    />
-                  </div>
-                )}
-                
-                <div className="space-y-2">
-                  <Label htmlFor="commission">Taxa de Comissão (%)</Label>
-                  <Input
-                    id="commission"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={commission}
-                    onChange={(e) => setCommission(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Comissão calculada: R$ {totalValue ? ((parseFloat(totalValue) * parseFloat(commission)) / 100).toFixed(2) : "0.00"}
-                  </p>
-                </div>
-              </div>
-              
-              {isOwner && costPrice && totalValue && (
-                <div className="p-4 bg-muted/20 rounded-md">
-                  <p className="text-sm">
-                    <strong>Lucro estimado:</strong> R$ {
-                      (parseFloat(totalValue) - parseFloat(costPrice) - ((parseFloat(totalValue) * parseFloat(commission)) / 100)).toFixed(2)
-                    }
-                  </p>
-                </div>
-              )}
-            </div>
-            
-            <CardFooter className="flex justify-between px-0 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => navigate("/sales")}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isLoading}
-              >
-                {isLoading ? "Salvando..." : "Registrar Venda"}
-              </Button>
-            </CardFooter>
-          </form>
+          <div className="flex flex-col items-center py-6">
+            <div className="text-6xl mb-4">🔒</div>
+            <p className="text-center mb-4">
+              Para registrar vendas, você precisa fazer parte de um time de vendas.
+              Acesse o gerenciamento de time para se vincular a um proprietário.
+            </p>
+            <Button onClick={() => navigate("/team")}>
+              Gerenciar Time
+            </Button>
+          </div>
         </CardContent>
       </Card>
-    </div>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Nova Venda</CardTitle>
+        <CardDescription>Registre uma nova venda no sistema.</CardDescription>
+      </CardHeader>
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="description">Descrição</Label>
+            <Input
+              id="description"
+              name="description"
+              value={sale.description}
+              onChange={handleInputChange}
+              placeholder="Descrição do produto/serviço"
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantidade</Label>
+              <Input
+                id="quantity"
+                name="quantity"
+                type="number"
+                min="1"
+                step="1"
+                value={sale.quantity}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="unitPrice">Preço Unitário (R$)</Label>
+              <Input
+                id="unitPrice"
+                name="unitPrice"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={sale.unitPrice}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="observations">Observações</Label>
+            <Textarea
+              id="observations"
+              name="observations"
+              value={sale.observations}
+              onChange={handleInputChange}
+              placeholder="Observações adicionais sobre a venda"
+            />
+          </div>
+          <div className="border p-4 rounded-md bg-muted/30">
+            <div className="flex justify-between items-center">
+              <Label>Valor Total:</Label>
+              <span className="text-xl font-bold">
+                R$ {(sale.quantity * sale.unitPrice).toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center mt-2">
+              <Label>Comissão Padrão (10%):</Label>
+              <span>R$ {((sale.quantity * sale.unitPrice) * 0.1).toFixed(2)}</span>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-end space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate(-1)}
+          >
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Registrando..." : "Registrar Venda"}
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
   );
 };
 

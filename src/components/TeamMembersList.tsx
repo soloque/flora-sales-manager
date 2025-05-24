@@ -1,17 +1,18 @@
 
-import React from "react";
-import { format } from "date-fns";
 import { User } from "@/types";
-import { Button } from "@/components/ui/button";
-import { MessageSquare } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { formatDistance } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { MessageSquare, Mail } from "lucide-react";
+import { SellerDeleteConfirm } from "@/components/SellerActions";
 
 interface TeamMembersListProps {
   teamMembers: User[];
@@ -19,51 +20,82 @@ interface TeamMembersListProps {
 }
 
 const TeamMembersList = ({ teamMembers, onSendMessage }: TeamMembersListProps) => {
+  // Sort by join date
+  const sortedMembers = [...teamMembers].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+  );
+  
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium">Membros do Time</h3>
-      {teamMembers.length === 0 ? (
-        <div className="text-center py-8 border rounded-md">
-          <div className="mx-auto h-12 w-12 text-muted-foreground flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-          </div>
-          <p className="mt-2 text-muted-foreground">Seu time ainda não possui membros.</p>
-        </div>
-      ) : (
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
+    <div>
+      <h3 className="text-lg font-medium mb-4">Membros do Time</h3>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Membro desde</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedMembers.length === 0 ? (
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Desde</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableCell colSpan={5} className="h-24 text-center">
+                  Nenhum membro no time ainda.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {teamMembers.map((member) => (
+            ) : (
+              sortedMembers.map((member) => (
                 <TableRow key={member.id}>
-                  <TableCell>{member.name}</TableCell>
-                  <TableCell>{member.email}</TableCell>
-                  <TableCell>{format(new Date(member.createdAt), 'dd/MM/yyyy')}</TableCell>
+                  <TableCell className="font-medium">{member.name}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                      {member.email}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {formatDistance(member.createdAt, new Date(), {
+                      addSuffix: true,
+                      locale: ptBR
+                    })}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      member.role === "inactive" 
+                        ? "bg-gray-100 text-gray-800"
+                        : "bg-green-100 text-green-800"
+                    }`}>
+                      {member.role === "inactive" ? "Inativo" : "Ativo"}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => onSendMessage(member)}
                       >
-                        <MessageSquare className="h-4 w-4 mr-1" />
+                        <MessageSquare className="h-4 w-4 mr-2" />
                         Mensagem
                       </Button>
+                      <SellerDeleteConfirm
+                        seller={member}
+                        onDeleteSuccess={() => {
+                          // Refresh the page to update the list
+                          window.location.reload();
+                        }}
+                      />
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

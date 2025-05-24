@@ -20,77 +20,14 @@ import {
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "@/types";
+import { User, TeamRequest, DirectMessage } from "@/types";
 import TeamInviteModal from "@/components/TeamInviteModal";
 import TeamMembersList from "@/components/TeamMembersList";
 import TeamRequestsList from "@/components/TeamRequestsList";
 import DirectMessageList from "@/components/DirectMessageList";
-
-// Interface for team request
-interface TeamRequest {
-  id: string;
-  seller_id: string;
-  seller_name: string;
-  owner_id: string;
-  message: string;
-  status: 'pending' | 'approved' | 'rejected';
-  created_at: string;
-  seller_email?: string;
-}
-
-// Interface for team member
-interface TeamMember {
-  id: string;
-  owner_id: string;
-  seller_id: string;
-  created_at: string;
-}
-
-// Interface for direct message
-interface DirectMessage {
-  id: string;
-  sender_id: string;
-  sender_name: string;
-  receiver_id: string;
-  message: string;
-  created_at: string;
-  read: boolean;
-}
-
-// Interface for team owner or member data returned from RPC functions
-interface TeamUserData {
-  id: string;
-  name: string | null;
-  email: string | null;
-  role: string | null;
-  created_at: string;
-  avatar_url: string | null;
-}
-
-// Interface for team request data returned from RPC functions
-interface TeamRequestData {
-  id: string;
-  seller_id: string;
-  seller_name: string;
-  seller_email: string;
-  owner_id: string;
-  message: string;
-  status: string;
-  created_at: string;
-}
-
-// Interface for direct message data returned from RPC functions
-interface DirectMessageData {
-  id: string;
-  sender_id: string;
-  sender_name: string;
-  receiver_id: string;
-  message: string;
-  read: boolean;
-  created_at: string;
-}
+import { TeamChat } from "@/components/TeamChat";
+import { createNotification } from "@/services/notificationService";
 
 const TeamManagement = () => {
   const { user } = useAuth();
@@ -107,9 +44,8 @@ const TeamManagement = () => {
   // State for direct messaging
   const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
   const [selectedTeamMember, setSelectedTeamMember] = useState<User | null>(null);
-  const [showMessageDialog, setShowMessageDialog] = useState(false);
-  const [newMessage, setNewMessage] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showChatView, setShowChatView] = useState(false);
   
   // Load team data based on user role
   useEffect(() => {
@@ -130,12 +66,12 @@ const TeamManagement = () => {
           }
           
           if (data) {
-            const membersData = data as TeamUserData[];
+            const membersData = data as any[];
             const formattedMembers = membersData.map(member => ({
               id: member.id,
               name: member.name || "Sem nome",
               email: member.email || "Sem email",
-              role: (member.role || "seller") as "seller" | "guest" | "owner",
+              role: (member.role || "seller") as "seller" | "inactive" | "owner",
               createdAt: new Date(member.created_at),
               avatar_url: member.avatar_url
             }));
@@ -155,14 +91,14 @@ const TeamManagement = () => {
           }
           
           if (requests) {
-            const requestsData = requests as TeamRequestData[];
+            const requestsData = requests as any[];
             const mappedRequests: TeamRequest[] = requestsData.map(req => ({
               id: req.id,
               seller_id: req.seller_id,
               seller_name: req.seller_name,
               owner_id: req.owner_id,
               message: req.message,
-              status: req.status as 'pending' | 'approved' | 'rejected',
+              status: req.status,
               created_at: req.created_at,
               seller_email: req.seller_email
             }));
@@ -181,7 +117,7 @@ const TeamManagement = () => {
           }
           
           if (data && Array.isArray(data) && data.length > 0) {
-            const teamData = data as TeamUserData[];
+            const teamData = data as any[];
             const ownerUser: User = {
               id: teamData[0].id,
               name: teamData[0].name || "Proprietário",
@@ -233,7 +169,7 @@ const TeamManagement = () => {
           id: owner.id,
           name: owner.name || "Sem nome",
           email: owner.email || "Sem email",
-          role: owner.role as "seller" | "guest" | "owner",
+          role: owner.role as "seller" | "inactive" | "owner",
           createdAt: new Date(owner.created_at),
           avatar_url: owner.avatar_url
         }));
@@ -278,6 +214,14 @@ const TeamManagement = () => {
           throw teamError;
         }
         
+        // Send notification to the seller about approval
+        await createNotification(
+          request.seller_id,
+          "Solicitação de time aprovada",
+          "Sua solicitação para integrar o time foi aprovada!",
+          "team_request"
+        );
+        
         // Fetch seller details to add to team members list
         const { data: sellerData, error: sellerError } = await supabase
           .from('profiles')
@@ -292,13 +236,21 @@ const TeamManagement = () => {
             id: sellerData.id,
             name: sellerData.name || request.seller_name,
             email: sellerData.email || "",
-            role: (sellerData.role as "seller" | "guest" | "owner") || "seller",
+            role: (sellerData.role as "seller" | "inactive" | "owner") || "seller",
             createdAt: new Date(sellerData.created_at),
             avatar_url: sellerData.avatar_url
           };
           
           setTeamMembers(prev => [...prev, newTeamMember]);
         }
+      } else {
+        // Send notification about rejection
+        await createNotification(
+          request.seller_id,
+          "Solicitação de time rejeitada",
+          "Sua solicitação para integrar o time foi rejeitada.",
+          "team_request"
+        );
       }
       
       // Remove request from list
@@ -306,44 +258,10 @@ const TeamManagement = () => {
       
       toast({
         title: `Solicitação ${status === 'approved' ? 'aprovada' : 'rejeitada'}`,
-        description: `A solicitação de ${request.seller_name} foi ${status === 'approved' ? 'aprovada' : 'rejeitada'}.`,
+        description: `A solicitação de ${request.seller_name} foi ${status === 'approved' ? 'aprovada' : 'rejeitada'}.`
       });
     } catch (error: any) {
       console.error(`Error ${status === 'approved' ? 'approving' : 'rejecting'} request:`, error);
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // Send direct message
-  const handleSendMessage = async () => {
-    if (!user || !selectedTeamMember || !newMessage.trim()) return;
-    
-    try {
-      // Send message using SQL function
-      const { error } = await supabase.rpc('send_direct_message', {
-        sender_id_param: user.id,
-        sender_name_param: user.name || '',
-        receiver_id_param: selectedTeamMember.id,
-        message_param: newMessage
-      });
-        
-      if (error) {
-        throw error;
-      }
-      
-      toast({
-        title: "Mensagem enviada",
-        description: `Sua mensagem para ${selectedTeamMember.name} foi enviada com sucesso!`,
-      });
-      
-      setNewMessage("");
-      setShowMessageDialog(false);
-    } catch (error: any) {
-      console.error("Error sending message:", error);
       toast({
         title: "Erro",
         description: error.message,
@@ -369,7 +287,7 @@ const TeamManagement = () => {
       }
       
       if (data) {
-        const messagesData = data as DirectMessageData[];
+        const messagesData = data as any[];
         const mappedMessages: DirectMessage[] = messagesData.map(msg => ({
           id: msg.id,
           sender_id: msg.sender_id,
@@ -398,14 +316,28 @@ const TeamManagement = () => {
           filter: `receiver_id=eq.${user.id}`
         },
         (payload) => {
-          const newMessage = payload.new as DirectMessage;
-          setDirectMessages(prev => [newMessage, ...prev]);
+          const newMessage = payload.new as any;
+          const mappedMessage: DirectMessage = {
+            id: newMessage.id,
+            sender_id: newMessage.sender_id,
+            sender_name: newMessage.sender_name,
+            receiver_id: newMessage.receiver_id,
+            message: newMessage.message,
+            read: newMessage.read,
+            created_at: newMessage.created_at
+          };
+          
+          setDirectMessages(prev => [mappedMessage, ...prev]);
           setUnreadCount(prev => prev + 1);
           
-          toast({
-            title: "Nova mensagem",
-            description: `${newMessage.sender_name}: ${newMessage.message.substring(0, 30)}${newMessage.message.length > 30 ? '...' : ''}`,
-          });
+          // Create notification for new message
+          createNotification(
+            user.id,
+            `Nova mensagem de ${newMessage.sender_name}`,
+            newMessage.message.substring(0, 50) + (newMessage.message.length > 50 ? '...' : ''),
+            "message",
+            newMessage.id
+          );
         }
       )
       .subscribe();
@@ -440,6 +372,33 @@ const TeamManagement = () => {
     }
   };
   
+  // Handle opening chat with a team member
+  const handleOpenChat = (member: User) => {
+    setSelectedTeamMember(member);
+    setShowChatView(true);
+    
+    // Mark messages from this user as read
+    const messagesToMark = directMessages
+      .filter(msg => 
+        msg.sender_id === member.id && 
+        msg.receiver_id === user?.id && 
+        !msg.read
+      );
+      
+    messagesToMark.forEach(msg => {
+      markMessageAsRead(msg.id);
+    });
+  };
+  
+  if (showChatView && selectedTeamMember) {
+    return (
+      <TeamChat 
+        selectedMember={selectedTeamMember} 
+        onClose={() => setShowChatView(false)} 
+      />
+    );
+  }
+  
   return (
     <div className="space-y-6">
       <Card>
@@ -458,10 +417,7 @@ const TeamManagement = () => {
               {/* Team Members section */}
               <TeamMembersList 
                 teamMembers={teamMembers} 
-                onSendMessage={(member) => {
-                  setSelectedTeamMember(member);
-                  setShowMessageDialog(true);
-                }}
+                onSendMessage={handleOpenChat}
               />
               
               {/* Team Requests section */}
@@ -485,12 +441,7 @@ const TeamManagement = () => {
                         <p className="text-lg font-medium">{selectedOwner.name}</p>
                         <p className="text-sm">{selectedOwner.email}</p>
                       </div>
-                      <Button 
-                        onClick={() => {
-                          setSelectedTeamMember(selectedOwner);
-                          setShowMessageDialog(true);
-                        }}
-                      >
+                      <Button onClick={() => handleOpenChat(selectedOwner)}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-square h-4 w-4 mr-2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                         Enviar Mensagem
                       </Button>
@@ -556,6 +507,17 @@ const TeamManagement = () => {
                 messages={directMessages} 
                 unreadCount={unreadCount} 
                 onMarkAsRead={markMessageAsRead}
+                onOpenChat={(senderId, senderName) => {
+                  // Find seller in team
+                  const sender = {
+                    id: senderId,
+                    name: senderName,
+                    email: "",
+                    role: "owner" as const,
+                    createdAt: new Date()
+                  };
+                  handleOpenChat(sender);
+                }}
               />
             </div>
           )}
@@ -569,30 +531,6 @@ const TeamManagement = () => {
         ownerId={selectedOwner?.id}
         ownerName={selectedOwner?.name}
       />
-      
-      {/* Direct Message Dialog */}
-      <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Enviar mensagem</DialogTitle>
-            <DialogDescription>
-              Envie uma mensagem para {selectedTeamMember?.name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <Textarea
-              placeholder="Digite sua mensagem..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              className="min-h-[120px]"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowMessageDialog(false)}>Cancelar</Button>
-            <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>Enviar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

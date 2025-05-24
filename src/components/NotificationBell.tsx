@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Notification } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from '@/components/ui/use-toast';
 
 export function NotificationBell() {
   const { user } = useAuth();
@@ -24,7 +25,7 @@ export function NotificationBell() {
     
     // Subscribe to realtime notifications
     const channel = supabase
-      .channel('public:notifications')
+      .channel('notification_changes')
       .on(
         'postgres_changes',
         {
@@ -33,12 +34,28 @@ export function NotificationBell() {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
-          const newNotification = mapDatabaseNotificationToNotification(payload.new);
+        (payload: any) => {
+          const newNotification: Notification = {
+            id: payload.new.id,
+            user_id: payload.new.user_id,
+            title: payload.new.title,
+            message: payload.new.message,
+            type: payload.new.type as any,
+            read: payload.new.read,
+            created_at: new Date(payload.new.created_at),
+            reference_id: payload.new.reference_id,
+          };
+          
           setNotifications(prev => [newNotification, ...prev]);
           if (!newNotification.read) {
             setUnreadCount(prev => prev + 1);
           }
+          
+          // Show toast for new notification
+          toast({
+            title: newNotification.title,
+            description: newNotification.message,
+          });
         }
       )
       .subscribe();
@@ -62,26 +79,23 @@ export function NotificationBell() {
       if (error) throw error;
       
       if (data) {
-        const mappedNotifications = data.map(mapDatabaseNotificationToNotification);
+        const mappedNotifications: Notification[] = data.map(item => ({
+          id: item.id,
+          user_id: item.user_id,
+          title: item.title,
+          message: item.message,
+          type: item.type as any,
+          read: item.read,
+          created_at: new Date(item.created_at),
+          reference_id: item.reference_id,
+        }));
+        
         setNotifications(mappedNotifications);
         setUnreadCount(mappedNotifications.filter(n => !n.read).length);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
-  };
-  
-  const mapDatabaseNotificationToNotification = (dbNotification: any): Notification => {
-    return {
-      id: dbNotification.id,
-      user_id: dbNotification.user_id,
-      title: dbNotification.title,
-      message: dbNotification.message,
-      type: dbNotification.type,
-      read: dbNotification.read,
-      created_at: new Date(dbNotification.created_at),
-      reference_id: dbNotification.reference_id,
-    };
   };
   
   const markAsRead = async (id: string) => {

@@ -8,12 +8,14 @@ import { PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sale } from "@/types";
 import { SalesView } from "@/components/SalesView";
+import { useNavigate } from "react-router-dom";
 
 const SalesList = () => {
   const { user } = useAuth();
   const isOwner = user?.role === "owner";
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
   
   useEffect(() => {
     if (!user) return;
@@ -55,12 +57,13 @@ const SalesList = () => {
             status: sale.status as any || "pending",
             observations: sale.observations || "",
             customerInfo: {
-              name: "",
-              phone: "",
-              address: "",
-              city: "",
-              zipCode: "",
-              order: ""
+              name: sale.customer_name || "",
+              phone: sale.customer_phone || "",
+              address: sale.customer_address || "",
+              city: sale.customer_city || "",
+              state: sale.customer_state || "",
+              zipCode: sale.customer_zipcode || "",
+              order: sale.customer_order || ""
             },
             costPrice: sale.cost_price,
             profit: sale.profit,
@@ -71,7 +74,7 @@ const SalesList = () => {
           setSales(formattedSales);
         }
       } catch (error) {
-        console.error("Error fetching sales:", error);
+        console.error("Erro ao buscar vendas:", error);
       } finally {
         setIsLoading(false);
       }
@@ -117,12 +120,13 @@ const SalesList = () => {
               status: sale.status as any || "pending",
               observations: sale.observations || "",
               customerInfo: {
-                name: "",
-                phone: "",
-                address: "",
-                city: "",
-                zipCode: "",
-                order: ""
+                name: sale.customer_name || "",
+                phone: sale.customer_phone || "",
+                address: sale.customer_address || "",
+                city: sale.customer_city || "",
+                state: sale.customer_state || "",
+                zipCode: sale.customer_zipcode || "",
+                order: sale.customer_order || ""
               },
               costPrice: sale.cost_price,
               profit: sale.profit,
@@ -133,12 +137,16 @@ const SalesList = () => {
             setSales(formattedSales);
           }
         } catch (error) {
-          console.error("Error refreshing sales:", error);
+          console.error("Erro ao atualizar vendas:", error);
         }
       };
       
       fetchSales();
     }
+  };
+  
+  const handleRegisterSale = () => {
+    navigate("/sales/new");
   };
   
   return (
@@ -151,11 +159,9 @@ const SalesList = () => {
               Visualize e gerencie as vendas registradas nos últimos 90 dias
             </CardDescription>
           </div>
-          <Button size="sm" asChild>
-            <Link to="/new-sale">
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Nova Venda
-            </Link>
+          <Button size="sm" onClick={handleRegisterSale}>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Nova Venda
           </Button>
         </CardHeader>
         <CardContent>

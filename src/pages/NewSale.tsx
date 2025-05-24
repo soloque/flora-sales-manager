@@ -10,8 +10,36 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/services/notificationService";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { fetchAddressByCep } from "@/services/cepService";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+
+const formSchema = z.object({
+  description: z.string().min(3, "Descrição deve ter pelo menos 3 caracteres"),
+  quantity: z.number().int().positive("Quantidade deve ser maior que zero"),
+  unitPrice: z.number().positive("Preço deve ser maior que zero"),
+  customerName: z.string().min(3, "Nome do cliente é obrigatório"),
+  customerPhone: z.string().min(8, "Telefone do cliente é obrigatório"),
+  cep: z.string().length(8, "CEP deve ter 8 dígitos").or(z.string().length(9, "CEP deve ter 8 dígitos")),
+  address: z.string().min(3, "Endereço é obrigatório"),
+  city: z.string().min(2, "Cidade é obrigatória"),
+  state: z.string().min(2, "Estado é obrigatório"),
+  order: z.string().min(3, "Pedido é obrigatório"),
+  observations: z.string().optional(),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 const NewSale = () => {
   const { user } = useAuth();
@@ -20,12 +48,23 @@ const NewSale = () => {
   const [hasOwner, setHasOwner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingTeam, setIsCheckingTeam] = useState(true);
+  const [isFetchingAddress, setIsFetchingAddress] = useState(false);
   
-  const [sale, setSale] = useState({
-    description: "",
-    quantity: 1,
-    unitPrice: 0,
-    observations: ""
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      description: "",
+      quantity: 1,
+      unitPrice: 0,
+      customerName: "",
+      customerPhone: "",
+      cep: "",
+      address: "",
+      city: "",
+      state: "",
+      order: "",
+      observations: "",
+    },
   });
 
   useEffect(() => {
@@ -49,7 +88,7 @@ const NewSale = () => {
           setHasOwner(true);
         }
       } catch (error) {
-        console.error("Error checking seller team:", error);
+        console.error("Erro ao verificar o time do vendedor:", error);
       } finally {
         setIsCheckingTeam(false);
       }
@@ -58,17 +97,36 @@ const NewSale = () => {
     checkSellerTeam();
   }, [user]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setSale({
-      ...sale,
-      [name]: name === "quantity" || name === "unitPrice" ? parseFloat(value) || 0 : value
-    });
+  const handleCepBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const cep = e.target.value.replace(/\D/g, '');
+    
+    if (cep.length !== 8) return;
+    
+    setIsFetchingAddress(true);
+    
+    try {
+      const addressData = await fetchAddressByCep(cep);
+      
+      form.setValue('address', addressData.logradouro);
+      form.setValue('city', addressData.localidade);
+      form.setValue('state', addressData.uf);
+      
+      // Trigger validation
+      form.trigger(['address', 'city', 'state']);
+    } catch (error) {
+      if (error instanceof Error) {
+        toast({
+          variant: "destructive",
+          title: "Erro ao buscar CEP",
+          description: error.message,
+        });
+      }
+    } finally {
+      setIsFetchingAddress(false);
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const onSubmit = async (data: FormValues) => {
     if (!user) {
       toast({
         variant: "destructive",
@@ -90,26 +148,33 @@ const NewSale = () => {
     setIsLoading(true);
     try {
       // Calculate total price and commission
-      const totalPrice = sale.quantity * sale.unitPrice;
+      const totalPrice = data.quantity * data.unitPrice;
       
-      // Default commission rate (20%) - Changed from 10% to 20%
+      // Default commission rate (20%)
       const commissionRate = 20;
       const commission = totalPrice * (commissionRate / 100);
       
-      const { data, error } = await supabase
+      const { data: saleData, error } = await supabase
         .from('sales')
         .insert({
           date: new Date().toISOString(),
-          description: sale.description,
-          quantity: sale.quantity,
-          unit_price: sale.unitPrice,
+          description: data.description,
+          quantity: data.quantity,
+          unit_price: data.unitPrice,
           total_price: totalPrice,
           seller_id: user.id,
           seller_name: user.name,
           commission: commission,
           commission_rate: commissionRate,
           status: "pending",
-          observations: sale.observations
+          observations: data.observations,
+          customer_name: data.customerName,
+          customer_phone: data.customerPhone,
+          customer_address: data.address,
+          customer_city: data.city,
+          customer_state: data.state,
+          customer_zipcode: data.cep,
+          customer_order: data.order
         })
         .select()
         .single();
@@ -134,7 +199,7 @@ const NewSale = () => {
             "Nova venda registrada",
             `${user.name} registrou uma nova venda no valor de R$ ${totalPrice.toFixed(2)}`,
             "new_sale",
-            data.id
+            saleData.id
           );
         }
       }
@@ -146,7 +211,7 @@ const NewSale = () => {
       
       navigate("/sales");
     } catch (error) {
-      console.error("Error submitting sale:", error);
+      console.error("Erro ao registrar venda:", error);
       toast({
         variant: "destructive",
         title: "Erro",
@@ -207,87 +272,245 @@ const NewSale = () => {
         <CardTitle>Nova Venda</CardTitle>
         <CardDescription>Registre uma nova venda no sistema.</CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição da Venda</Label>
-            <Input
-              id="description"
-              name="description"
-              value={sale.description}
-              onChange={handleInputChange}
-              placeholder="Descrição do produto/serviço"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="quantity">Quantidade</Label>
-              <Input
-                id="quantity"
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição da Venda</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Descrição do produto/serviço"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="quantity"
-                type="number"
-                min="1"
-                step="1"
-                value={sale.quantity}
-                onChange={handleInputChange}
-                required
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Quantidade</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        step="1"
+                        {...field}
+                        onChange={e => field.onChange(parseInt(e.target.value) || 1)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="unitPrice">Preço Unitário (R$)</Label>
-              <Input
-                id="unitPrice"
+              
+              <FormField
+                control={form.control}
                 name="unitPrice"
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={sale.unitPrice}
-                onChange={handleInputChange}
-                required
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço Unitário (R$)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        {...field}
+                        onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="observations">Observações</Label>
-            <Textarea
-              id="observations"
-              name="observations"
-              value={sale.observations}
-              onChange={handleInputChange}
-              placeholder="Observações adicionais sobre a venda"
-              className="min-h-[100px]"
-            />
-          </div>
-          <div className="border p-4 rounded-md bg-muted/30">
-            <div className="flex justify-between items-center">
-              <Label>Valor Total:</Label>
-              <span className="text-xl font-bold">
-                R$ {(sale.quantity * sale.unitPrice).toFixed(2)}
-              </span>
+            
+            <div className="border-t pt-4">
+              <h3 className="font-medium mb-2">Informações do Cliente</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="customerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Cliente</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Nome completo" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="customerPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefone</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="(00) 00000-0000" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="mt-4">
+                <FormField
+                  control={form.control}
+                  name="cep"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CEP</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            {...field} 
+                            placeholder="00000-000" 
+                            onBlur={handleCepBlur} 
+                          />
+                          {isFetchingAddress && (
+                            <Loader2 className="h-4 w-4 animate-spin absolute right-3 top-3" />
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="md:col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Endereço</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Rua, número, complemento" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cidade</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <FormField
+                  control={form.control}
+                  name="state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estado</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="md:col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="order"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pedido</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Descrição do pedido" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between items-center mt-2">
-              <Label>Comissão ({isOwner ? 'personalizada' : 'padrão'}) (20%):</Label>
-              <span>R$ {((sale.quantity * sale.unitPrice) * 0.2).toFixed(2)}</span>
+            
+            <div className="space-y-2">
+              <FormField
+                control={form.control}
+                name="observations"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Observações</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Observações adicionais sobre a venda"
+                        className="min-h-[100px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-            <div className="mt-4 text-sm text-muted-foreground">
-              {!isOwner && "Apenas o proprietário pode ajustar a taxa de comissão."}
+            
+            <div className="border p-4 rounded-md bg-muted/30">
+              <div className="flex justify-between items-center">
+                <Label>Valor Total:</Label>
+                <span className="text-xl font-bold">
+                  R$ {((form.watch("quantity") || 0) * (form.watch("unitPrice") || 0)).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center mt-2">
+                <Label>Comissão ({isOwner ? 'personalizada' : 'padrão'}) (20%):</Label>
+                <span>
+                  R$ {((form.watch("quantity") || 0) * (form.watch("unitPrice") || 0) * 0.2).toFixed(2)}
+                </span>
+              </div>
+              <div className="mt-4 text-sm text-muted-foreground">
+                {!isOwner && "Apenas o proprietário pode ajustar a taxa de comissão."}
+              </div>
             </div>
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-end space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate(-1)}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Registrando..." : "Registrar Venda"}
-          </Button>
-        </CardFooter>
-      </form>
+          </CardContent>
+          <CardFooter className="flex justify-end space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(-1)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Registrando..." : "Registrar Venda"}
+            </Button>
+          </CardFooter>
+        </form>
+      </Form>
     </Card>
   );
 };

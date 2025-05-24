@@ -42,7 +42,7 @@ export interface CustomerInfo {
   phone: string;
   address: string;
   city: string;
-  state?: string;
+  state: string;
   zipCode: string;
   order: string; // Free text for plant orders
   observations?: string;

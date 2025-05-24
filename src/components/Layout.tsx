@@ -82,14 +82,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       .substring(0, 2);
   };
 
-  // Updated navigation items
+  // Updated navigation items with Portuguese labels
   const ownerLinks = [
     { name: "Dashboard", path: "/", icon: <Home className="w-5 h-5" /> },
     { name: "Vendas", path: "/sales", icon: <FileText className="w-5 h-5" /> },
-    { name: "Nova Venda", path: "/new-sale", icon: <FileText className="w-5 h-5" /> },
     { name: "Comissões", path: "/commissions", icon: <BarChart className="w-5 h-5" /> },
     { name: "Vendedores", path: "/sellers", icon: <UserRound className="w-5 h-5" /> },
-    { name: "Time", path: "/teams", icon: <Users className="w-5 h-5" /> },
     { name: "Estoque", path: "/inventory", icon: <Database className="w-5 h-5" /> },
     { name: "Configurações", path: "/settings", icon: <Settings className="w-5 h-5" /> },
   ];
@@ -97,7 +95,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const sellerLinks = [
     { name: "Dashboard", path: "/", icon: <Home className="w-5 h-5" /> },
     { name: "Vendas", path: "/sales", icon: <FileText className="w-5 h-5" /> },
-    { name: "Nova Venda", path: "/new-sale", icon: <FileText className="w-5 h-5" /> },
     { name: "Comissões", path: "/commissions", icon: <BarChart className="w-5 h-5" /> },
     { name: "Configurações", path: "/settings", icon: <Settings className="w-5 h-5" /> },
   ];
@@ -110,6 +107,31 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
       } w-64`
     : `${sidebarWidth} transition-all duration-300 ease-in-out h-screen`;
+
+  // Text for the page title
+  const getPageTitle = () => {
+    const path = location.pathname;
+    
+    // Check standard routes
+    const foundLink = links.find((link) => link.path === path);
+    if (foundLink) return foundLink.name;
+    
+    // Handle special cases
+    switch (path) {
+      case "/commissions":
+        return "Comissões";
+      case "/commission-settings":
+        return "Configurações de Comissões";
+      case "/sellers":
+        return "Vendedores";
+      case "/settings":
+        return "Configurações";
+      case "/inventory":
+        return "Estoque";
+      default:
+        return "Dashboard";
+    }
+  };
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -220,7 +242,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </Button>
           )}
           <h1 className="text-2xl font-bold">
-            {links.find((link) => link.path === location.pathname)?.name || "Dashboard"}
+            {getPageTitle()}
           </h1>
           <div className="flex items-center gap-3">
             {isAuthenticated && <NotificationBell />}

@@ -7,11 +7,9 @@ import Register from "@/pages/Register";
 import NotFound from "@/pages/NotFound";
 import Dashboard from "@/pages/Dashboard";
 import SalesList from "@/pages/SalesList";
-import NewSale from "@/pages/NewSale";
 import CommissionDetails from "@/pages/CommissionDetails";
 import CommissionSettings from "@/pages/CommissionSettings";
 import SellerManagement from "@/pages/SellerManagement"; 
-import TeamManagement from "@/pages/TeamManagement";
 import Inventory from "@/pages/Inventory";
 import UserSettings from "@/pages/UserSettings";
 import Pricing from "@/pages/Pricing";
@@ -37,11 +35,9 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/sales" element={<SalesList />} />
-                <Route path="/new-sale" element={<NewSale />} />
                 <Route path="/commissions" element={<CommissionDetails />} />
                 <Route path="/commission-settings" element={<CommissionSettings />} />
                 <Route path="/sellers" element={<SellerManagement />} />
-                <Route path="/teams" element={<TeamManagement />} />
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/settings" element={<UserSettings />} />
                 <Route path="/pricing" element={<Pricing />} />

@@ -1,136 +1,134 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { Update } from '@/types';
+import { supabase } from "@/integrations/supabase/client";
+import { Update } from "@/types";
 
-// Get all updates
-export const getAllUpdates = async (): Promise<Update[]> => {
-  const { data, error } = await supabase
-    .from('updates')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching updates:', error);
-    throw error;
-  }
-
-  if (!data) return [];
-
-  return data.map((update) => ({
-    id: update.id,
-    title: update.title,
-    content: update.content,
-    createdAt: new Date(update.created_at),
-    authorId: update.author_id || '',
-    authorName: update.author_name || '',
-    isHighlighted: update.is_highlighted || false,
-    images: update.images || []
-  }));
+// Map database object to frontend type
+const mapDatabaseUpdateToUpdate = (dbUpdate: any): Update => {
+  return {
+    id: dbUpdate.id,
+    title: dbUpdate.title || "",
+    content: dbUpdate.content || "",
+    images: dbUpdate.images || [],
+    createdAt: new Date(dbUpdate.created_at),
+    authorId: dbUpdate.author_id || "",
+    authorName: dbUpdate.author_name || "",
+    isHighlighted: dbUpdate.is_highlighted || false
+  };
 };
 
-// Get recent updates (limit by count)
-export const getRecentUpdates = async (count: number = 3): Promise<Update[]> => {
-  const { data, error } = await supabase
-    .from('updates')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(count);
-
-  if (error) {
-    console.error('Error fetching recent updates:', error);
-    throw error;
+// Get all updates
+export const getAllUpdates = async (ownerId: string): Promise<Update[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('updates')
+      .select('*')
+      .eq('author_id', ownerId)
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      throw error;
+    }
+    
+    return data.map(mapDatabaseUpdateToUpdate);
+  } catch (error) {
+    console.error("Error fetching updates:", error);
+    return [];
   }
+};
 
-  if (!data) return [];
-
-  return data.map((update) => ({
-    id: update.id,
-    title: update.title,
-    content: update.content,
-    createdAt: new Date(update.created_at),
-    authorId: update.author_id || '',
-    authorName: update.author_name || '',
-    isHighlighted: update.is_highlighted || false,
-    images: update.images || []
-  }));
+// Get highlighted updates
+export const getHighlightedUpdates = async (ownerId: string): Promise<Update[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('updates')
+      .select('*')
+      .eq('author_id', ownerId)
+      .eq('is_highlighted', true)
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      throw error;
+    }
+    
+    return data.map(mapDatabaseUpdateToUpdate);
+  } catch (error) {
+    console.error("Error fetching highlighted updates:", error);
+    return [];
+  }
 };
 
 // Create a new update
-export const createUpdate = async (update: Omit<Update, 'id' | 'createdAt'>): Promise<Update> => {
-  const { data, error } = await supabase
-    .from('updates')
-    .insert([
-      {
+export const createUpdate = async (update: Omit<Update, 'id' | 'createdAt'>): Promise<Update | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('updates')
+      .insert({
         title: update.title,
         content: update.content,
+        images: update.images || [],
         author_id: update.authorId,
         author_name: update.authorName,
-        is_highlighted: update.isHighlighted,
-        images: update.images || []
-      }
-    ])
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error creating update:', error);
-    throw error;
+        is_highlighted: update.isHighlighted
+      })
+      .select()
+      .single();
+      
+    if (error) {
+      throw error;
+    }
+    
+    return mapDatabaseUpdateToUpdate(data);
+  } catch (error) {
+    console.error("Error creating update:", error);
+    return null;
   }
-
-  return {
-    id: data.id,
-    title: data.title,
-    content: data.content,
-    createdAt: new Date(data.created_at),
-    authorId: data.author_id || '',
-    authorName: data.author_name || '',
-    isHighlighted: data.is_highlighted || false,
-    images: data.images || []
-  };
 };
 
 // Update an existing update
-export const updateExistingUpdate = async (id: string, update: Partial<Omit<Update, 'id' | 'createdAt'>>): Promise<Update> => {
-  const updatePayload: Record<string, any> = {};
-  
-  if (update.title) updatePayload.title = update.title;
-  if (update.content) updatePayload.content = update.content;
-  if (update.isHighlighted !== undefined) updatePayload.is_highlighted = update.isHighlighted;
-  if (update.images) updatePayload.images = update.images;
-
-  const { data, error } = await supabase
-    .from('updates')
-    .update(updatePayload)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error updating update:', error);
-    throw error;
+export const updateUpdate = async (id: string, update: Partial<Omit<Update, 'id' | 'createdAt'>>): Promise<Update | null> => {
+  try {
+    const updateData: Record<string, any> = {};
+    
+    if (update.title !== undefined) updateData.title = update.title;
+    if (update.content !== undefined) updateData.content = update.content;
+    if (update.images !== undefined) updateData.images = update.images;
+    if (update.authorId !== undefined) updateData.author_id = update.authorId;
+    if (update.authorName !== undefined) updateData.author_name = update.authorName;
+    if (update.isHighlighted !== undefined) updateData.is_highlighted = update.isHighlighted;
+    
+    const { data, error } = await supabase
+      .from('updates')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+      
+    if (error) {
+      throw error;
+    }
+    
+    return mapDatabaseUpdateToUpdate(data);
+  } catch (error) {
+    console.error("Error updating update:", error);
+    return null;
   }
-
-  return {
-    id: data.id,
-    title: data.title,
-    content: data.content,
-    createdAt: new Date(data.created_at),
-    authorId: data.author_id || '',
-    authorName: data.author_name || '',
-    isHighlighted: data.is_highlighted || false,
-    images: data.images || []
-  };
 };
 
 // Delete an update
-export const deleteUpdate = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('updates')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    console.error('Error deleting update:', error);
-    throw error;
+export const deleteUpdate = async (id: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('updates')
+      .delete()
+      .eq('id', id);
+      
+    if (error) {
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error deleting update:", error);
+    return false;
   }
 };

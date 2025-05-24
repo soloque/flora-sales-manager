@@ -1,6 +1,6 @@
 
 // User roles
-export type UserRole = "owner" | "seller" | "guest";
+export type UserRole = "owner" | "seller" | "inactive";
 
 // User interface
 export interface User {
@@ -131,4 +131,39 @@ export interface InventoryItem {
   supplier: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Team Request
+export interface TeamRequest {
+  id: string;
+  seller_id: string;
+  seller_name: string;
+  seller_email: string;
+  owner_id: string;
+  message: string;
+  status: string;
+  created_at: string;
+}
+
+// Direct Message
+export interface DirectMessage {
+  id: string;
+  sender_id: string;
+  sender_name: string;
+  receiver_id: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
+// Notification
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: 'team_request' | 'new_sale' | 'update' | 'message' | 'status_change';
+  read: boolean;
+  created_at: Date;
+  reference_id?: string;
 }

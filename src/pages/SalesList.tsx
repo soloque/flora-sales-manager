@@ -15,9 +15,10 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { Sale, OrderStatus } from "@/types";
-import { Plus, Search, FileText, Edit } from "lucide-react";
+import { Plus, Search, FileText, Edit, AlertCircle } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { createNotification } from "@/services/notificationService";
 
 const SalesList = () => {
   const { user } = useAuth();
@@ -42,7 +43,7 @@ const SalesList = () => {
         customer_info(*)
       `);
       
-      // Não precisa filtrar por vendedor aqui, as RLS policies já tratam disso
+      // Row Level Security policies will handle filtering by seller/owner
       
       const { data, error } = await query;
       
@@ -142,7 +143,7 @@ const SalesList = () => {
     }
   };
 
-  const updateSaleStatus = async (saleId: string, newStatus: OrderStatus) => {
+  const updateSaleStatus = async (saleId: string, newStatus: OrderStatus, currentSellerId: string) => {
     try {
       const { error } = await supabase
         .from('sales')
@@ -170,6 +171,17 @@ const SalesList = () => {
         title: "Status atualizado",
         description: "O status da venda foi atualizado com sucesso."
       });
+
+      // Create notification for seller if owner changed status
+      if (isOwner) {
+        await createNotification(
+          currentSellerId,
+          "Status de venda atualizado",
+          `O status da sua venda foi alterado para: ${getStatusText(newStatus)}`,
+          "status_change",
+          saleId
+        );
+      }
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
       toast({
@@ -178,6 +190,22 @@ const SalesList = () => {
         description: "Não foi possível atualizar o status da venda."
       });
     }
+  };
+
+  const getStatusText = (status: OrderStatus) => {
+    switch (status) {
+      case "pending": return "Pendente";
+      case "processing": return "Em processamento";
+      case "paid": return "Pago";
+      case "delivered": return "Entregue";
+      case "cancelled": return "Cancelado";
+      case "problem": return "Problema";
+      default: return status;
+    }
+  };
+
+  const isEditableStatus = (status: OrderStatus) => {
+    return status === "pending";
   };
 
   return (
@@ -242,13 +270,19 @@ const SalesList = () => {
                 ? "Tente ajustar seus filtros de busca"
                 : "Registre sua primeira venda para começar"}
             </p>
-            {!isOwner && (
+            {!isOwner && user?.role !== "inactive" && (
               <Button asChild>
                 <Link to="/sales/new">
                   <Plus className="h-4 w-4 mr-2" />
                   Nova Venda
                 </Link>
               </Button>
+            )}
+            {user?.role === "inactive" && (
+              <div className="mt-4 p-4 bg-yellow-100 dark:bg-yellow-900/20 rounded-md flex items-center gap-2">
+                <AlertCircle className="text-yellow-600 dark:text-yellow-400" />
+                <p className="text-sm">Sua conta está inativa. Entre em contato com o administrador.</p>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -293,18 +327,24 @@ const SalesList = () => {
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       {/* View/Edit button */}
-                      <Button variant="outline" size="icon" asChild>
-                        <Link to={`/sales/${sale.id}`}>
+                      {isEditableStatus(sale.status) ? (
+                        <Button variant="outline" size="icon" asChild>
+                          <Link to={`/sales/${sale.id}`}>
+                            <Edit className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="icon" disabled title="Não é possível editar vendas que não estão com status pendente">
                           <Edit className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                        </Button>
+                      )}
                       
                       {/* Status dropdown for owner */}
                       {isOwner && (
                         <select
                           className="w-32 rounded-md border border-input bg-background px-3 py-1 text-sm"
                           value={sale.status}
-                          onChange={(e) => updateSaleStatus(sale.id, e.target.value as OrderStatus)}
+                          onChange={(e) => updateSaleStatus(sale.id, e.target.value as OrderStatus, sale.sellerId)}
                         >
                           <option value="pending">Pendente</option>
                           <option value="processing">Processando</option>

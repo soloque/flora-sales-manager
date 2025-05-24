@@ -18,6 +18,7 @@ import {
   Calendar, 
   Users 
 } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -224,6 +225,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             {links.find((link) => link.path === location.pathname)?.name || "Dashboard"}
           </h1>
           <div className="flex items-center gap-3">
+            {isAuthenticated && <NotificationBell />}
             {isSidebarCollapsed && !isMobile && (
               <Button
                 variant="ghost"

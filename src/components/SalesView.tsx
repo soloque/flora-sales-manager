@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Sale, User, OrderStatus } from "@/types";
 import { 
@@ -49,7 +50,7 @@ export function SalesView({ sales, isOwner, onUpdateSale }: SalesViewProps) {
     status: "pending",
     observations: "",
     commission: 0,
-    commissionRate: 20 // Changed default to 20%
+    commissionRate: 20
   });
   
   const formatCurrency = (value: number) => {
@@ -111,8 +112,10 @@ export function SalesView({ sales, isOwner, onUpdateSale }: SalesViewProps) {
     setShowDeleteModal(true);
   };
   
-  const isEditable = (status: OrderStatus) => {
-    return status === "pending" || status === "processing";
+  // Updated: Only owner can edit status, seller can only edit pending or processing status
+  const isEditable = (status: OrderStatus, isOwner: boolean) => {
+    if (isOwner) return true; // Owner can edit any status
+    return status === "pending" || status === "processing"; // Sellers can only edit pending/processing
   };
   
   const updateSaleStatus = async () => {
@@ -248,7 +251,7 @@ export function SalesView({ sales, isOwner, onUpdateSale }: SalesViewProps) {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {isEditable(sale.status) && (
+                      {isEditable(sale.status, isOwner) && (
                         <>
                           <Button
                             variant="outline"
@@ -257,13 +260,15 @@ export function SalesView({ sales, isOwner, onUpdateSale }: SalesViewProps) {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteSale(sale)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {(isOwner || sale.status === "pending") && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteSale(sale)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </>
                       )}
                     </div>
@@ -359,7 +364,7 @@ export function SalesView({ sales, isOwner, onUpdateSale }: SalesViewProps) {
               <Button variant="outline" onClick={() => setShowDetailsModal(false)}>
                 Fechar
               </Button>
-              {isEditable(selectedSale.status) && (
+              {isEditable(selectedSale.status, isOwner) && (
                 <Button onClick={() => {
                   setShowDetailsModal(false);
                   handleEditSale(selectedSale);
@@ -383,65 +388,69 @@ export function SalesView({ sales, isOwner, onUpdateSale }: SalesViewProps) {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={editedSale.status}
-                    onValueChange={(value: OrderStatus) => 
-                      setEditedSale({...editedSale, status: value})
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pendente</SelectItem>
-                      <SelectItem value="processing">Em Processamento</SelectItem>
-                      <SelectItem value="paid">Pago</SelectItem>
-                      <SelectItem value="delivered">Entregue</SelectItem>
-                      <SelectItem value="cancelled">Cancelado</SelectItem>
-                      <SelectItem value="problem">Problema</SelectItem>
-                    </SelectContent>
-                  </Select>
+              {isOwner && (
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={editedSale.status}
+                      onValueChange={(value: OrderStatus) => 
+                        setEditedSale({...editedSale, status: value})
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pendente</SelectItem>
+                        <SelectItem value="processing">Em Processamento</SelectItem>
+                        <SelectItem value="paid">Pago</SelectItem>
+                        <SelectItem value="delivered">Entregue</SelectItem>
+                        <SelectItem value="cancelled">Cancelado</SelectItem>
+                        <SelectItem value="problem">Problema</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
+              )}
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="commissionRate">Taxa de Comissão (%)</Label>
-                  <Input
-                    id="commissionRate"
-                    type="number"
-                    value={editedSale.commissionRate}
-                    onChange={(e) => {
-                      const rate = parseFloat(e.target.value) || 0;
-                      setEditedSale({...editedSale, commissionRate: rate});
-                    }}
-                    onBlur={updateCommission}
-                  />
+              {isOwner && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="commissionRate">Taxa de Comissão (%)</Label>
+                    <Input
+                      id="commissionRate"
+                      type="number"
+                      value={editedSale.commissionRate}
+                      onChange={(e) => {
+                        const rate = parseFloat(e.target.value) || 0;
+                        setEditedSale({...editedSale, commissionRate: rate});
+                      }}
+                      onBlur={updateCommission}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="commission">Valor da Comissão</Label>
+                    <Input
+                      id="commission"
+                      type="number"
+                      value={editedSale.commission}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value) || 0;
+                        const rate = selectedSale.totalPrice > 0 
+                          ? (value / selectedSale.totalPrice) * 100
+                          : 0;
+                        
+                        setEditedSale({
+                          ...editedSale, 
+                          commission: value,
+                          commissionRate: parseFloat(rate.toFixed(2))
+                        });
+                      }}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="commission">Valor da Comissão</Label>
-                  <Input
-                    id="commission"
-                    type="number"
-                    value={editedSale.commission}
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value) || 0;
-                      const rate = selectedSale.totalPrice > 0 
-                        ? (value / selectedSale.totalPrice) * 100
-                        : 0;
-                      
-                      setEditedSale({
-                        ...editedSale, 
-                        commission: value,
-                        commissionRate: parseFloat(rate.toFixed(2))
-                      });
-                    }}
-                  />
-                </div>
-              </div>
+              )}
               
               <div>
                 <Label htmlFor="observations">Observações</Label>

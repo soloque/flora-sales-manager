@@ -15,7 +15,6 @@ import {
   LogOut, 
   Database, 
   BarChart, 
-  Calendar, 
   Users 
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -83,13 +82,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       .substring(0, 2);
   };
 
+  // Updated navigation items
   const ownerLinks = [
     { name: "Dashboard", path: "/", icon: <Home className="w-5 h-5" /> },
     { name: "Vendas", path: "/sales", icon: <FileText className="w-5 h-5" /> },
-    { name: "Histórico", path: "/sales/history", icon: <Calendar className="w-5 h-5" /> },
+    { name: "Nova Venda", path: "/new-sale", icon: <FileText className="w-5 h-5" /> },
     { name: "Comissões", path: "/commissions", icon: <BarChart className="w-5 h-5" /> },
     { name: "Vendedores", path: "/sellers", icon: <UserRound className="w-5 h-5" /> },
-    { name: "Times", path: "/teams", icon: <Users className="w-5 h-5" /> },
+    { name: "Time", path: "/teams", icon: <Users className="w-5 h-5" /> },
     { name: "Estoque", path: "/inventory", icon: <Database className="w-5 h-5" /> },
     { name: "Configurações", path: "/settings", icon: <Settings className="w-5 h-5" /> },
   ];
@@ -97,10 +97,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const sellerLinks = [
     { name: "Dashboard", path: "/", icon: <Home className="w-5 h-5" /> },
     { name: "Vendas", path: "/sales", icon: <FileText className="w-5 h-5" /> },
-    { name: "Nova Venda", path: "/sales/new", icon: <FileText className="w-5 h-5" /> },
-    { name: "Histórico", path: "/sales/history", icon: <Calendar className="w-5 h-5" /> },
+    { name: "Nova Venda", path: "/new-sale", icon: <FileText className="w-5 h-5" /> },
     { name: "Comissões", path: "/commissions", icon: <BarChart className="w-5 h-5" /> },
-    { name: "Time", path: "/teams", icon: <Users className="w-5 h-5" /> },
     { name: "Configurações", path: "/settings", icon: <Settings className="w-5 h-5" /> },
   ];
 

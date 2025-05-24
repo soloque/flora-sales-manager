@@ -233,13 +233,7 @@ export function DashboardSummary({ isOwner }: DashboardSummaryProps) {
             <CardContent className="pt-6">
               <p className="text-center text-muted-foreground">
                 Você não está vinculado a nenhum proprietário.
-                Acesse o gerenciamento de time para se vincular.
               </p>
-              <div className="flex justify-center mt-4">
-                <Button asChild>
-                  <Link to="/team">Gerenciar Time</Link>
-                </Button>
-              </div>
             </CardContent>
           </Card>
         )}
@@ -269,7 +263,7 @@ export function DashboardSummary({ isOwner }: DashboardSummaryProps) {
                       sale.status === 'cancelled' ? 'destructive' :
                       'outline'
                     }>
-                      {sale.status}
+                      {getStatusLabel(sale.status)}
                     </Badge>
                     <p className="font-medium">{formatCurrency(sale.totalPrice)}</p>
                   </div>
@@ -323,4 +317,17 @@ export function DashboardSummary({ isOwner }: DashboardSummaryProps) {
       )}
     </div>
   );
+}
+
+// Helper function to translate status labels to Portuguese
+function getStatusLabel(status: string) {
+  switch (status) {
+    case "pending": return "Pendente";
+    case "processing": return "Em Processamento";
+    case "paid": return "Pago";
+    case "delivered": return "Entregue";
+    case "cancelled": return "Cancelado";
+    case "problem": return "Problema";
+    default: return status;
+  }
 }

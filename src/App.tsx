@@ -38,7 +38,6 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/sales" element={<SalesList />} />
                 <Route path="/new-sale" element={<NewSale />} />
-                {/* Removed redundant routes /sales/new and /sales/history */}
                 <Route path="/commissions" element={<CommissionDetails />} />
                 <Route path="/commission-settings" element={<CommissionSettings />} />
                 <Route path="/sellers" element={<SellerManagement />} />

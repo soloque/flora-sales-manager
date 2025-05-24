@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Sale, User, OrderStatus } from "@/types";
 import { 
@@ -81,7 +80,7 @@ export function SalesView({ sales, isOwner, onUpdateSale }: SalesViewProps) {
       case "paid":
         return <Badge variant="default">Pago</Badge>;
       case "delivered":
-        return <Badge variant="success">Entregue</Badge>;
+        return <Badge variant="secondary" className="bg-green-100 text-green-800">Entregue</Badge>;
       case "cancelled":
         return <Badge variant="destructive">Cancelado</Badge>;
       case "problem":

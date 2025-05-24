@@ -31,7 +31,7 @@ import {
   Copy,
   Check,
 } from "lucide-react";
-import { User as UserType, Sale } from "@/types";
+import { User as UserType, Sale, UserRole } from "@/types";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { 
   ChartContainer,
@@ -69,7 +69,7 @@ const SellerManagement = () => {
   const [newSeller, setNewSeller] = useState({
     name: "",
     email: "",
-    role: "seller" as "seller" | "guest" | "owner"
+    role: "seller" as UserRole
   });
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -85,7 +85,7 @@ const SellerManagement = () => {
         const { data: profilesData, error } = await supabase
           .from('profiles')
           .select('*')
-          .in('role', ['seller', 'guest']);
+          .in('role', ['seller', 'inactive']);
           
         if (error) {
           console.error("Error fetching sellers:", error);
@@ -98,11 +98,11 @@ const SellerManagement = () => {
         }
         
         if (profilesData) {
-          const formattedSellers = profilesData.map(profile => ({
+          const formattedSellers: UserType[] = profilesData.map(profile => ({
             id: profile.id,
             name: profile.name || "Sem nome",
             email: profile.email || "Sem email",
-            role: profile.role as "seller" | "guest" | "owner",
+            role: profile.role as UserRole,
             createdAt: new Date(profile.created_at),
             avatar_url: profile.avatar_url
           }));
@@ -200,7 +200,7 @@ const SellerManagement = () => {
           id: data.id,
           name: data.name || "Sem nome",
           email: data.email || "Sem email",
-          role: data.role as "seller" | "guest" | "owner",
+          role: data.role as UserRole,
           createdAt: new Date(data.created_at),
           avatar_url: data.avatar_url
         };
@@ -367,7 +367,7 @@ const SellerManagement = () => {
           id: data.id,
           name: data.name || "",
           email: data.email || "",
-          role: data.role as "seller" | "guest" | "owner",
+          role: data.role as UserRole,
           createdAt: new Date(data.created_at),
         };
         
@@ -421,6 +421,7 @@ const SellerManagement = () => {
       case "seller": return "Vendedor";
       case "owner": return "Administrador";
       case "guest": return "Convidado";
+      case "inactive": return "Inativo";
       default: return role;
     }
   };
@@ -902,7 +903,7 @@ const SellerManagement = () => {
                 value={newSeller.role}
                 onValueChange={(val) => setNewSeller({
                   ...newSeller, 
-                  role: val as "seller" | "guest" | "owner"
+                  role: val as UserRole
                 })}
               >
                 <SelectTrigger>
@@ -910,7 +911,7 @@ const SellerManagement = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="seller">Vendedor</SelectItem>
-                  <SelectItem value="guest">Convidado</SelectItem>
+                  <SelectItem value="inactive">Inativo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -937,7 +938,7 @@ const SellerManagement = () => {
               <Select
                 value={selectedSeller?.role}
                 onValueChange={(val) => setSelectedSeller(prev => 
-                  prev ? {...prev, role: val as "seller" | "guest" | "owner"} : null
+                  prev ? {...prev, role: val as UserRole} : null
                 )}
               >
                 <SelectTrigger>
@@ -945,7 +946,7 @@ const SellerManagement = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="seller">Vendedor</SelectItem>
-                  <SelectItem value="guest">Convidado</SelectItem>
+                  <SelectItem value="inactive">Inativo</SelectItem>
                 </SelectContent>
               </Select>
             </div>

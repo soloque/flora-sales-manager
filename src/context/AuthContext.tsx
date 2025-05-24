@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, UserRole } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             id: session.user.id,
             name: session.user.user_metadata.name || session.user.email?.split('@')[0] || '',
             email: session.user.email || '',
-            role: session.user.user_metadata.role as UserRole || 'guest',
+            role: (session.user.user_metadata.role as UserRole) || 'seller',
             createdAt: new Date(session.user.created_at || Date.now()),
           });
         } else {
@@ -53,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           id: session.user.id,
           name: session.user.user_metadata.name || session.user.email?.split('@')[0] || '',
           email: session.user.email || '',
-          role: session.user.user_metadata.role as UserRole || 'guest',
+          role: (session.user.user_metadata.role as UserRole) || 'seller',
           createdAt: new Date(session.user.created_at || Date.now()),
         });
 

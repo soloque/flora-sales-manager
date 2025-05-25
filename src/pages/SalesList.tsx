@@ -8,14 +8,12 @@ import { PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sale } from "@/types";
 import { SalesView } from "@/components/SalesView";
-import { useNavigate } from "react-router-dom";
 
 const SalesList = () => {
   const { user } = useAuth();
   const isOwner = user?.role === "owner";
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
   
   useEffect(() => {
     if (!user) return;
@@ -145,10 +143,6 @@ const SalesList = () => {
     }
   };
   
-  const handleRegisterSale = () => {
-    navigate("/sales/new");
-  };
-  
   return (
     <div className="space-y-6">
       <Card>
@@ -159,9 +153,11 @@ const SalesList = () => {
               Visualize e gerencie as vendas registradas nos últimos 90 dias
             </CardDescription>
           </div>
-          <Button size="sm" onClick={handleRegisterSale}>
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Nova Venda
+          <Button size="sm" asChild>
+            <Link to="/sales/new">
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Nova Venda
+            </Link>
           </Button>
         </CardHeader>
         <CardContent>

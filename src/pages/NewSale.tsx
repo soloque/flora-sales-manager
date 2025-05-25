@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/services/notificationService";
@@ -24,6 +25,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { User } from "@/types";
 
 const formSchema = z.object({
   description: z.string().min(3, "Descrição deve ter pelo menos 3 caracteres"),
@@ -37,6 +39,7 @@ const formSchema = z.object({
   state: z.string().min(2, "Estado é obrigatório"),
   order: z.string().min(3, "Pedido é obrigatório"),
   observations: z.string().optional(),
+  assignedSellerId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -49,6 +52,7 @@ const NewSale = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingTeam, setIsCheckingTeam] = useState(true);
   const [isFetchingAddress, setIsFetchingAddress] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -64,6 +68,7 @@ const NewSale = () => {
       state: "",
       order: "",
       observations: "",
+      assignedSellerId: "",
     },
   });
 
@@ -72,7 +77,7 @@ const NewSale = () => {
     
     setIsOwner(user.role === "owner");
     
-    // Check if seller is linked to an owner
+    // Check if seller is linked to an owner or if owner, get team members
     const checkSellerTeam = async () => {
       try {
         if (user.role === "seller") {
@@ -86,6 +91,26 @@ const NewSale = () => {
           setHasOwner(data && data.length > 0);
         } else if (user.role === "owner") {
           setHasOwner(true);
+          
+          // Get team members for owner
+          const { data, error } = await supabase.rpc(
+            'get_team_members',
+            { owner_id_param: user.id }
+          );
+          
+          if (error) throw error;
+          
+          if (data) {
+            const members = data.map(member => ({
+              id: member.id,
+              name: member.name || "",
+              email: member.email || "",
+              role: member.role as any,
+              createdAt: new Date(member.created_at),
+              avatar_url: member.avatar_url
+            }));
+            setTeamMembers(members);
+          }
         }
       } catch (error) {
         console.error("Erro ao verificar o time do vendedor:", error);
@@ -154,6 +179,19 @@ const NewSale = () => {
       const commissionRate = 20;
       const commission = totalPrice * (commissionRate / 100);
       
+      // Determine seller info
+      let sellerId = user.id;
+      let sellerName = user.name;
+      
+      if (isOwner && data.assignedSellerId) {
+        // Owner is assigning sale to a team member
+        const assignedSeller = teamMembers.find(member => member.id === data.assignedSellerId);
+        if (assignedSeller) {
+          sellerId = assignedSeller.id;
+          sellerName = assignedSeller.name;
+        }
+      }
+      
       const { data: saleData, error } = await supabase
         .from('sales')
         .insert({
@@ -162,8 +200,8 @@ const NewSale = () => {
           quantity: data.quantity,
           unit_price: data.unitPrice,
           total_price: totalPrice,
-          seller_id: user.id,
-          seller_name: user.name,
+          seller_id: sellerId,
+          seller_name: sellerName,
           commission: commission,
           commission_rate: commissionRate,
           status: "pending",
@@ -202,6 +240,15 @@ const NewSale = () => {
             saleData.id
           );
         }
+      } else if (data.assignedSellerId && data.assignedSellerId !== user.id) {
+        // Owner assigned sale to someone else, notify the seller
+        await createNotification(
+          data.assignedSellerId,
+          "Venda atribuída a você",
+          `Uma nova venda no valor de R$ ${totalPrice.toFixed(2)} foi atribuída a você`,
+          "new_sale",
+          saleData.id
+        );
       }
       
       toast({
@@ -233,7 +280,7 @@ const NewSale = () => {
     );
   }
 
-  if (!hasOwner) {
+  if (!hasOwner && !isOwner) {
     return (
       <Card>
         <CardHeader>
@@ -255,10 +302,10 @@ const NewSale = () => {
           <div className="flex flex-col items-center py-6">
             <div className="text-6xl mb-4">🔒</div>
             <p className="text-center mb-4">
-              Acesse o gerenciamento de time para solicitar vínculo a um proprietário.
+              Acesse o gerenciamento de vendedores para solicitar vínculo a um proprietário.
             </p>
-            <Button onClick={() => navigate("/teams")}>
-              Gerenciar Time
+            <Button onClick={() => navigate("/sellers")}>
+              Gerenciar Vendedores
             </Button>
           </div>
         </CardContent>
@@ -275,6 +322,36 @@ const NewSale = () => {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
+            {isOwner && teamMembers.length > 0 && (
+              <div className="space-y-2">
+                <FormField
+                  control={form.control}
+                  name="assignedSellerId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Atribuir venda para vendedor (opcional)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um vendedor ou deixe vazio para atribuir a você" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Atribuir a mim (proprietário)</SelectItem>
+                          {teamMembers.map((member) => (
+                            <SelectItem key={member.id} value={member.id}>
+                              {member.name} ({member.email})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+            
             <div className="space-y-2">
               <FormField
                 control={form.control}
@@ -487,13 +564,10 @@ const NewSale = () => {
                 </span>
               </div>
               <div className="flex justify-between items-center mt-2">
-                <Label>Comissão ({isOwner ? 'personalizada' : 'padrão'}) (20%):</Label>
+                <Label>Comissão (20%):</Label>
                 <span>
                   R$ {((form.watch("quantity") || 0) * (form.watch("unitPrice") || 0) * 0.2).toFixed(2)}
                 </span>
-              </div>
-              <div className="mt-4 text-sm text-muted-foreground">
-                {!isOwner && "Apenas o proprietário pode ajustar a taxa de comissão."}
               </div>
             </div>
           </CardContent>

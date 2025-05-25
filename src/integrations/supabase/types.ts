@@ -223,6 +223,13 @@ export type Database = {
           commission_rate: number | null
           cost_price: number | null
           created_at: string
+          customer_address: string | null
+          customer_city: string | null
+          customer_name: string | null
+          customer_order: string | null
+          customer_phone: string | null
+          customer_state: string | null
+          customer_zipcode: string | null
           date: string
           description: string | null
           id: string
@@ -241,6 +248,13 @@ export type Database = {
           commission_rate?: number | null
           cost_price?: number | null
           created_at?: string
+          customer_address?: string | null
+          customer_city?: string | null
+          customer_name?: string | null
+          customer_order?: string | null
+          customer_phone?: string | null
+          customer_state?: string | null
+          customer_zipcode?: string | null
           date?: string
           description?: string | null
           id?: string
@@ -259,6 +273,13 @@ export type Database = {
           commission_rate?: number | null
           cost_price?: number | null
           created_at?: string
+          customer_address?: string | null
+          customer_city?: string | null
+          customer_name?: string | null
+          customer_order?: string | null
+          customer_phone?: string | null
+          customer_state?: string | null
+          customer_zipcode?: string | null
           date?: string
           description?: string | null
           id?: string

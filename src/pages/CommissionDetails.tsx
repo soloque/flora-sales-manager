@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +16,7 @@ import { DateRange } from "react-day-picker";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { exportToCSV } from "@/utils/exportUtils";
 import { Link } from "react-router-dom";
-import { supabase, mapDatabaseSaleToSale } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
 const CommissionDetails = () => {
@@ -62,7 +61,33 @@ const CommissionDetails = () => {
         
         if (data) {
           // Map database objects to frontend Sales type
-          const mappedSales = data.map(mapDatabaseSaleToSale);
+          const mappedSales = data.map(sale => ({
+            id: sale.id,
+            date: new Date(sale.date),
+            description: sale.description || "",
+            quantity: sale.quantity || 0,
+            unitPrice: sale.unit_price || 0,
+            totalPrice: sale.total_price || 0,
+            sellerId: sale.seller_id || "",
+            sellerName: sale.seller_name || "",
+            commission: sale.commission || 0,
+            commissionRate: sale.commission_rate || 0,
+            status: sale.status as any || "pending",
+            observations: sale.observations || "",
+            customerInfo: {
+              name: sale.customer_name || "",
+              phone: sale.customer_phone || "",
+              address: sale.customer_address || "",
+              city: sale.customer_city || "",
+              state: sale.customer_state || "",
+              zipCode: sale.customer_zipcode || "",
+              order: sale.customer_order || ""
+            },
+            costPrice: sale.cost_price,
+            profit: sale.profit,
+            createdAt: new Date(sale.created_at),
+            updatedAt: new Date(sale.updated_at)
+          }));
           setSales(mappedSales);
         }
       } catch (error) {

@@ -12,8 +12,8 @@ import { AlertCircle, UserPlus } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import TeamMembersList from "@/components/TeamMembersList";
 import { createNotification } from "@/services/notificationService";
-import { TeamRequestsList } from "@/components/TeamRequestsList";
-import { TeamInviteModal } from "@/components/TeamInviteModal";
+import TeamRequestsList from "@/components/TeamRequestsList";
+import TeamInviteModal from "@/components/TeamInviteModal";
 import {
   Dialog,
   DialogContent,

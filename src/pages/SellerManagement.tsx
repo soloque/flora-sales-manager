@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -29,6 +28,7 @@ const SellerManagement = () => {
   const isSeller = user?.role === "seller";
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [teamRequests, setTeamRequests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchEmail, setSearchEmail] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -223,6 +223,42 @@ const SellerManagement = () => {
     });
   };
 
+  const handleApproveRequest = async (requestId: string) => {
+    try {
+      // Implementation for approving team requests
+      console.log("Approving request:", requestId);
+      toast({
+        title: "Solicitação aprovada",
+        description: "O vendedor foi adicionado ao seu time."
+      });
+    } catch (error) {
+      console.error("Erro ao aprovar solicitação:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível aprovar a solicitação."
+      });
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      // Implementation for rejecting team requests
+      console.log("Rejecting request:", requestId);
+      toast({
+        title: "Solicitação rejeitada",
+        description: "A solicitação foi rejeitada."
+      });
+    } catch (error) {
+      console.error("Erro ao rejeitar solicitação:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível rejeitar a solicitação."
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
@@ -349,7 +385,11 @@ const SellerManagement = () => {
         </CardContent>
       </Card>
 
-      <TeamRequestsList />
+      <TeamRequestsList 
+        requests={teamRequests}
+        onApprove={handleApproveRequest}
+        onReject={handleRejectRequest}
+      />
     </div>
   );
 };

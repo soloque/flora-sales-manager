@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -153,12 +152,14 @@ const SalesList = () => {
               Visualize e gerencie as vendas registradas nos últimos 90 dias
             </CardDescription>
           </div>
-          <Button size="sm" asChild>
-            <Link to="/sales/new">
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Nova Venda
-            </Link>
-          </Button>
+          {!isOwner && (
+            <Button size="sm" asChild>
+              <Link to="/sales/new">
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Nova Venda
+              </Link>
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (

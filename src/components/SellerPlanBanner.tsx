@@ -1,9 +1,8 @@
 
 import { useSellerSubscription } from "@/hooks/useSellerSubscription";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, AlertTriangle, CheckCircle } from "lucide-react";
+import { Users, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const SellerPlanBanner = () => {
@@ -63,45 +62,16 @@ const SellerPlanBanner = () => {
     );
   }
 
-  // Plano gratuito - mostrar limite
-  const isNearLimit = subscriptionInfo.salesUsed >= subscriptionInfo.salesLimit * 0.8;
-  const isAtLimit = subscriptionInfo.salesUsed >= subscriptionInfo.salesLimit;
-
+  // Plano gratuito - mostrar apenas link discreto
   return (
-    <Card className={`mb-6 ${isAtLimit ? 'border-red-200 bg-red-50' : isNearLimit ? 'border-yellow-200 bg-yellow-50' : 'border-gray-200 bg-gray-50'}`}>
-      <CardContent className="pt-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            {isAtLimit ? (
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-            ) : (
-              <Users className="h-5 w-5 text-gray-600" />
-            )}
-            <div>
-              <p className={`font-medium ${isAtLimit ? 'text-red-800' : isNearLimit ? 'text-yellow-800' : 'text-gray-800'}`}>
-                {isAtLimit ? 'Limite de Vendas Atingido' : 'Plano Gratuito'}
-              </p>
-              <p className={`text-sm ${isAtLimit ? 'text-red-600' : isNearLimit ? 'text-yellow-600' : 'text-gray-600'}`}>
-                {subscriptionInfo.salesUsed} de {subscriptionInfo.salesLimit} vendas utilizadas
-                {isAtLimit && ' • Upgrade necessário para continuar'}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Badge variant={isAtLimit ? "destructive" : "secondary"}>
-              {subscriptionInfo.salesUsed}/{subscriptionInfo.salesLimit}
-            </Badge>
-            {(isNearLimit || isAtLimit) && (
-              <Button asChild size="sm" variant={isAtLimit ? "destructive" : "default"}>
-                <Link to="/pricing">
-                  {isAtLimit ? 'Upgrade Obrigatório' : 'Upgrade'}
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="mb-4 text-center">
+      <p className="text-sm text-muted-foreground">
+        Plano gratuito • {subscriptionInfo.salesUsed} de {subscriptionInfo.salesLimit} vendas utilizadas • {" "}
+        <Link to="/pricing" className="text-primary hover:underline">
+          Fazer upgrade
+        </Link>
+      </p>
+    </div>
   );
 };
 

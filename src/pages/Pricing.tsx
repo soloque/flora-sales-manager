@@ -98,13 +98,13 @@ const Pricing = () => {
       if (user) {
         window.location.href = "/dashboard";
       } else {
-        window.location.href = "/login";
+        window.location.href = "/register";
       }
       return;
     }
 
     if (!user) {
-      window.location.href = "/login";
+      window.location.href = "/register";
       return;
     }
 
@@ -297,7 +297,7 @@ const Pricing = () => {
           </div>
           
           <Button asChild size="lg">
-            <Link to="/login">
+            <Link to="/register">
               Começar gratuitamente
             </Link>
           </Button>
@@ -362,7 +362,7 @@ const Pricing = () => {
             <Link to="/login" className="text-primary hover:underline mx-2">
               Entrar
             </Link>
-            <Link to="/login" className="text-primary hover:underline mx-2">
+            <Link to="/register" className="text-primary hover:underline mx-2">
               Registrar
             </Link>
           </div>

@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -140,7 +141,7 @@ const Landing = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
                 <Button asChild size="lg" className="h-14 px-8 text-lg font-semibold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300">
-                  <Link to="/login">
+                  <Link to="/register">
                     Começar Gratuitamente
                   </Link>
                 </Button>
@@ -245,7 +246,7 @@ const Landing = () => {
                       }`}
                       variant={plan.highlighted ? "default" : "outline"}
                     >
-                      <Link to="/login">
+                      <Link to="/register">
                         {plan.name === "Free" ? "Começar Grátis" : "Escolher Plano"}
                       </Link>
                     </Button>
@@ -267,7 +268,7 @@ const Landing = () => {
             Junte-se a empresas que já transformaram seus resultados com o Sales Canvas
           </p>
           <Button asChild size="lg" className="h-16 px-12 text-xl font-bold rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300">
-            <Link to="/login">
+            <Link to="/register">
               Criar Conta Gratuita
             </Link>
           </Button>

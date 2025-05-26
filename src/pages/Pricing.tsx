@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -99,13 +98,13 @@ const Pricing = () => {
       if (user) {
         window.location.href = "/dashboard";
       } else {
-        window.location.href = "/register";
+        window.location.href = "/login";
       }
       return;
     }
 
     if (!user) {
-      window.location.href = "/register";
+      window.location.href = "/login";
       return;
     }
 
@@ -298,7 +297,7 @@ const Pricing = () => {
           </div>
           
           <Button asChild size="lg">
-            <Link to="/register">
+            <Link to="/login">
               Começar gratuitamente
             </Link>
           </Button>
@@ -363,7 +362,7 @@ const Pricing = () => {
             <Link to="/login" className="text-primary hover:underline mx-2">
               Entrar
             </Link>
-            <Link to="/register" className="text-primary hover:underline mx-2">
+            <Link to="/login" className="text-primary hover:underline mx-2">
               Registrar
             </Link>
           </div>

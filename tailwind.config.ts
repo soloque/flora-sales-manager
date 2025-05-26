@@ -54,7 +54,7 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         success: {
-          DEFAULT: "hsl(143, 85%, 40%)",
+          DEFAULT: "hsl(217, 91%, 60%)",
           foreground: "hsl(0, 0%, 100%)",
         },
         warning: {

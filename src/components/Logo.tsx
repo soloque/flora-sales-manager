@@ -11,7 +11,7 @@ export function Logo() {
       <div className="relative">
         <div className="bg-gradient-to-br from-primary to-primary/80 p-2 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-200">
           <BarChart3 className="h-6 w-6 text-primary-foreground" />
-          <TrendingUp className="h-3 w-3 absolute -top-1 -right-1 text-success bg-background rounded-full p-0.5" />
+          <TrendingUp className="h-3 w-3 absolute -top-1 -right-1 text-blue-400 bg-background rounded-full p-0.5" />
         </div>
       </div>
       <div className="flex flex-col">

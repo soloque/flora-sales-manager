@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Sale } from "@/types";
 import { AlertCircle, UserPlus, Users, PlusCircle } from "lucide-react";
@@ -318,6 +318,8 @@ const SellerManagement = () => {
   const handleSaleCreated = () => {
     // Refresh sales or any other data if needed
     console.log("Venda criada com sucesso");
+    // Refresh page to update dashboard
+    window.location.reload();
   };
 
   if (isLoading) {

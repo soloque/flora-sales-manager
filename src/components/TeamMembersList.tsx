@@ -12,12 +12,23 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatDistance } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MessageSquare, Mail, UserCheck, Bot, Plus } from "lucide-react";
+import { MessageSquare, Mail, UserCheck, Bot } from "lucide-react";
 import { SellerDeleteConfirm } from "@/components/SellerActions";
 import { ChatModal } from "@/components/ChatModal";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 
 interface TeamMembersListProps {
   teamMembers: User[];
@@ -34,7 +45,6 @@ interface VirtualSeller {
 
 const TeamMembersList = ({ teamMembers }: TeamMembersListProps) => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [virtualSellers, setVirtualSellers] = useState<VirtualSeller[]>([]);
@@ -115,16 +125,21 @@ const TeamMembersList = ({ teamMembers }: TeamMembersListProps) => {
 
       if (error) throw error;
 
+      toast({
+        title: "Vendedor virtual removido",
+        description: "O vendedor virtual foi removido com sucesso."
+      });
+
       // Refresh the list
       fetchVirtualSellers();
     } catch (error) {
       console.error("Error deleting virtual seller:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível remover o vendedor virtual."
+      });
     }
-  };
-
-  const handleNewSaleForVirtualSeller = (virtualSellerId: string) => {
-    // Navigate to new sale page with pre-selected virtual seller
-    navigate(`/sales/new?sellerId=${virtualSellerId}`);
   };
   
   return (
@@ -213,24 +228,34 @@ const TeamMembersList = ({ teamMembers }: TeamMembersListProps) => {
                             />
                           </>
                         ) : (
-                          <>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => handleNewSaleForVirtualSeller(seller.id)}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Nova Venda
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeleteVirtualSeller(seller.id)}
-                            >
-                              Remover
-                            </Button>
-                          </>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                              >
+                                Remover
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar remoção</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza de que deseja remover o vendedor virtual "{seller.name}"? 
+                                  Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeleteVirtualSeller(seller.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Remover
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         )}
                       </div>
                     </TableCell>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -37,7 +36,10 @@ const DashboardSummary = () => {
         
         let query = supabase
           .from('sales')
-          .select('*')
+          .select(`
+            *,
+            virtual_sellers!sales_assigned_seller_id_fkey(name)
+          `)
           .gte('date', firstDayOfMonth.toISOString())
           .order('date', { ascending: false });
           
@@ -50,34 +52,45 @@ const DashboardSummary = () => {
         if (error) throw error;
         
         if (data) {
-          const formattedSales: Sale[] = data.map(sale => ({
-            id: sale.id,
-            date: new Date(sale.date),
-            description: sale.description || "",
-            quantity: sale.quantity || 0,
-            unitPrice: sale.unit_price || 0,
-            totalPrice: sale.total_price || 0,
-            sellerId: sale.seller_id || "",
-            sellerName: sale.seller_name || "",
-            commission: sale.commission || 0,
-            commissionRate: sale.commission_rate || 0,
-            status: sale.status as any || "pending",
-            observations: sale.observations || "",
-            customerInfo: {
-              name: sale.customer_name || "",
-              phone: sale.customer_phone || "",
-              address: sale.customer_address || "",
-              city: sale.customer_city || "",
-              state: sale.customer_state || "",
-              zipCode: sale.customer_zipcode || "",
-              order: sale.customer_order || ""
-            },
-            costPrice: sale.cost_price,
-            profit: sale.profit,
-            createdAt: new Date(sale.created_at),
-            updatedAt: new Date(sale.updated_at)
-          }));
+          const formattedSales: Sale[] = data.map(sale => {
+            // Determine seller name from various sources
+            let sellerName = sale.seller_name || "";
+            
+            // If assigned to virtual seller, use virtual seller name
+            if (sale.assigned_seller_id && sale.virtual_sellers) {
+              sellerName = sale.virtual_sellers.name || "Vendedor Virtual";
+            }
+            
+            return {
+              id: sale.id,
+              date: new Date(sale.date),
+              description: sale.description || "",
+              quantity: sale.quantity || 0,
+              unitPrice: sale.unit_price || 0,
+              totalPrice: sale.total_price || 0,
+              sellerId: sale.seller_id || "",
+              sellerName: sellerName,
+              commission: sale.commission || 0,
+              commissionRate: sale.commission_rate || 0,
+              status: sale.status as any || "pending",
+              observations: sale.observations || "",
+              customerInfo: {
+                name: sale.customer_name || "",
+                phone: sale.customer_phone || "",
+                address: sale.customer_address || "",
+                city: sale.customer_city || "",
+                state: sale.customer_state || "",
+                zipCode: sale.customer_zipcode || "",
+                order: sale.customer_order || ""
+              },
+              costPrice: sale.cost_price,
+              profit: sale.profit,
+              createdAt: new Date(sale.created_at),
+              updatedAt: new Date(sale.updated_at)
+            };
+          });
           
+          console.log('Formatted sales for dashboard:', formattedSales);
           setSales(formattedSales);
         }
       } catch (error) {

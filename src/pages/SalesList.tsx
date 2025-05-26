@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Sale } from "@/types";
 import { SalesView } from "@/components/SalesView";
 import { NewSaleModal } from "@/components/NewSaleModal";
+import { useExampleData } from "@/hooks/useExampleData";
+import ExampleSalesView from "@/components/ExampleSalesView";
 
 const SalesList = () => {
   const { user } = useAuth();
@@ -15,6 +17,7 @@ const SalesList = () => {
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isNewSaleModalOpen, setIsNewSaleModalOpen] = useState(false);
+  const { showExamples, exampleSales, dismissExamples } = useExampleData();
   
   const fetchSales = async () => {
     if (!user) return;
@@ -89,6 +92,9 @@ const SalesList = () => {
   const handleSaleCreated = () => {
     fetchSales();
   };
+
+  const hasRealSales = sales.length > 0;
+  const shouldShowExamples = showExamples && !hasRealSales;
   
   return (
     <div className="space-y-6">
@@ -112,6 +118,13 @@ const SalesList = () => {
             <div className="flex justify-center items-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
+          ) : shouldShowExamples ? (
+            <ExampleSalesView 
+              exampleSales={exampleSales}
+              isOwner={isOwner}
+              onDismiss={dismissExamples}
+              onUpdateSale={handleUpdateSale}
+            />
           ) : (
             <SalesView 
               sales={sales} 

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,21 +16,37 @@ import {
   Crown,
   Play,
   ArrowRight,
-  CheckCircle
+  CheckCircle,
+  UserPlus,
+  Eye
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useExampleData } from "@/hooks/useExampleData";
 
 const Help = () => {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { showExamples, dismissExamples } = useExampleData();
 
   const tutorialSteps = [
     {
       title: "Bem-vindo ao SalesCanvas!",
       description: "Vamos te ensinar como usar todas as funcionalidades do seu sistema de vendas.",
       icon: Home,
-      content: "O SalesCanvas é uma plataforma completa para gerenciar suas vendas e equipe. Navegue pelas próximas etapas para aprender como aproveitar ao máximo todas as funcionalidades."
+      content: "O SalesCanvas é uma plataforma completa para gerenciar suas vendas e equipe. Para começar, você pode visualizar dados de exemplo em todas as páginas para entender como funciona quando está preenchido."
+    },
+    {
+      title: "Primeiros Passos - Dados de Exemplo",
+      description: "Veja como cada página fica quando preenchida",
+      icon: Eye,
+      content: "Quando você acaba de se cadastrar, todas as páginas mostram dados de exemplo automaticamente. Isso te ajuda a entender como o sistema funciona. Os exemplos se apagam sozinhos após 30 segundos ou você pode removê-los clicando no botão 'Esconder'."
+    },
+    {
+      title: "Configurando sua Equipe",
+      description: "Adicione vendedores reais ou virtuais",
+      icon: UserPlus,
+      content: "Na página de Equipe, você pode adicionar vendedores de duas formas: convidando pessoas reais por e-mail ou criando vendedores virtuais para organizar suas próprias vendas por categorias."
     },
     {
       title: "Dashboard - Visão Geral",
@@ -97,6 +112,11 @@ const Help = () => {
     }
   ];
 
+  const activateExamples = () => {
+    localStorage.removeItem('hasSeenExamples');
+    window.location.reload();
+  };
+
   const startTutorial = () => {
     setCurrentStep(0);
     setIsDialogOpen(true);
@@ -145,10 +165,56 @@ const Help = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={startTutorial} size="lg" className="w-full sm:w-auto">
-            <Play className="h-4 w-4 mr-2" />
-            Iniciar Tutorial
-          </Button>
+          <div className="flex gap-3">
+            <Button onClick={() => setIsDialogOpen(true)} size="lg">
+              <Play className="h-4 w-4 mr-2" />
+              Iniciar Tutorial
+            </Button>
+            {!showExamples && (
+              <Button onClick={activateExamples} variant="outline" size="lg">
+                <Eye className="h-4 w-4 mr-2" />
+                Ver Dados de Exemplo
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Guia para Começar */}
+      <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-green-800">
+            <UserPlus className="h-5 w-5" />
+            Como Começar no SalesCanvas
+          </CardTitle>
+          <CardDescription className="text-green-700">
+            Passo a passo para configurar sua conta e começar a vender
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 p-3 bg-green-100 rounded-lg">
+              <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</div>
+              <div>
+                <h4 className="font-semibold text-green-800">Explore os Dados de Exemplo</h4>
+                <p className="text-sm text-green-700">Veja como cada página fica quando preenchida com vendas e vendedores</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-green-100 rounded-lg">
+              <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</div>
+              <div>
+                <h4 className="font-semibold text-green-800">Configure sua Equipe</h4>
+                <p className="text-sm text-green-700">Adicione vendedores reais ou crie vendedores virtuais</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-green-100 rounded-lg">
+              <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</div>
+              <div>
+                <h4 className="font-semibold text-green-800">Registre sua Primeira Venda</h4>
+                <p className="text-sm text-green-700">Use o botão "Nova Venda" para começar a registrar suas transações</p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

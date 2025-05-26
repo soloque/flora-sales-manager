@@ -3,14 +3,20 @@ import { useAuth } from "@/context/AuthContext";
 import DashboardSummary from "@/components/DashboardSummary";
 import SubscriptionBanner from "@/components/SubscriptionBanner";
 import SellerPlanBanner from "@/components/SellerPlanBanner";
+import { useExampleData } from "@/hooks/useExampleData";
+import ExampleDataBanner from "@/components/ExampleDataBanner";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const isOwner = user?.role === "owner";
   const isSeller = user?.role === "seller";
+  const { showExamples, dismissExamples } = useExampleData();
   
   return (
     <div className="space-y-6">
+      {/* Example Data Banner */}
+      {showExamples && <ExampleDataBanner onDismiss={dismissExamples} />}
+
       {/* Banner Section */}
       {isOwner && <SubscriptionBanner />}
       {isSeller && <SellerPlanBanner />}

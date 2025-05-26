@@ -16,6 +16,8 @@ import TeamInviteModal from "@/components/TeamInviteModal";
 import SellerTeamView from "@/components/SellerTeamView";
 import VirtualSellerModal from "@/components/VirtualSellerModal";
 import { NewSaleModal } from "@/components/NewSaleModal";
+import { useExampleData } from "@/hooks/useExampleData";
+import ExampleTeamView from "@/components/ExampleTeamView";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +41,7 @@ const SellerManagement = () => {
   const [isVirtualSellerModalOpen, setIsVirtualSellerModalOpen] = useState(false);
   const [isNewSaleModalOpen, setIsNewSaleModalOpen] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<any>(null);
+  const { showExamples, exampleTeamMembers, dismissExamples } = useExampleData();
 
   useEffect(() => {
     if (!user) return;
@@ -322,6 +325,9 @@ const SellerManagement = () => {
     window.location.reload();
   };
 
+  const hasRealTeamMembers = teamMembers.length > 0;
+  const shouldShowExamples = showExamples && !hasRealTeamMembers && isOwner;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
@@ -454,10 +460,19 @@ const SellerManagement = () => {
             </div>
           </div>
 
-          <TeamMembersList 
-            teamMembers={teamMembers}
-            onSendMessage={handleSendMessage}
-          />
+          {shouldShowExamples ? (
+            <ExampleTeamView 
+              teamMembers={exampleTeamMembers}
+              onDismiss={dismissExamples}
+            />
+          ) : (
+            <>
+              <TeamMembersList 
+                teamMembers={teamMembers}
+                onSendMessage={handleSendMessage}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
 

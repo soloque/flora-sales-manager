@@ -1,6 +1,5 @@
-
 // User roles
-export type UserRole = "owner" | "seller" | "inactive";
+export type UserRole = "owner" | "seller" | "inactive" | "virtual_seller";
 
 // User interface
 export interface User {

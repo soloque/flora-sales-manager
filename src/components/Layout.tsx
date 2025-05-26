@@ -1,200 +1,180 @@
 
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { 
-  BarChart3, 
-  Users, 
-  ShoppingCart, 
-  MessageSquare, 
-  Settings, 
-  LogOut,
-  Home,
-  Package,
-  FileText,
-  CreditCard,
-  Crown,
-  Menu,
-  TrendingUp,
-  HelpCircle
-} from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
+import { Logo } from "@/components/Logo";
+import { SubscriptionBanner } from "@/components/SubscriptionBanner";
+import { SellerPlanBanner } from "@/components/SellerPlanBanner";
+import { FloatingNewSaleButton } from "@/components/FloatingNewSaleButton";
+import { 
+  LogOut, 
+  BarChart3, 
+  ShoppingCart, 
+  DollarSign, 
+  Settings, 
+  Users, 
+  Package, 
+  MessageSquare,
+  History,
+  CreditCard,
+  HelpCircle
+} from "lucide-react";
 
 const Layout = () => {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const handleSignOut = async () => {
-    await logout();
-    // Force navigation to login page
-    window.location.href = "/login";
-  };
-
-  // Filter navigation based on user role
-  const getNavigation = () => {
-    const baseNavigation = [
-      { name: "Dashboard", href: "/dashboard", icon: Home },
-      { name: "Vendas", href: "/sales", icon: ShoppingCart },
-      { name: "Histórico", href: "/sales-history", icon: FileText },
-      { name: "Equipe", href: "/team", icon: Users },
-      { name: "Mensagens", href: "/messages", icon: MessageSquare },
-      { name: "Ajuda", href: "/help", icon: HelpCircle },
-      { name: "Configurações", href: "/settings", icon: Settings },
-    ];
-
-    // Add owner-specific navigation items
-    if (user && user.role === "owner") {
-      baseNavigation.splice(6, 0, 
-        { name: "Inventário", href: "/inventory", icon: Package },
-        { name: "Comissões", href: "/commission-settings", icon: CreditCard },
-        { name: "Planos", href: "/plan-management", icon: Crown }
-      );
-    }
-
-    // Add "Nova Venda" only for sellers (not owners)
-    if (user && user.role !== "owner") {
-      baseNavigation.splice(2, 0, { 
-        name: "Nova Venda", 
-        href: "/sales/new", 
-        icon: BarChart3
-      });
-    }
-
-    return baseNavigation;
-  };
-
-  const navigation = getNavigation();
+  const navigate = useNavigate();
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Outlet />
-      </div>
-    );
+    navigate("/login");
+    return null;
   }
 
-  const NavigationItems = ({ mobile = false }: { mobile?: boolean }) => (
-    <>
-      {navigation.map((item) => {
-        const Icon = item.icon;
-        const isActive = location.pathname === item.href;
-        const Component = mobile ? "div" : "div";
-        
-        return (
-          <Component key={item.name}>
-            <Link
-              to={item.href}
-              onClick={mobile ? () => setIsMobileMenuOpen(false) : undefined}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:text-primary ${
-                isActive ? "bg-muted text-primary" : "text-muted-foreground"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {item.name}
-            </Link>
-          </Component>
-        );
-      })}
-    </>
-  );
+  const isOwner = user.role === "owner";
+  const isSeller = user.role === "seller";
+
+  const navigation = [
+    {
+      name: "Dashboard",
+      href: "/dashboard",
+      icon: BarChart3,
+      show: true
+    },
+    {
+      name: "Vendas",
+      href: "/sales",
+      icon: ShoppingCart,
+      show: true
+    },
+    {
+      name: "Histórico",
+      href: "/sales-history",
+      icon: History,
+      show: true
+    },
+    {
+      name: "Comissões",
+      href: "/commissions",
+      icon: DollarSign,
+      show: true
+    },
+    {
+      name: "Equipe",
+      href: "/team",
+      icon: Users,
+      show: isOwner || isSeller
+    },
+    {
+      name: "Estoque",
+      href: "/inventory",
+      icon: Package,
+      show: isOwner
+    },
+    {
+      name: "Mensagens",
+      href: "/messages",
+      icon: MessageSquare,
+      show: true
+    },
+    {
+      name: "Planos",
+      href: "/plan-management",
+      icon: CreditCard,
+      show: isOwner
+    },
+    {
+      name: "Ajuda",
+      href: "/help",
+      icon: HelpCircle,
+      show: true
+    },
+    {
+      name: "Configurações",
+      href: "/settings",
+      icon: Settings,
+      show: true
+    }
+  ];
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate("/login");
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Banners */}
+      {isOwner && <SubscriptionBanner />}
+      {isSeller && <SellerPlanBanner />}
+      
       {/* Header */}
-      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center">
-          <div className="flex items-center gap-4">
-            {/* Mobile menu */}
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-64">
-                <div className="flex flex-col gap-4 mt-6">
-                  <div className="px-3">
-                    <h2 className="mb-2 text-lg font-semibold">Menu</h2>
-                  </div>
-                  <nav className="grid gap-1">
-                    <NavigationItems mobile />
-                  </nav>
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            <Link to="/dashboard" className="flex items-center space-x-2">
-              <div className="relative">
-                <div className="bg-gradient-to-br from-primary to-primary/80 p-2 rounded-xl shadow-lg transition-all duration-200">
-                  <TrendingUp className="h-5 w-5 text-primary-foreground" />
-                </div>
-              </div>
-              <span className="font-bold text-xl">SalesCanvas</span>
-            </Link>
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
+        <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center space-x-4">
+            <Logo />
+            <span className="font-semibold text-lg">PlantPro</span>
           </div>
           
-          <div className="flex flex-1 items-center justify-end space-x-4">
-            <nav className="flex items-center space-x-2">
-              <NotificationBell />
-              <ThemeToggle />
-              <div className="hidden sm:flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground truncate max-w-[150px]">
-                  {user.email}
-                </span>
-              </div>
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+          <div className="flex items-center space-x-4">
+            <NotificationBell />
+            <ThemeToggle />
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">
+                {user.name}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">Sair</span>
               </Button>
-            </nav>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="flex min-h-[calc(100vh-4rem)]">
-        {/* Desktop Sidebar */}
-        <aside className="hidden md:flex w-64 flex-col border-r bg-background">
-          <div className="flex-1 overflow-auto py-4">
-            <nav className="grid items-start px-4 text-sm font-medium gap-1">
-              <NavigationItems />
-            </nav>
-          </div>
-          
-          {/* Quick Actions at bottom of sidebar - only for sellers */}
-          {user.role !== "owner" && (
-            <div className="border-t p-4">
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Ações Rápidas
-                </h3>
-                <Button size="sm" className="w-full justify-start" asChild>
-                  <Link to="/sales/new">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Nova Venda
+      <div className="flex">
+        {/* Sidebar */}
+        <aside className="w-64 border-r bg-muted/10 min-h-[calc(100vh-4rem)]">
+          <nav className="p-4 space-y-2">
+            {navigation
+              .filter(item => item.show)
+              .map((item) => {
+                const isActive = location.pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.name}</span>
                   </Link>
-                </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                  <Link to="/messages">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Mensagens
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          )}
+                );
+              })}
+          </nav>
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto">
-          <div className="container py-6">
-            <Outlet />
-          </div>
+        <main className="flex-1 p-6">
+          <Outlet />
         </main>
       </div>
+
+      {/* Floating New Sale Button */}
+      <FloatingNewSaleButton />
     </div>
   );
 };

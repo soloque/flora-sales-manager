@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Sale, User, OrderStatus } from "@/types";
 import { 
@@ -21,12 +20,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { toast } from "@/components/ui/use-toast";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import { Eye, Edit, Trash2, Download, Share2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createNotification } from "@/services/notificationService";
+import { exportSelectedSales, shareSelectedSales } from "@/utils/salesExportUtils";
 
 interface SalesViewProps {
   sales: Sale[];
@@ -35,6 +36,7 @@ interface SalesViewProps {
 }
 
 export function SalesView({ sales, isOwner, onUpdateSale }: SalesViewProps) {
+  const [selectedSales, setSelectedSales] = useState<string[]>([]);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -52,7 +54,7 @@ export function SalesView({ sales, isOwner, onUpdateSale }: SalesViewProps) {
     commission: 0,
     commissionRate: 20
   });
-  
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -90,7 +92,64 @@ export function SalesView({ sales, isOwner, onUpdateSale }: SalesViewProps) {
         return <Badge>{status}</Badge>;
     }
   };
-  
+
+  const handleSelectSale = (saleId: string, checked: boolean) => {
+    setSelectedSales(prev => 
+      checked 
+        ? [...prev, saleId]
+        : prev.filter(id => id !== saleId)
+    );
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    setSelectedSales(checked ? sales.map(sale => sale.id) : []);
+  };
+
+  const getSelectedSalesData = () => {
+    return sales.filter(sale => selectedSales.includes(sale.id));
+  };
+
+  const handleDownloadSelected = () => {
+    const selectedSalesData = getSelectedSalesData();
+    if (selectedSalesData.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Nenhum pedido selecionado",
+        description: "Selecione pelo menos um pedido para baixar."
+      });
+      return;
+    }
+    
+    exportSelectedSales(selectedSalesData);
+    toast({
+      title: "Download iniciado",
+      description: `${selectedSalesData.length} pedido(s) baixado(s) com sucesso.`
+    });
+  };
+
+  const handleShareSelected = async () => {
+    const selectedSalesData = getSelectedSalesData();
+    if (selectedSalesData.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Nenhum pedido selecionado",
+        description: "Selecione pelo menos um pedido para compartilhar."
+      });
+      return;
+    }
+
+    try {
+      await shareSelectedSales(selectedSalesData);
+    } catch (error) {
+      console.error("Erro ao compartilhar:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao compartilhar",
+        description: "Não foi possível compartilhar os pedidos selecionados."
+      });
+    }
+  };
+
   const handleViewDetails = (sale: Sale) => {
     setSelectedSale(sale);
     setShowDetailsModal(true);
@@ -213,10 +272,52 @@ export function SalesView({ sales, isOwner, onUpdateSale }: SalesViewProps) {
   
   return (
     <>
+      {/* Selection Actions Bar */}
+      {selectedSales.length > 0 && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-blue-900">
+              {selectedSales.length} pedido(s) selecionado(s)
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadSelected}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Baixar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleShareSelected}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Compartilhar
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedSales([])}
+              >
+                Limpar Seleção
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={selectedSales.length === sales.length && sales.length > 0}
+                  onCheckedChange={handleSelectAll}
+                />
+              </TableHead>
               <TableHead>Data</TableHead>
               <TableHead>Descrição</TableHead>
               <TableHead>Vendedor</TableHead>
@@ -228,13 +329,19 @@ export function SalesView({ sales, isOwner, onUpdateSale }: SalesViewProps) {
           <TableBody>
             {sales.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   Nenhuma venda encontrada.
                 </TableCell>
               </TableRow>
             ) : (
               sales.map((sale) => (
                 <TableRow key={sale.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedSales.includes(sale.id)}
+                      onCheckedChange={(checked) => handleSelectSale(sale.id, checked as boolean)}
+                    />
+                  </TableCell>
                   <TableCell>
                     {format(new Date(sale.date), 'dd/MM/yyyy')}
                   </TableCell>

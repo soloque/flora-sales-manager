@@ -69,6 +69,7 @@ serve(async (req) => {
 
     logStep("Creating checkout session", { planName, unitAmount, interval, customerId });
 
+    // Compra através da plataforma = sem período de teste, cobrança imediata
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -78,7 +79,7 @@ serve(async (req) => {
             currency: "brl",
             product_data: { 
               name: `Plano ${planName.charAt(0).toUpperCase() + planName.slice(1)}`,
-              description: `Período de teste grátis de 7 dias, depois ${isAnnual ? 'cobrança anual' : 'cobrança mensal'}`
+              description: `Ativação imediata - ${isAnnual ? 'cobrança anual' : 'cobrança mensal'}`
             },
             unit_amount: unitAmount,
             recurring: { interval },
@@ -88,11 +89,12 @@ serve(async (req) => {
       ],
       mode: "subscription",
       subscription_data: {
-        trial_period_days: 7, // 7 dias de trial
+        // Sem trial_period_days - cobrança imediata
         metadata: {
           user_id: user.id,
           plan_name: planName,
-          is_annual: isAnnual.toString()
+          is_annual: isAnnual.toString(),
+          source: 'platform' // Identifica que veio da plataforma
         }
       },
       success_url: `${req.headers.get("origin")}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
@@ -100,7 +102,8 @@ serve(async (req) => {
       metadata: {
         user_id: user.id,
         plan_name: planName,
-        is_annual: isAnnual.toString()
+        is_annual: isAnnual.toString(),
+        source: 'platform'
       }
     });
 

@@ -73,7 +73,7 @@ export const useStripeSubscription = () => {
       
       toast({
         title: "Redirecionando para pagamento",
-        description: "Você será redirecionado para o Stripe para configurar seu pagamento.",
+        description: "Você será redirecionado para o Stripe. A cobrança será feita imediatamente após a confirmação.",
       });
 
       return true;

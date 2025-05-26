@@ -163,7 +163,7 @@ export function DashboardChart({ sales }: DashboardChartProps) {
               formatter={(value, entry: any) => {
                 const seller = currentSellersWithPercentage.find(s => s.name === value);
                 return (
-                  <span style={{ color: entry.color }}>
+                  <span style={{ color: 'hsl(var(--foreground))' }}>
                     {value} ({seller?.percentage}%)
                   </span>
                 );

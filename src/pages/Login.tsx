@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTheme } from "@/context/ThemeContext";
-import { Moon, Sun, BarChart3, TrendingUp } from "lucide-react";
+import { Moon, Sun, TrendingUp } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 const Login = () => {
@@ -62,13 +62,32 @@ const Login = () => {
           <Link to="/" className="inline-flex items-center space-x-3 text-primary hover:text-primary/80 transition-all duration-200 group mb-8">
             <div className="relative">
               <div className="bg-gradient-to-br from-primary to-primary/80 p-3 rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-200">
-                <BarChart3 className="h-6 w-6 text-primary-foreground" />
+                <div className="h-6 w-6 relative">
+                  <svg viewBox="0 0 100 100" className="h-full w-full text-primary-foreground">
+                    <path 
+                      d="M50 10 L85 80 L15 80 Z" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="8"
+                    />
+                    <path 
+                      d="M50 25 L72 70 L28 70 Z" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="6"
+                    />
+                    <path 
+                      d="M50 40 L60 60 L40 60 Z" 
+                      fill="currentColor"
+                    />
+                  </svg>
+                </div>
                 <TrendingUp className="h-3 w-3 absolute -top-1 -right-1 text-blue-400 bg-background rounded-full p-0.5" />
               </div>
             </div>
             <div className="flex flex-col">
               <span className="text-3xl font-bold leading-none bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                VendaFlow
+                Sales Canvas
               </span>
               <span className="text-xs text-muted-foreground leading-none font-medium">
                 Gestão de Vendas

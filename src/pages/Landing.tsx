@@ -1,9 +1,8 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, TrendingUp, Users, Shield, Zap, CheckCircle } from "lucide-react";
+import { TrendingUp, Users, Shield, Zap, CheckCircle } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { Moon, Sun } from "lucide-react";
 
@@ -12,19 +11,14 @@ const Landing = () => {
 
   const features = [
     {
-      icon: BarChart3,
-      title: "Gestão Completa",
-      description: "Controle total sobre suas vendas, comissões e relatórios em tempo real"
+      icon: TrendingUp,
+      title: "Análises Completas",
+      description: "Gráficos e métricas avançadas para otimizar seus resultados"
     },
     {
       icon: Users,
       title: "Equipe Conectada",
       description: "Gerencie sua equipe de vendas e acompanhe o desempenho individual"
-    },
-    {
-      icon: TrendingUp,
-      title: "Análises Completas",
-      description: "Gráficos e métricas avançadas para otimizar seus resultados"
     },
     {
       icon: Shield,
@@ -119,13 +113,33 @@ const Landing = () => {
               <div className="flex items-center space-x-3">
                 <div className="relative">
                   <div className="bg-gradient-to-br from-primary to-primary/80 p-3 rounded-2xl shadow-2xl">
-                    <BarChart3 className="h-8 w-8 text-primary-foreground" />
+                    {/* Custom triangle logo */}
+                    <div className="h-8 w-8 relative">
+                      <svg viewBox="0 0 100 100" className="h-full w-full text-primary-foreground">
+                        <path 
+                          d="M50 10 L85 80 L15 80 Z" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="8"
+                        />
+                        <path 
+                          d="M50 25 L72 70 L28 70 Z" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="6"
+                        />
+                        <path 
+                          d="M50 40 L60 60 L40 60 Z" 
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </div>
                     <TrendingUp className="h-4 w-4 absolute -top-1 -right-1 text-blue-400 bg-background rounded-full p-0.5" />
                   </div>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-4xl font-bold leading-none bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                    VendaFlow
+                    Sales Canvas
                   </span>
                   <span className="text-sm text-muted-foreground leading-none font-medium">
                     Gestão de Vendas
@@ -271,7 +285,7 @@ const Landing = () => {
             Pronto para Revolucionar suas Vendas?
           </h2>
           <p className="text-xl text-muted-foreground">
-            Junte-se a empresas que já transformaram seus resultados com o VendaFlow
+            Junte-se a empresas que já transformaram seus resultados com o Sales Canvas
           </p>
           <Button asChild size="lg" className="h-16 px-12 text-xl font-bold rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300">
             <Link to="/register">
@@ -288,15 +302,34 @@ const Landing = () => {
             <div className="flex justify-center">
               <div className="flex items-center space-x-2">
                 <div className="bg-gradient-to-br from-primary to-primary/80 p-2 rounded-lg">
-                  <BarChart3 className="h-5 w-5 text-primary-foreground" />
+                  <div className="h-5 w-5 relative">
+                    <svg viewBox="0 0 100 100" className="h-full w-full text-primary-foreground">
+                      <path 
+                        d="M50 10 L85 80 L15 80 Z" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="8"
+                      />
+                      <path 
+                        d="M50 25 L72 70 L28 70 Z" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="6"
+                      />
+                      <path 
+                        d="M50 40 L60 60 L40 60 Z" 
+                        fill="currentColor"
+                      />
+                    </svg>
+                  </div>
                 </div>
                 <span className="text-lg font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                  VendaFlow
+                  Sales Canvas
                 </span>
               </div>
             </div>
             <p className="text-muted-foreground">
-              © 2024 VendaFlow. Transformando vendas em resultados.
+              © 2024 Sales Canvas. Transformando vendas em resultados.
             </p>
           </div>
         </div>

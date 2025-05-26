@@ -52,17 +52,66 @@ serve(async (req) => {
     logStep("Found Stripe customer", { customerId });
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${origin}/plan-management`,
-    });
     
-    logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
+    try {
+      // Tentar criar a sessão do portal do cliente
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${origin}/plan-management`,
+      });
+      
+      logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
 
-    return new Response(JSON.stringify({ url: portalSession.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+      return new Response(JSON.stringify({ url: portalSession.url }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    } catch (portalError: any) {
+      logStep("Portal creation failed, checking if it's a configuration issue", { error: portalError.message });
+      
+      // Se o erro for sobre configuração não encontrada, criar uma configuração básica
+      if (portalError.message.includes("No configuration provided") || 
+          portalError.message.includes("default configuration has not been created")) {
+        
+        logStep("Creating default portal configuration");
+        
+        // Criar uma configuração padrão para o portal do cliente
+        const configuration = await stripe.billingPortal.configurations.create({
+          business_profile: {
+            headline: "Gerenciar sua assinatura",
+          },
+          features: {
+            payment_method_update: { enabled: true },
+            subscription_cancel: { enabled: true },
+            subscription_pause: { enabled: false },
+            subscription_update: {
+              enabled: true,
+              default_allowed_updates: ["price"],
+              proration_behavior: "create_prorations",
+            },
+            invoice_history: { enabled: true },
+          },
+        });
+        
+        logStep("Default configuration created", { configId: configuration.id });
+        
+        // Agora tentar criar a sessão novamente com a configuração
+        const portalSession = await stripe.billingPortal.sessions.create({
+          customer: customerId,
+          configuration: configuration.id,
+          return_url: `${origin}/plan-management`,
+        });
+        
+        logStep("Customer portal session created with new config", { sessionId: portalSession.id, url: portalSession.url });
+
+        return new Response(JSON.stringify({ url: portalSession.url }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      } else {
+        throw portalError;
+      }
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in customer-portal", { message: errorMessage });

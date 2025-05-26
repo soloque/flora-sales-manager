@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -135,7 +134,11 @@ const PlanManagement = () => {
   };
 
   const handleManageSubscription = async () => {
-    await openCustomerPortal();
+    try {
+      await openCustomerPortal();
+    } catch (error) {
+      console.error('Error opening customer portal:', error);
+    }
   };
 
   if (loading) {
@@ -192,11 +195,10 @@ const PlanManagement = () => {
               </div>
               <div className="flex gap-2">
                 <Badge 
-                  variant={displayPlan.status === 'active' || displayPlan.status === 'trialing' ? 'default' : 'secondary'}
+                  variant={displayPlan.status === 'active' ? 'default' : 'secondary'}
                   className="capitalize"
                 >
-                  {displayPlan.status === 'active' ? 'Ativo' : 
-                   displayPlan.status === 'trialing' ? 'Teste' : displayPlan.status}
+                  {displayPlan.status === 'active' ? 'Ativo' : displayPlan.status}
                 </Badge>
                 {stripeSubscription?.subscribed && (
                   <AlertDialog>

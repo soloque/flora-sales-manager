@@ -14,7 +14,6 @@ import {
   FileText,
   CreditCard,
   Crown,
-  Plus,
   Menu
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -38,18 +37,34 @@ const Layout = () => {
     openCustomerPortal();
   };
 
-  const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Vendas", href: "/sales", icon: ShoppingCart },
-    { name: "Nova Venda", href: "/sales/new", icon: Plus, highlight: !user || user.role !== "owner" },
-    { name: "Histórico", href: "/sales-history", icon: FileText },
-    { name: "Equipe", href: "/team", icon: Users },
-    { name: "Mensagens", href: "/messages", icon: MessageSquare },
-    { name: "Inventário", href: "/inventory", icon: Package },
-    { name: "Comissões", href: "/commission-settings", icon: CreditCard },
-    { name: "Planos", href: "/plan-management", icon: Crown },
-    { name: "Configurações", href: "/settings", icon: Settings },
-  ];
+  // Filter navigation based on user role
+  const getNavigation = () => {
+    const baseNavigation = [
+      { name: "Dashboard", href: "/dashboard", icon: Home },
+      { name: "Vendas", href: "/sales", icon: ShoppingCart },
+      { name: "Histórico", href: "/sales-history", icon: FileText },
+      { name: "Equipe", href: "/team", icon: Users },
+      { name: "Mensagens", href: "/messages", icon: MessageSquare },
+      { name: "Inventário", href: "/inventory", icon: Package },
+      { name: "Comissões", href: "/commission-settings", icon: CreditCard },
+      { name: "Planos", href: "/plan-management", icon: Crown },
+      { name: "Configurações", href: "/settings", icon: Settings },
+    ];
+
+    // Add "Nova Venda" only for sellers (not owners)
+    if (user && user.role !== "owner") {
+      baseNavigation.splice(2, 0, { 
+        name: "Nova Venda", 
+        href: "/sales/new", 
+        icon: BarChart3, 
+        highlight: true 
+      });
+    }
+
+    return baseNavigation;
+  };
+
+  const navigation = getNavigation();
 
   if (!user) {
     return (
@@ -150,28 +165,28 @@ const Layout = () => {
             </nav>
           </div>
           
-          {/* Quick Actions at bottom of sidebar */}
-          <div className="border-t p-4">
-            <div className="space-y-2">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Ações Rápidas
-              </h3>
-              {user.role !== "owner" && (
+          {/* Quick Actions at bottom of sidebar - only for sellers */}
+          {user.role !== "owner" && (
+            <div className="border-t p-4">
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Ações Rápidas
+                </h3>
                 <Button size="sm" className="w-full justify-start" asChild>
                   <Link to="/sales/new">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <BarChart3 className="h-4 w-4 mr-2" />
                     Nova Venda
                   </Link>
                 </Button>
-              )}
-              <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                <Link to="/messages">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Mensagens
-                </Link>
-              </Button>
+                <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                  <Link to="/messages">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Mensagens
+                  </Link>
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </aside>
 
         {/* Main content */}

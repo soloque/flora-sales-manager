@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,47 +40,62 @@ const Landing = () => {
 
   const plans = [
     {
-      name: "Starter",
-      price: "R$ 200",
-      period: "/mês",
-      description: "Ideal para pequenos negócios",
+      name: "Free",
+      price: "R$ 0",
+      period: "/sempre",
+      description: "Perfeito para começar",
       features: [
-        "Até 10 vendedores",
-        "Controle de comissões", 
+        "Até 3 vendedores",
+        "Até 50 clientes",
         "Relatórios básicos",
         "Registro de vendas",
-        "Verificação de CEP",
-        "7 dias gratuitos"
+        "Marca d'água nos relatórios",
+        "Suporte por email"
       ],
       highlighted: false
     },
     {
-      name: "Business",
-      price: "R$ 600",
+      name: "Starter",
+      price: "R$ 150",
+      period: "/mês",
+      description: "Ideal para pequenos negócios",
+      features: [
+        "Até 10 vendedores",
+        "Clientes ilimitados",
+        "Controle de comissões", 
+        "Relatórios básicos",
+        "Verificação de CEP",
+        "Suporte prioritário"
+      ],
+      highlighted: false
+    },
+    {
+      name: "Professional",
+      price: "R$ 450",
       period: "/mês",
       description: "Para negócios em crescimento",
       features: [
         "Vendedores ilimitados",
+        "Clientes ilimitados",
         "Tudo do plano Starter",
         "Relatórios avançados", 
         "Controle de estoque",
-        "Análise financeira detalhada",
-        "+R$100 a cada 10 vendedores extras"
+        "Análise financeira detalhada"
       ],
       highlighted: true
     },
     {
       name: "Enterprise",
-      price: "R$ 1.200",
-      period: "/mês",
+      price: "Personalizado",
+      period: "",
       description: "Para grandes operações",
       features: [
-        "Vendedores ilimitados",
-        "Tudo do plano Business",
+        "Tudo do plano Professional",
         "API personalizada",
-        "Suporte prioritário", 
+        "Suporte 24/7",
         "Customizações específicas",
-        "Sem cobrança por vendedores extras"
+        "Integrações avançadas",
+        "Treinamento incluso"
       ],
       highlighted: false
     }
@@ -199,7 +215,7 @@ const Landing = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
             {plans.map((plan, index) => (
               <Card key={index} className={`relative border-2 transition-all duration-300 hover:shadow-xl ${
                 plan.highlighted 
@@ -211,29 +227,29 @@ const Landing = () => {
                     Mais Popular
                   </Badge>
                 )}
-                <CardContent className="p-8">
+                <CardContent className="p-6">
                   <div className="space-y-6">
                     <div className="text-center space-y-2">
-                      <h3 className="text-2xl font-bold">{plan.name}</h3>
-                      <p className="text-muted-foreground">{plan.description}</p>
+                      <h3 className="text-xl font-bold">{plan.name}</h3>
+                      <p className="text-muted-foreground text-sm">{plan.description}</p>
                       <div className="flex items-baseline justify-center">
-                        <span className="text-4xl font-bold">{plan.price}</span>
+                        <span className="text-3xl font-bold">{plan.price}</span>
                         <span className="text-muted-foreground ml-1">{plan.period}</span>
                       </div>
                     </div>
                     
-                    <ul className="space-y-3">
+                    <ul className="space-y-2">
                       {plan.features.map((feature, featureIndex) => (
-                        <li key={featureIndex} className="flex items-center space-x-3">
-                          <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                          <span className="text-sm">{feature}</span>
+                        <li key={featureIndex} className="flex items-center space-x-2">
+                          <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="text-xs">{feature}</span>
                         </li>
                       ))}
                     </ul>
                     
                     <Button 
                       asChild 
-                      className={`w-full h-12 rounded-xl font-semibold ${
+                      className={`w-full h-10 rounded-xl font-semibold text-sm ${
                         plan.highlighted 
                           ? 'bg-primary hover:bg-primary/90 shadow-lg' 
                           : 'variant-outline'
@@ -241,7 +257,7 @@ const Landing = () => {
                       variant={plan.highlighted ? "default" : "outline"}
                     >
                       <Link to="/register">
-                        Começar Teste Gratuito
+                        {plan.name === "Free" ? "Começar Grátis" : plan.name === "Enterprise" ? "Falar com Vendas" : "Iniciar Teste"}
                       </Link>
                     </Button>
                   </div>

@@ -401,7 +401,10 @@ export type Database = {
       subscriptions: {
         Row: {
           created_at: string
+          features_enabled: string[] | null
+          has_watermark: boolean | null
           id: string
+          max_customers: number | null
           max_sellers: number
           plan_name: string
           price_per_month: number
@@ -415,7 +418,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          features_enabled?: string[] | null
+          has_watermark?: boolean | null
           id?: string
+          max_customers?: number | null
           max_sellers?: number
           plan_name: string
           price_per_month: number
@@ -429,7 +435,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          features_enabled?: string[] | null
+          has_watermark?: boolean | null
           id?: string
+          max_customers?: number | null
           max_sellers?: number
           plan_name?: string
           price_per_month?: number
@@ -535,6 +544,10 @@ export type Database = {
       add_team_member: {
         Args: { owner_id_param: string; seller_id_param: string }
         Returns: undefined
+      }
+      can_add_customer: {
+        Args: { user_id_param: string }
+        Returns: boolean
       }
       can_add_seller: {
         Args: { user_id_param: string }

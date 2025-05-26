@@ -9,9 +9,12 @@ export interface Subscription {
   status: 'trial' | 'active' | 'canceled' | 'past_due';
   plan_name: string;
   max_sellers: number;
+  max_customers?: number;
   price_per_month: number;
   trial_end_date?: string;
   subscription_end_date?: string;
+  has_watermark?: boolean;
+  features_enabled?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -78,6 +81,26 @@ export const useSubscription = () => {
     }
   };
 
+  const canAddCustomer = async (): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { data, error } = await supabase.rpc('can_add_customer', {
+        user_id_param: user.id
+      });
+
+      if (error) {
+        console.error('Error checking customer limit:', error);
+        return false;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error checking customer limit:', error);
+      return false;
+    }
+  };
+
   const isTrialExpired = (): boolean => {
     if (!subscription || subscription.status !== 'trial') return false;
     if (!subscription.trial_end_date) return false;
@@ -98,11 +121,30 @@ export const useSubscription = () => {
     return Math.max(0, diffDays);
   };
 
+  const getPlanDisplayName = (): string => {
+    if (!subscription) return 'Carregando...';
+    
+    switch (subscription.plan_name) {
+      case 'free':
+        return 'Free';
+      case 'starter':
+        return 'Starter';
+      case 'professional':
+        return 'Professional';
+      case 'enterprise':
+        return 'Enterprise';
+      default:
+        return subscription.plan_name.charAt(0).toUpperCase() + subscription.plan_name.slice(1);
+    }
+  };
+
   return {
     subscription,
     loading,
     canAddSeller,
+    canAddCustomer,
     isTrialExpired,
     getTrialDaysLeft,
+    getPlanDisplayName,
   };
 };

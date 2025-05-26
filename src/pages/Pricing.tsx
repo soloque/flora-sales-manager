@@ -13,57 +13,75 @@ const Pricing = () => {
   
   const plans = [
     {
-      name: "Starter",
-      description: "Ideal para pequenos negócios com até 10 vendedores",
-      price: isAnnual ? 2160 : 200, // R$200/mo or R$180/mo annually (R$2160/year)
+      name: "Free",
+      description: "Perfeito para começar e testar a plataforma",
+      price: 0,
       features: [
-        "Até 10 vendedores",
-        "Controle de comissões",
+        "Até 3 vendedores",
+        "Até 50 clientes",
         "Relatórios básicos",
         "Registro de vendas",
+        "Sistema de mensagens",
+        "Marca d'água nos relatórios",
+        "Suporte por email",
+        "Gratuito para sempre",
+      ],
+      highlighted: false,
+      cta: "Começar grátis",
+      sellerLimit: 3,
+    },
+    {
+      name: "Starter",
+      description: "Ideal para pequenos negócios com até 10 vendedores",
+      price: isAnnual ? 1620 : 150, // R$150/mo or R$135/mo annually (R$1620/year)
+      features: [
+        "Até 10 vendedores",
+        "Clientes ilimitados",
+        "Controle de comissões",
+        "Relatórios básicos",
         "Verificação de CEP",
         "Modo escuro/claro",
         "Sistema de mensagens",
-        "7 dias gratuitos",
+        "Suporte prioritário",
       ],
       highlighted: false,
       cta: "Começar teste gratuito",
       sellerLimit: 10,
     },
     {
-      name: "Business",
-      description: "Para negócios em crescimento - cada 10 vendedores extras +R$100",
-      price: isAnnual ? 6480 : 600, // R$600/mo or R$540/mo annually (R$6480/year)
+      name: "Professional",
+      description: "Para negócios em crescimento - vendedores ilimitados",
+      price: isAnnual ? 4860 : 450, // R$450/mo or R$405/mo annually (R$4860/year)
       features: [
         "Vendedores ilimitados",
+        "Clientes ilimitados",
         "Tudo do plano Starter",
         "Relatórios avançados",
         "Controle de estoque",
         "Análise financeira detalhada",
         "Personalização de comissões",
         "Comunicação com equipe",
-        "+R$100 a cada 10 vendedores extras",
       ],
       highlighted: true,
       cta: "Plano recomendado",
-      sellerLimit: null, // Unlimited with extra cost
+      sellerLimit: null, // Unlimited
     },
     {
       name: "Enterprise",
       description: "Solução completa para grandes operações",
-      price: isAnnual ? 12600 : 1200, // R$1200/mo or R$1050/mo annually (R$12600/year)
+      price: "custom", // Custom pricing
       features: [
-        "Vendedores ilimitados",
-        "Tudo do plano Business",
+        "Tudo do plano Professional",
         "API personalizada",
-        "Suporte prioritário",
+        "Suporte 24/7",
         "Customizações específicas",
         "Integrações avançadas",
+        "Treinamento incluso",
         "Backup diário",
-        "Sem cobrança por vendedores extras",
+        "SLA garantido",
       ],
       highlighted: false,
-      cta: "Entre em contato",
+      cta: "Falar com vendas",
       sellerLimit: null, // Unlimited
     },
   ];
@@ -86,7 +104,7 @@ const Pricing = () => {
           </h1>
           <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto">
             Escolha o plano ideal para o seu negócio de vendas de plantas. 
-            Comece com 7 dias de teste gratuito!
+            Comece gratuitamente com o plano Free!
           </p>
           
           <div className="mt-8 flex justify-center items-center space-x-4">
@@ -112,7 +130,7 @@ const Pricing = () => {
 
       {/* Pricing cards */}
       <div className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
           {plans.map((plan) => (
             <Card
               key={plan.name}
@@ -127,30 +145,38 @@ const Pricing = () => {
                   Mais Popular
                 </div>
               )}
-              <CardHeader>
-                <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl">{plan.name}</CardTitle>
+                <CardDescription className="text-sm">{plan.description}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                 <div>
-                  <span className="text-4xl font-bold">
-                    R$ {(plan.price / (isAnnual ? 12 : 1)).toFixed(0)}
-                  </span>
-                  <span className="text-muted-foreground">
-                    /{isAnnual ? "mês" : "mês"}
-                  </span>
-                  {isAnnual && (
-                    <div className="text-sm text-muted-foreground mt-1">
-                      Faturado anualmente como R$ {plan.price},00
-                    </div>
+                  {plan.price === "custom" ? (
+                    <span className="text-2xl font-bold">Personalizado</span>
+                  ) : plan.price === 0 ? (
+                    <span className="text-2xl font-bold">Grátis</span>
+                  ) : (
+                    <>
+                      <span className="text-2xl font-bold">
+                        R$ {(plan.price / (isAnnual ? 12 : 1)).toFixed(0)}
+                      </span>
+                      <span className="text-muted-foreground">
+                        /{isAnnual ? "mês" : "mês"}
+                      </span>
+                      {isAnnual && plan.price > 0 && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Faturado anualmente como R$ {plan.price},00
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
-                <ul className="space-y-2">
+                <ul className="space-y-1">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-center">
-                      <Check className="h-5 w-5 text-primary mr-2 shrink-0" />
-                      <span>{feature}</span>
+                      <Check className="h-4 w-4 text-primary mr-2 shrink-0" />
+                      <span className="text-xs">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -161,7 +187,7 @@ const Pricing = () => {
                   className="w-full"
                   asChild
                 >
-                  <Link to="/register">
+                  <Link to={plan.name === "Enterprise" ? "/contact" : "/register"}>
                     {plan.cta}
                   </Link>
                 </Button>
@@ -172,15 +198,15 @@ const Pricing = () => {
 
         <div className="max-w-3xl mx-auto mt-16 text-center">
           <h2 className="text-2xl font-bold mb-4">
-            Teste grátis por 7 dias, sem compromisso
+            Comece gratuitamente, atualize quando precisar
           </h2>
           <p className="text-muted-foreground mb-8">
-            Experimente qualquer plano por 7 dias gratuitamente. Cancele a qualquer momento sem cobranças.
-            Não é necessário cartão de crédito para o período de teste.
+            O plano Free é permanente e não requer cartão de crédito. 
+            Faça upgrade para planos pagos quando seu negócio crescer.
           </p>
           <Button asChild size="lg">
             <Link to="/register">
-              Começar teste gratuito
+              Começar gratuitamente
             </Link>
           </Button>
         </div>
@@ -190,38 +216,38 @@ const Pricing = () => {
       <div className="bg-muted py-16">
         <div className="container mx-auto px-4 max-w-4xl">
           <h2 className="text-3xl font-bold text-center mb-8">
-            Como Funciona a Cobrança
+            Como Funcionam os Planos
           </h2>
           <div className="grid md:grid-cols-2 gap-8">
             <Card>
               <CardHeader>
-                <CardTitle className="text-xl">Plano Starter</CardTitle>
+                <CardTitle className="text-xl">Planos Free e Starter</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground mb-4">
-                  Ideal para pequenos negócios com até 10 vendedores.
+                  Ideais para começar e pequenos negócios.
                 </p>
                 <div className="space-y-2">
-                  <p><strong>Preço:</strong> R$ 200/mês</p>
-                  <p><strong>Vendedores inclusos:</strong> Até 10</p>
-                  <p><strong>Vendedores extras:</strong> Não disponível</p>
+                  <p><strong>Free:</strong> Gratuito para sempre</p>
+                  <p><strong>Vendedores inclusos:</strong> Free (3), Starter (10)</p>
+                  <p><strong>Limitações:</strong> Free tem marca d'água e limite de clientes</p>
                 </div>
               </CardContent>
             </Card>
             
             <Card>
               <CardHeader>
-                <CardTitle className="text-xl">Planos Business e Enterprise</CardTitle>
+                <CardTitle className="text-xl">Professional e Enterprise</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground mb-4">
-                  Para negócios que precisam de mais vendedores.
+                  Para negócios que precisam escalar sem limitações.
                 </p>
                 <div className="space-y-2">
-                  <p><strong>Business:</strong> R$ 600/mês base</p>
-                  <p><strong>Enterprise:</strong> R$ 1.200/mês base</p>
-                  <p><strong>Vendedores extras (Business):</strong> +R$ 100 a cada 10 vendedores adicionais</p>
-                  <p><strong>Vendedores extras (Enterprise):</strong> Inclusos sem cobrança adicional</p>
+                  <p><strong>Professional:</strong> R$ 450/mês</p>
+                  <p><strong>Enterprise:</strong> Preço personalizado</p>
+                  <p><strong>Vendedores:</strong> Ilimitados em ambos</p>
+                  <p><strong>Diferenciais:</strong> API, suporte 24/7 no Enterprise</p>
                 </div>
               </CardContent>
             </Card>
@@ -238,20 +264,11 @@ const Pricing = () => {
           <div className="space-y-6">
             <div>
               <h3 className="text-xl font-semibold mb-2">
-                Como funciona o período de teste?
+                O plano Free é realmente gratuito para sempre?
               </h3>
               <p>
-                Você tem acesso a todas as funcionalidades do plano Starter por 7 dias gratuitamente. 
-                Após esse período, será necessário escolher um plano para continuar utilizando o sistema.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold mb-2">
-                Como é calculada a cobrança pelos vendedores extras?
-              </h3>
-              <p>
-                No plano Business, para cada grupo de 10 vendedores adicionais além dos inclusos no plano base, 
-                há um acréscimo de R$100 mensais. No Enterprise, vendedores adicionais estão inclusos.
+                Sim! O plano Free não tem limite de tempo e você pode usá-lo indefinidamente. 
+                Ele inclui as funcionalidades básicas com algumas limitações como marca d'água nos relatórios.
               </p>
             </div>
             <div>
@@ -265,11 +282,20 @@ const Pricing = () => {
             </div>
             <div>
               <h3 className="text-xl font-semibold mb-2">
-                O que acontece quando o teste gratuito termina?
+                Como funciona o suporte nos diferentes planos?
               </h3>
               <p>
-                Após 7 dias, você precisará escolher um plano pago para continuar usando o sistema. 
-                Seus dados serão preservados durante a transição.
+                Free: Suporte por email. Starter/Professional: Suporte prioritário. 
+                Enterprise: Suporte 24/7 com SLA garantido.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2">
+                O que é a marca d'água no plano Free?
+              </h3>
+              <p>
+                É uma pequena identificação "Powered by VendaFlow" que aparece nos relatórios gerados. 
+                Nos planos pagos, os relatórios são totalmente personalizados sem marca d'água.
               </p>
             </div>
           </div>

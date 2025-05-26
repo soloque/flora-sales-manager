@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -16,11 +15,6 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/use-toast";
 import { User, CommissionSettings as CommissionSettingsType, UserRole } from "@/types";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { 
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
 import { UserPlus, UserMinus, Save, Trash2 } from "lucide-react";
 import { 
   Dialog,
@@ -356,57 +350,54 @@ const CommissionSettings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
+          <div className="h-[400px] w-full">
             {sellerPerformance.length === 0 ? (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 Nenhum dado de vendas disponível para exibir.
               </div>
             ) : (
-              <ChartContainer 
-                config={{
-                  sales: { label: "Vendas" },
-                }}
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={sellerPerformance}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {sellerPerformance.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={COLORS[index % COLORS.length]} 
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      content={({ active, payload }) => {
-                        if (active && payload?.length) {
-                          const data = payload[0].payload;
-                          return (
-                            <div className="rounded-lg border bg-background p-2 shadow-sm">
-                              <div className="font-medium">{data.name}</div>
-                              <div className="text-xs text-muted-foreground">Vendas: {data.sales}</div>
-                              <div className="text-xs">
-                                Participação: {((data.value / sellerPerformance.reduce((a, b) => a + b.value, 0)) * 100).toFixed(1)}%
-                              </div>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={sellerPerformance}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={120}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {sellerPerformance.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={COLORS[index % COLORS.length]} 
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    content={({ active, payload }) => {
+                      if (active && payload?.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="rounded-lg border bg-background p-3 shadow-md">
+                            <div className="font-medium">{data.name}</div>
+                            <div className="text-sm text-muted-foreground">Vendas: {data.sales}</div>
+                            <div className="text-sm">
+                              Valor: R$ {data.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+                            <div className="text-sm">
+                              Participação: {((data.value / sellerPerformance.reduce((a, b) => a + b.value, 0)) * 100).toFixed(1)}%
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
             )}
           </div>
         </CardContent>

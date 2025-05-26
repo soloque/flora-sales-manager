@@ -4,11 +4,23 @@ import { useAuth } from "@/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User } from "@/types";
-import { MessageSquare, Mail, User as UserIcon } from "lucide-react";
+import { MessageSquare, Mail, User as UserIcon, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatModal } from "@/components/ChatModal";
 import { formatDistance } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const SellerTeamView = () => {
   const { user } = useAuth();
@@ -52,6 +64,38 @@ const SellerTeamView = () => {
       console.error("Error fetching owner info:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLeaveTeam = async () => {
+    if (!user || !owner) return;
+
+    try {
+      // Remove seller from team
+      const { error } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('seller_id', user.id)
+        .eq('owner_id', owner.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Equipe abandonada",
+        description: `Você saiu da equipe de ${owner.name} com sucesso.`,
+      });
+
+      // Refresh the page to show updated state
+      setOwner(null);
+    } catch (error: any) {
+      console.error("Error leaving team:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao sair da equipe",
+        description: error.message || "Ocorreu um erro ao tentar sair da equipe.",
+      });
     }
   };
 
@@ -107,10 +151,36 @@ const SellerTeamView = () => {
                       </p>
                     </div>
                   </div>
-                  <Button onClick={handleOpenChat}>
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Enviar Mensagem
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={handleOpenChat}>
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Enviar Mensagem
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive">
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sair da Equipe
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Sair da Equipe</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja sair da equipe de {owner.name}? 
+                            Você não poderá mais registrar vendas através desta equipe 
+                            e precisará solicitar uma nova integração para voltar.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleLeaveTeam}>
+                            Sair da Equipe
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
 
                 <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">

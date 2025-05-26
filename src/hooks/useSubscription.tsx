@@ -40,7 +40,14 @@ export const useSubscription = () => {
           return;
         }
 
-        setSubscription(data);
+        if (data) {
+          // Cast the data to match our Subscription interface
+          const subscriptionData: Subscription = {
+            ...data,
+            status: data.status as 'trial' | 'active' | 'canceled' | 'past_due'
+          };
+          setSubscription(subscriptionData);
+        }
       } catch (error) {
         console.error('Error fetching subscription:', error);
       } finally {

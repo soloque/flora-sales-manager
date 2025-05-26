@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -186,16 +185,16 @@ const AutoResponseBot = () => {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 p-4 md:p-0">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className={`${isMobile ? 'space-y-3 p-0' : 'space-y-4 md:space-y-6 p-4 md:p-0'} w-full`}>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Bot de Respostas Automáticas</h1>
-          <p className="text-muted-foreground text-sm md:text-base">
+          <h1 className={`${isMobile ? 'text-xl' : 'text-2xl md:text-3xl'} font-bold`}>Bot Copia & Cola</h1>
+          <p className="text-muted-foreground text-xs md:text-base">
             Pressione as teclas para copiar o texto automaticamente
           </p>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
-          <Badge variant={isRunning ? "default" : "secondary"}>
+          <Badge variant={isRunning ? "default" : "secondary"} className={isMobile ? "text-xs" : ""}>
             {isRunning ? "Ativo" : "Inativo"}
           </Badge>
           {isRunning ? (
@@ -214,67 +213,67 @@ const AutoResponseBot = () => {
 
       {isRunning && (
         <Card className="border-green-200 bg-green-50 dark:bg-green-900/20">
-          <CardContent className="pt-4 md:pt-6">
+          <CardContent className={`${isMobile ? 'pt-3 px-3 pb-3' : 'pt-4 md:pt-6'}`}>
             <div className="flex items-start md:items-center gap-2 text-green-700 dark:text-green-300">
-              <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5 md:mt-0" />
+              <CheckCircle className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0 mt-0.5 md:mt-0" />
               <div className="flex-1 min-w-0">
-                <span className="font-medium block md:inline">Bot ativo!</span>
-                <span className="text-sm block md:inline md:ml-2">
+                <span className={`font-medium block md:inline ${isMobile ? 'text-sm' : ''}`}>Bot ativo!</span>
+                <span className={`${isMobile ? 'text-xs' : 'text-sm'} block md:inline md:ml-2`}>
                   Pressione as teclas para copiar automaticamente. Cole com Ctrl+V.
                 </span>
               </div>
             </div>
             {lastUsedKey && (
-              <div className="mt-2 text-xs text-green-600 dark:text-green-400 break-words">
-                Última mensagem copiada: "{lastUsedKey.length > (isMobile ? 30 : 50) ? lastUsedKey.substring(0, isMobile ? 30 : 50) + '...' : lastUsedKey}"
+              <div className={`mt-2 ${isMobile ? 'text-xs' : 'text-xs'} text-green-600 dark:text-green-400 break-words`}>
+                Última mensagem copiada: "{lastUsedKey.length > (isMobile ? 25 : 50) ? lastUsedKey.substring(0, isMobile ? 25 : 50) + '...' : lastUsedKey}"
               </div>
             )}
           </CardContent>
         </Card>
       )}
 
-      <Tabs defaultValue="config" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 h-auto">
-          <TabsTrigger value="config" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3">
-            <Settings className="h-4 w-4" />
-            <span className="text-xs md:text-sm">Configurações</span>
+      <Tabs defaultValue="config" className="space-y-3 md:space-y-4">
+        <TabsList className={`grid w-full grid-cols-3 ${isMobile ? 'h-auto' : 'h-auto'}`}>
+          <TabsTrigger value="config" className={`flex flex-col md:flex-row items-center gap-1 md:gap-2 ${isMobile ? 'p-2 text-xs' : 'p-2 md:p-3'}`}>
+            <Settings className="h-3 w-3 md:h-4 md:w-4" />
+            <span className={isMobile ? 'text-xs' : 'text-xs md:text-sm'}>Config</span>
           </TabsTrigger>
-          <TabsTrigger value="instructions" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3">
-            <Info className="h-4 w-4" />
-            <span className="text-xs md:text-sm">Como Usar</span>
+          <TabsTrigger value="instructions" className={`flex flex-col md:flex-row items-center gap-1 md:gap-2 ${isMobile ? 'p-2 text-xs' : 'p-2 md:p-3'}`}>
+            <Info className="h-3 w-3 md:h-4 md:w-4" />
+            <span className={isMobile ? 'text-xs' : 'text-xs md:text-sm'}>Como Usar</span>
           </TabsTrigger>
-          <TabsTrigger value="shortcuts" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3">
-            <Keyboard className="h-4 w-4" />
-            <span className="text-xs md:text-sm">Atalhos</span>
+          <TabsTrigger value="shortcuts" className={`flex flex-col md:flex-row items-center gap-1 md:gap-2 ${isMobile ? 'p-2 text-xs' : 'p-2 md:p-3'}`}>
+            <Keyboard className="h-3 w-3 md:h-4 md:w-4" />
+            <span className={isMobile ? 'text-xs' : 'text-xs md:text-sm'}>Atalhos</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="config" className="space-y-4">
+        <TabsContent value="config" className="space-y-3 md:space-y-4">
           <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg md:text-xl">Configurar Mensagens</CardTitle>
-              <CardDescription className="text-sm">
+            <CardHeader className={isMobile ? 'pb-3 px-3 pt-3' : 'pb-4'}>
+              <CardTitle className={`${isMobile ? 'text-base' : 'text-lg md:text-xl'}`}>Configurar Mensagens</CardTitle>
+              <CardDescription className={`${isMobile ? 'text-xs' : 'text-sm'}`}>
                 Configure as teclas e mensagens que serão copiadas automaticamente
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4">
+            <CardContent className={`space-y-3 md:space-y-4 ${isMobile ? 'px-3 pb-3' : ''}`}>
+              <div className="grid gap-3 md:gap-4">
                 {messages.map((msg, index) => (
-                  <div key={index} className="border rounded-lg p-3 md:p-4 space-y-3">
+                  <div key={index} className={`border rounded-lg ${isMobile ? 'p-2' : 'p-3 md:p-4'} space-y-2 md:space-y-3`}>
                     <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Label className="text-sm flex-shrink-0">Tecla:</Label>
+                        <Label className={`${isMobile ? 'text-xs' : 'text-sm'} flex-shrink-0`}>Tecla:</Label>
                         <Input
                           placeholder="Ex: 0, 1, F1"
                           value={msg.key}
                           onChange={(e) => updateMessage(index, 'key', e.target.value)}
-                          className="w-20 md:w-32"
+                          className={`w-16 md:w-32 ${isMobile ? 'h-8 text-xs' : ''}`}
                         />
                         <Input
                           placeholder="Descrição"
                           value={msg.description}
                           onChange={(e) => updateMessage(index, 'description', e.target.value)}
-                          className="flex-1 min-w-0"
+                          className={`flex-1 min-w-0 ${isMobile ? 'h-8 text-xs' : ''}`}
                         />
                       </div>
                       <div className="flex gap-2 md:gap-1">
@@ -282,31 +281,31 @@ const AutoResponseBot = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => copyToClipboard(msg.message)}
-                          className="flex-1 md:flex-none"
+                          className={`flex-1 md:flex-none ${isMobile ? 'h-8 text-xs px-2' : ''}`}
                         >
-                          <Copy className="h-4 w-4" />
-                          <span className="md:hidden ml-1">Copiar</span>
+                          <Copy className="h-3 w-3 md:h-4 md:w-4" />
+                          <span className={`${isMobile ? 'ml-1' : 'md:hidden ml-1'}`}>Copiar</span>
                         </Button>
                         <Button
                           size="sm"
                           variant="destructive"
                           onClick={() => removeMessage(index)}
-                          className="px-3"
+                          className={`${isMobile ? 'h-8 px-2 text-xs' : 'px-3'}`}
                         >
                           ×
                         </Button>
                       </div>
                     </div>
                     <div>
-                      <Label>Mensagem</Label>
+                      <Label className={isMobile ? 'text-xs' : ''}>Mensagem</Label>
                       <Textarea
                         placeholder="Digite a mensagem..."
                         value={msg.message}
                         onChange={(e) => updateMessage(index, 'message', e.target.value)}
                         rows={isMobile ? 2 : 3}
-                        className="text-sm"
+                        className={`${isMobile ? 'text-xs mt-1' : 'text-sm'}`}
                       />
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground mt-1`}>
                         Use quebras de linha para múltiplas linhas
                       </p>
                     </div>
@@ -315,10 +314,10 @@ const AutoResponseBot = () => {
               </div>
 
               <div className="flex flex-col md:flex-row gap-2">
-                <Button onClick={addNewMessage} variant="outline" className="w-full md:w-auto">
+                <Button onClick={addNewMessage} variant="outline" className={`w-full md:w-auto ${isMobile ? 'h-9 text-sm' : ''}`}>
                   Adicionar Nova Mensagem
                 </Button>
-                <Button onClick={saveMessages} className="w-full md:w-auto">
+                <Button onClick={saveMessages} className={`w-full md:w-auto ${isMobile ? 'h-9 text-sm' : ''}`}>
                   Salvar Configurações
                 </Button>
               </div>
@@ -326,47 +325,47 @@ const AutoResponseBot = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="instructions" className="space-y-4">
+        <TabsContent value="instructions" className="space-y-3 md:space-y-4">
           <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg md:text-xl">Como Usar o Bot</CardTitle>
-              <CardDescription className="text-sm">
-                Siga estes passos para usar o bot de respostas automáticas
+            <CardHeader className={isMobile ? 'pb-3 px-3 pt-3' : 'pb-4'}>
+              <CardTitle className={`${isMobile ? 'text-base' : 'text-lg md:text-xl'}`}>Como Usar o Bot</CardTitle>
+              <CardDescription className={`${isMobile ? 'text-xs' : 'text-sm'}`}>
+                Siga estes passos para usar o bot copia & cola
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
+            <CardContent className={`space-y-3 md:space-y-4 ${isMobile ? 'px-3 pb-3' : ''}`}>
+              <div className="space-y-3 md:space-y-4">
                 <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                  <div className={`flex-shrink-0 ${isMobile ? 'w-5 h-5' : 'w-6 h-6'} bg-primary text-primary-foreground rounded-full flex items-center justify-center ${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>
                     1
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm md:text-base">Configure as Mensagens e Teclas</h3>
-                    <p className="text-xs md:text-sm text-muted-foreground">
-                      Na aba "Configurações", defina as teclas (0-9, F1-F12, letras) e suas respectivas mensagens.
+                    <h3 className={`font-medium ${isMobile ? 'text-sm' : 'text-sm md:text-base'}`}>Configure as Mensagens e Teclas</h3>
+                    <p className={`${isMobile ? 'text-xs' : 'text-xs md:text-sm'} text-muted-foreground`}>
+                      Na aba "Config", defina as teclas (0-9, F1-F12, letras) e suas respectivas mensagens.
                     </p>
                   </div>
                 </div>
 
                 <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                  <div className={`flex-shrink-0 ${isMobile ? 'w-5 h-5' : 'w-6 h-6'} bg-primary text-primary-foreground rounded-full flex items-center justify-center ${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>
                     2
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm md:text-base">Inicie o Bot</h3>
-                    <p className="text-xs md:text-sm text-muted-foreground">
+                    <h3 className={`font-medium ${isMobile ? 'text-sm' : 'text-sm md:text-base'}`}>Inicie o Bot</h3>
+                    <p className={`${isMobile ? 'text-xs' : 'text-xs md:text-sm'} text-muted-foreground`}>
                       Clique em "Iniciar Bot" para ativar o sistema de cópia automática.
                     </p>
                   </div>
                 </div>
 
                 <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                  <div className={`flex-shrink-0 ${isMobile ? 'w-5 h-5' : 'w-6 h-6'} bg-primary text-primary-foreground rounded-full flex items-center justify-center ${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>
                     3
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm md:text-base">Use as Teclas</h3>
-                    <p className="text-xs md:text-sm text-muted-foreground">
+                    <h3 className={`font-medium ${isMobile ? 'text-sm' : 'text-sm md:text-base'}`}>Use as Teclas</h3>
+                    <p className={`${isMobile ? 'text-xs' : 'text-xs md:text-sm'} text-muted-foreground`}>
                       Pressione as teclas configuradas e o texto será copiado automaticamente. Cole com Ctrl+V onde desejar.
                     </p>
                   </div>
@@ -375,9 +374,9 @@ const AutoResponseBot = () => {
 
               <Separator />
 
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 md:p-4">
-                <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2 text-sm md:text-base">💡 Como Funciona</h4>
-                <ul className="text-xs md:text-sm text-blue-700 dark:text-blue-300 space-y-1">
+              <div className={`bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg ${isMobile ? 'p-2' : 'p-3 md:p-4'}`}>
+                <h4 className={`font-medium text-blue-800 dark:text-blue-200 mb-2 ${isMobile ? 'text-xs' : 'text-sm md:text-base'}`}>💡 Como Funciona</h4>
+                <ul className={`${isMobile ? 'text-xs' : 'text-xs md:text-sm'} text-blue-700 dark:text-blue-300 space-y-1`}>
                   <li>• Pressione a tecla configurada</li>
                   <li>• O texto é automaticamente copiado</li>
                   <li>• Cole com Ctrl+V em qualquer lugar (Facebook, WhatsApp, etc.)</li>
@@ -389,26 +388,26 @@ const AutoResponseBot = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="shortcuts" className="space-y-4">
+        <TabsContent value="shortcuts" className="space-y-3 md:space-y-4">
           <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg md:text-xl">Atalhos Configurados</CardTitle>
-              <CardDescription className="text-sm">
+            <CardHeader className={isMobile ? 'pb-3 px-3 pt-3' : 'pb-4'}>
+              <CardTitle className={`${isMobile ? 'text-base' : 'text-lg md:text-xl'}`}>Atalhos Configurados</CardTitle>
+              <CardDescription className={`${isMobile ? 'text-xs' : 'text-sm'}`}>
                 Lista de teclas e suas respectivas mensagens
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className={isMobile ? 'px-3 pb-3' : ''}>
+              <div className="space-y-2 md:space-y-3">
                 {messages.filter(msg => msg.key).map((msg) => (
-                  <div key={msg.key} className="flex flex-col md:flex-row md:items-start gap-3 p-3 border rounded-lg">
-                    <Badge variant="outline" className="self-start md:mt-0.5">
+                  <div key={msg.key} className={`flex flex-col md:flex-row md:items-start gap-2 md:gap-3 ${isMobile ? 'p-2' : 'p-3'} border rounded-lg`}>
+                    <Badge variant="outline" className={`self-start md:mt-0.5 ${isMobile ? 'text-xs' : ''}`}>
                       {msg.key}
                     </Badge>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm">{msg.description}</h4>
-                      <p className="text-xs text-muted-foreground mt-1 break-words">
-                        {msg.message.length > (isMobile ? 80 : 100) 
-                          ? msg.message.substring(0, isMobile ? 80 : 100) + '...'
+                      <h4 className={`font-medium ${isMobile ? 'text-xs' : 'text-sm'}`}>{msg.description}</h4>
+                      <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground mt-1 break-words`}>
+                        {msg.message.length > (isMobile ? 60 : 100) 
+                          ? msg.message.substring(0, isMobile ? 60 : 100) + '...'
                           : msg.message
                         }
                       </p>
@@ -417,17 +416,17 @@ const AutoResponseBot = () => {
                       size="sm"
                       variant="ghost"
                       onClick={() => copyToClipboard(msg.message)}
-                      className="self-start"
+                      className={`self-start ${isMobile ? 'h-7 px-2' : ''}`}
                     >
-                      <Copy className="h-4 w-4" />
-                      <span className="md:hidden ml-1">Copiar</span>
+                      <Copy className="h-3 w-3 md:h-4 md:w-4" />
+                      <span className={`${isMobile ? 'ml-1 text-xs' : 'md:hidden ml-1'}`}>Copiar</span>
                     </Button>
                   </div>
                 ))}
               </div>
               {messages.filter(msg => msg.key).length === 0 && (
-                <p className="text-center text-muted-foreground py-8 text-sm">
-                  Nenhum atalho configurado. Vá para a aba "Configurações" para adicionar mensagens.
+                <p className={`text-center text-muted-foreground py-6 md:py-8 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                  Nenhum atalho configurado. Vá para a aba "Config" para adicionar mensagens.
                 </p>
               )}
             </CardContent>

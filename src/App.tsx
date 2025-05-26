@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "@/components/Layout";
 import Landing from "@/pages/Landing";
@@ -19,6 +18,7 @@ import Messages from "@/pages/Messages";
 import SalesHistory from "@/pages/SalesHistory";
 import PlanManagement from "@/pages/PlanManagement";
 import Help from "@/pages/Help";
+import ResetPassword from "@/pages/ResetPassword";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/toaster";

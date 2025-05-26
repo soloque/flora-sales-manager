@@ -186,7 +186,20 @@ const PlanManagement = () => {
                   </Badge>
                 </CardTitle>
                 <CardDescription>
-                  {getPlanPrice(displayPlan.planName)} • {' '}
+                  {(() => {
+                    switch (displayPlan.planName) {
+                      case 'free':
+                        return 'Grátis';
+                      case 'popular':
+                        return 'R$ 100/mês';
+                      case 'crescimento':
+                        return 'R$ 200/mês';
+                      case 'profissional':
+                        return 'R$ 600/mês';
+                      default:
+                        return getPlanPrice(displayPlan.planName);
+                    }
+                  })()} • {' '}
                   {displayPlan.maxSellers === -1 
                     ? 'Vendedores ilimitados' 
                     : `Até ${displayPlan.maxSellers} vendedores`

@@ -69,18 +69,38 @@ export const usePlanManagement = () => {
 
     setUpgrading(true);
     try {
+      console.log(`Upgrading plan to: ${newPlan} for user: ${user.id}`);
+      
+      // Se for para o plano free, também cancelar no Stripe se existir
+      if (newPlan === "free") {
+        try {
+          // Tentar cancelar assinatura do Stripe
+          const { error: stripeError } = await supabase.functions.invoke('customer-portal');
+          // Não falhar se não conseguir cancelar no Stripe
+          if (stripeError) {
+            console.log('Stripe cancellation not available or already cancelled');
+          }
+        } catch (stripeError) {
+          console.log('Stripe cancellation error:', stripeError);
+        }
+      }
+
       const { error } = await supabase.rpc('upgrade_user_plan', {
         user_id_param: user.id,
         new_plan_name_param: newPlan
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database upgrade error:', error);
+        throw error;
+      }
 
+      console.log(`Successfully upgraded to ${newPlan}`);
       await fetchCurrentPlan();
       
       toast({
         title: "Plano atualizado com sucesso!",
-        description: `Seu plano foi alterado para ${newPlan}.`,
+        description: `Seu plano foi alterado para ${getPlanDisplayName(newPlan)}.`,
       });
 
       return true;

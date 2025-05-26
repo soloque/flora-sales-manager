@@ -14,7 +14,10 @@ export const useExampleData = (): ExampleDataState => {
 
   useEffect(() => {
     const hasSeenExamples = localStorage.getItem('hasSeenExamples');
-    if (!hasSeenExamples) {
+    const hasRealData = localStorage.getItem('hasRealData');
+    
+    // Mostrar exemplos se nunca viu antes E não tem dados reais
+    if (!hasSeenExamples && !hasRealData) {
       setShowExamples(true);
     }
   }, []);
@@ -24,12 +27,12 @@ export const useExampleData = (): ExampleDataState => {
     localStorage.setItem('hasSeenExamples', 'true');
   };
 
-  // Auto-dismiss after 30 seconds
+  // Auto-dismiss after 45 seconds (increased time)
   useEffect(() => {
     if (showExamples) {
       const timer = setTimeout(() => {
         dismissExamples();
-      }, 30000);
+      }, 45000);
       return () => clearTimeout(timer);
     }
   }, [showExamples]);
@@ -115,6 +118,60 @@ export const useExampleData = (): ExampleDataState => {
       profit: 60.01,
       createdAt: new Date(),
       updatedAt: new Date()
+    },
+    {
+      id: 'example-4',
+      date: new Date(Date.now() - 259200000), // 3 days ago
+      description: 'Smartwatch Xiaomi',
+      quantity: 1,
+      unitPrice: 459.90,
+      totalPrice: 459.90,
+      sellerId: 'example-seller-2',
+      sellerName: 'Carlos Oliveira',
+      commission: 68.98,
+      commissionRate: 15,
+      status: 'paid' as any,
+      observations: 'Cliente retornante',
+      customerInfo: {
+        name: 'Carla Ferreira',
+        phone: '(31) 96666-5555',
+        address: 'Rua dos Inconfidentes, 321',
+        city: 'Belo Horizonte',
+        state: 'MG',
+        zipCode: '30130-140',
+        order: 'Smartwatch + Pulseira extra'
+      },
+      costPrice: 319.90,
+      profit: 71.02,
+      createdAt: new Date(Date.now() - 259200000),
+      updatedAt: new Date(Date.now() - 259200000)
+    },
+    {
+      id: 'example-5',
+      date: new Date(Date.now() - 345600000), // 4 days ago
+      description: 'Tablet Samsung Galaxy Tab',
+      quantity: 1,
+      unitPrice: 899.99,
+      totalPrice: 899.99,
+      sellerId: 'example-seller-1',
+      sellerName: 'Maria Silva',
+      commission: 89.99,
+      commissionRate: 10,
+      status: 'delivered' as any,
+      observations: 'Primeira compra do cliente',
+      customerInfo: {
+        name: 'Roberto Dias',
+        phone: '(47) 95555-4444',
+        address: 'Av. Brasil, 1500',
+        city: 'Florianópolis',
+        state: 'SC',
+        zipCode: '88040-000',
+        order: 'Tablet + Capa protetora'
+      },
+      costPrice: 649.99,
+      profit: 160.01,
+      createdAt: new Date(Date.now() - 345600000),
+      updatedAt: new Date(Date.now() - 345600000)
     }
   ];
 

@@ -18,12 +18,15 @@ import { Sale } from "@/types";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DashboardChart } from "./DashboardChart";
+import { useExampleData } from "@/hooks/useExampleData";
+import ExampleDataBanner from "./ExampleDataBanner";
 
 const DashboardSummary = () => {
   const { user } = useAuth();
   const isOwner = user?.role === "owner";
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { showExamples, exampleSales, dismissExamples } = useExampleData();
 
   useEffect(() => {
     if (!user) return;
@@ -90,6 +93,11 @@ const DashboardSummary = () => {
           
           console.log('Formatted sales for dashboard:', formattedSales);
           setSales(formattedSales);
+          
+          // Se tem dados reais, marcar que não precisa mais mostrar exemplos
+          if (formattedSales.length > 0) {
+            localStorage.setItem('hasRealData', 'true');
+          }
         }
       } catch (error) {
         console.error("Erro ao buscar vendas:", error);
@@ -101,18 +109,25 @@ const DashboardSummary = () => {
     fetchSales();
   }, [user, isOwner]);
 
-  const totalSales = sales.reduce((acc, sale) => acc + sale.totalPrice, 0);
-  const totalCommissions = sales.reduce((acc, sale) => acc + sale.commission, 0);
-  const totalProfit = sales.reduce((acc, sale) => acc + (sale.profit || 0), 0);
-  const saleCount = sales.length;
+  // Usar dados de exemplo se não tiver vendas reais e showExamples for true
+  const hasRealSales = sales.length > 0;
+  const shouldShowExamples = showExamples && !hasRealSales;
+  const displaySales = shouldShowExamples ? exampleSales : sales;
+
+  const totalSales = displaySales.reduce((acc, sale) => acc + sale.totalPrice, 0);
+  const totalCommissions = displaySales.reduce((acc, sale) => acc + sale.commission, 0);
+  const totalProfit = displaySales.reduce((acc, sale) => acc + (sale.profit || 0), 0);
+  const saleCount = displaySales.length;
 
   // Mock data for trending comparison (previous month)
   const previousMonthSales = totalSales * 0.8; // Simulate 20% less sales
   const salesDifference = totalSales - previousMonthSales;
-  const salesIncrease = (salesDifference / previousMonthSales) * 100;
+  const salesIncrease = previousMonthSales > 0 ? (salesDifference / previousMonthSales) * 100 : 0;
 
   return (
     <div className="space-y-6">
+      {shouldShowExamples && <ExampleDataBanner onDismiss={dismissExamples} />}
+      
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -131,11 +146,13 @@ const DashboardSummary = () => {
                   <TrendingUp className="h-4 w-4 text-green-500 inline-block mr-1" />
                   {salesIncrease.toFixed(2)}% a mais que o mês passado
                 </>
-              ) : (
+              ) : salesIncrease < 0 ? (
                 <>
                   <TrendingDown className="h-4 w-4 text-red-500 inline-block mr-1" />
                   {Math.abs(salesIncrease).toFixed(2)}% a menos que o mês passado
                 </>
+              ) : (
+                "Primeiro mês de vendas"
               )}
             </p>
           </CardContent>
@@ -187,7 +204,7 @@ const DashboardSummary = () => {
       </div>
       
       {/* Gráfico de vendas por vendedor */}
-      {sales.length > 0 && <DashboardChart sales={sales} />}
+      {displaySales.length > 0 && <DashboardChart sales={displaySales} />}
     </div>
   );
 };

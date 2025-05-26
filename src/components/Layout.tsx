@@ -1,4 +1,3 @@
-
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,6 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { Logo } from "@/components/Logo";
 import SubscriptionBanner from "@/components/SubscriptionBanner";
 import SellerPlanBanner from "@/components/SellerPlanBanner";
-import FloatingNewSaleButton from "@/components/FloatingNewSaleButton";
 import { 
   LogOut, 
   BarChart3, 
@@ -172,9 +170,6 @@ const Layout = () => {
           <Outlet />
         </main>
       </div>
-
-      {/* Floating New Sale Button */}
-      <FloatingNewSaleButton />
     </div>
   );
 };

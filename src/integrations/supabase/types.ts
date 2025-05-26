@@ -404,6 +404,7 @@ export type Database = {
           features_enabled: string[] | null
           has_watermark: boolean | null
           id: string
+          is_annual: boolean | null
           max_customers: number | null
           max_sellers: number
           plan_name: string
@@ -413,6 +414,7 @@ export type Database = {
           stripe_subscription_id: string | null
           subscription_end_date: string | null
           trial_end_date: string | null
+          trial_start_date: string | null
           updated_at: string
           user_id: string
         }
@@ -421,6 +423,7 @@ export type Database = {
           features_enabled?: string[] | null
           has_watermark?: boolean | null
           id?: string
+          is_annual?: boolean | null
           max_customers?: number | null
           max_sellers?: number
           plan_name: string
@@ -430,6 +433,7 @@ export type Database = {
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
           trial_end_date?: string | null
+          trial_start_date?: string | null
           updated_at?: string
           user_id: string
         }
@@ -438,6 +442,7 @@ export type Database = {
           features_enabled?: string[] | null
           has_watermark?: boolean | null
           id?: string
+          is_annual?: boolean | null
           max_customers?: number | null
           max_sellers?: number
           plan_name?: string
@@ -447,6 +452,7 @@ export type Database = {
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
           trial_end_date?: string | null
+          trial_start_date?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -557,6 +563,14 @@ export type Database = {
         Args: { seller_id_param: string }
         Returns: boolean
       }
+      create_stripe_checkout_session: {
+        Args: {
+          user_id_param: string
+          plan_name_param: string
+          is_annual_param?: boolean
+        }
+        Returns: Json
+      }
       get_seller_subscription_info: {
         Args: { seller_id_param: string }
         Returns: {
@@ -656,6 +670,10 @@ export type Database = {
       upgrade_user_plan: {
         Args: { user_id_param: string; new_plan_name_param: string }
         Returns: undefined
+      }
+      verify_stripe_subscription: {
+        Args: { user_id_param: string }
+        Returns: Json
       }
     }
     Enums: {

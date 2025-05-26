@@ -5,17 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
+import { useStripeSubscription } from "@/hooks/useStripeSubscription";
 import { Moon, Sun } from "lucide-react";
 
 const Pricing = () => {
   const [isAnnual, setIsAnnual] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
+  const { createCheckoutSession, creating } = useStripeSubscription();
   
   const plans = [
     {
       name: "Free",
       description: "Perfeito para começar e testar a plataforma",
       price: 0,
+      annualPrice: 0,
       features: [
         "Até 3 vendedores",
         "Vendas ilimitadas",
@@ -28,11 +33,13 @@ const Pricing = () => {
       highlighted: false,
       cta: "Começar grátis",
       sellerLimit: 3,
+      planKey: "free"
     },
     {
       name: "Popular",
       description: "Ideal para pequenos negócios",
-      price: isAnnual ? 1080 : 100,
+      price: 100,
+      annualPrice: 1080, // 10% de desconto
       features: [
         "Até 10 vendedores",
         "Vendas ilimitadas",
@@ -40,15 +47,18 @@ const Pricing = () => {
         "Análise financeira completa",
         "Sistema de mensagens",
         "Suporte prioritário",
+        "7 dias grátis de teste",
       ],
       highlighted: true,
-      cta: "Plano mais escolhido",
+      cta: "7 dias grátis",
       sellerLimit: 10,
+      planKey: "popular"
     },
     {
       name: "Crescimento",
       description: "Para equipes que estão expandindo",
-      price: isAnnual ? 2160 : 200,
+      price: 200,
+      annualPrice: 2160, // 10% de desconto
       features: [
         "Até 20 vendedores",
         "Vendas ilimitadas",
@@ -56,15 +66,18 @@ const Pricing = () => {
         "Análise financeira completa",
         "Sistema de mensagens",
         "Suporte prioritário",
+        "7 dias grátis de teste",
       ],
       highlighted: false,
-      cta: "Expandir equipe",
+      cta: "7 dias grátis",
       sellerLimit: 20,
+      planKey: "crescimento"
     },
     {
       name: "Profissional",
       description: "Para grandes equipes de vendas",
-      price: isAnnual ? 6480 : 600,
+      price: 600,
+      annualPrice: 6480, // 10% de desconto
       features: [
         "Vendedores ilimitados",
         "Vendas ilimitadas",
@@ -72,12 +85,43 @@ const Pricing = () => {
         "Análise financeira completa",
         "Sistema de mensagens",
         "Suporte prioritário",
+        "7 dias grátis de teste",
       ],
       highlighted: false,
-      cta: "Ilimitado",
+      cta: "7 dias grátis",
       sellerLimit: null,
+      planKey: "profissional"
     },
   ];
+
+  const handlePlanSelect = async (plan: any) => {
+    if (plan.planKey === "free") {
+      if (user) {
+        window.location.href = "/dashboard";
+      } else {
+        window.location.href = "/register";
+      }
+      return;
+    }
+
+    if (!user) {
+      window.location.href = "/register";
+      return;
+    }
+
+    await createCheckoutSession(plan.planKey, isAnnual);
+  };
+
+  const formatPrice = (price: number, annualPrice: number) => {
+    if (price === 0) return "Grátis";
+    
+    if (isAnnual) {
+      const monthlyEquivalent = Math.floor(annualPrice / 12);
+      return `R$ ${monthlyEquivalent}/mês`;
+    }
+    
+    return `R$ ${price}/mês`;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -97,7 +141,7 @@ const Pricing = () => {
           </h1>
           <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto">
             Escolha o plano ideal para o tamanho da sua equipe de vendas. 
-            Todos os planos incluem recursos completos!
+            <strong> 7 dias grátis</strong> em todos os planos pagos!
           </p>
           
           <div className="mt-8 flex justify-center items-center space-x-4">
@@ -144,22 +188,18 @@ const Pricing = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  {plan.price === 0 ? (
-                    <span className="text-2xl font-bold">Grátis</span>
-                  ) : (
-                    <>
-                      <span className="text-2xl font-bold">
-                        R$ {typeof plan.price === "number" ? (plan.price / (isAnnual ? 12 : 1)).toFixed(0) : "0"}
-                      </span>
-                      <span className="text-muted-foreground">
-                        /{isAnnual ? "mês" : "mês"}
-                      </span>
-                      {isAnnual && typeof plan.price === "number" && plan.price > 0 && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Faturado anualmente como R$ {plan.price},00
-                        </div>
-                      )}
-                    </>
+                  <span className="text-2xl font-bold">
+                    {formatPrice(plan.price, plan.annualPrice)}
+                  </span>
+                  {isAnnual && plan.price > 0 && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Faturado anualmente como R$ {plan.annualPrice},00
+                    </div>
+                  )}
+                  {plan.price > 0 && (
+                    <div className="text-xs text-green-600 mt-1 font-medium">
+                      7 dias grátis • Sem cobrança no período de teste
+                    </div>
                   )}
                 </div>
 
@@ -176,15 +216,49 @@ const Pricing = () => {
                 <Button
                   variant={plan.highlighted ? "default" : "outline"}
                   className="w-full"
-                  asChild
+                  onClick={() => handlePlanSelect(plan)}
+                  disabled={creating}
                 >
-                  <Link to="/register">
-                    {plan.cta}
-                  </Link>
+                  {creating ? "Processando..." : plan.cta}
                 </Button>
               </CardFooter>
             </Card>
           ))}
+        </div>
+
+        {/* Trial information */}
+        <div className="max-w-4xl mx-auto mt-16 text-center">
+          <Card className="bg-blue-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="text-2xl text-blue-800">
+                🎉 7 Dias Grátis em Todos os Planos Pagos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-left">
+              <div className="grid md:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-blue-800">Como funciona:</h3>
+                  <div className="space-y-2 text-blue-700">
+                    <p>✅ Escolha qualquer plano pago</p>
+                    <p>✅ Use por 7 dias completamente grátis</p>
+                    <p>✅ Cadastre seu cartão (não cobramos ainda!)</p>
+                    <p>✅ Após 7 dias, cobramos conforme o plano escolhido</p>
+                    <p>✅ Cancele a qualquer momento durante o teste</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-blue-800">Política transparente:</h3>
+                  <div className="space-y-2 text-blue-700">
+                    <p>• <strong>Sem pegadinhas:</strong> 7 dias realmente grátis</p>
+                    <p>• <strong>Sem cobrança antecipada:</strong> Só cobramos após o período de teste</p>
+                    <p>• <strong>Fácil cancelamento:</strong> Cancele durante o teste sem custo</p>
+                    <p>• <strong>Suporte completo:</strong> Ajuda durante todo o período de teste</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Pricing explanation */}
@@ -240,6 +314,16 @@ const Pricing = () => {
           <div className="space-y-6">
             <div>
               <h3 className="text-xl font-semibold mb-2">
+                Como funciona o período de teste de 7 dias?
+              </h3>
+              <p>
+                Você escolhe qualquer plano pago, cadastra seu cartão de crédito, mas não cobramos nada 
+                pelos primeiros 7 dias. Após esse período, iniciamos a cobrança conforme o plano escolhido 
+                (mensal ou anual). Você pode cancelar a qualquer momento durante o teste.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2">
                 O plano Free é realmente gratuito para sempre?
               </h3>
               <p>
@@ -249,11 +333,11 @@ const Pricing = () => {
             </div>
             <div>
               <h3 className="text-xl font-semibold mb-2">
-                Todos os planos têm os mesmos recursos?
+                Quanto economizo no plano anual?
               </h3>
               <p>
-                Sim! A única diferença entre os planos é a quantidade de vendedores permitidos. 
-                Todos incluem vendas ilimitadas, relatórios completos e análise financeira.
+                O plano anual oferece 10% de desconto comparado ao pagamento mensal. 
+                Você paga o equivalente a 10 meses no ano.
               </p>
             </div>
             <div>

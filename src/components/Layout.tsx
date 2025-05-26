@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -108,19 +109,21 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   // Show login prompt if not authenticated
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-full max-w-md mx-4">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-6">
-              <h2 className="text-2xl font-bold">Acesso Necessário</h2>
-              <p className="text-muted-foreground">
-                Você precisa estar logado para acessar esta página.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <Button asChild className="flex-1">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
+        <Card className="w-full max-w-md mx-4 shadow-xl border-0 bg-card/80 backdrop-blur-sm">
+          <CardContent className="pt-8 pb-8">
+            <div className="text-center space-y-8">
+              <div className="space-y-3">
+                <h2 className="text-3xl font-bold tracking-tight">Acesso Necessário</h2>
+                <p className="text-muted-foreground text-lg">
+                  Você precisa estar logado para acessar esta página.
+                </p>
+              </div>
+              <div className="flex gap-4 justify-center">
+                <Button asChild className="flex-1 h-12 text-base font-medium">
                   <Link to="/login">Fazer Login</Link>
                 </Button>
-                <Button variant="outline" asChild className="flex-1">
+                <Button variant="outline" asChild className="flex-1 h-12 text-base font-medium">
                   <Link to="/register">Registrar</Link>
                 </Button>
               </div>
@@ -132,18 +135,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       {/* Header */}
-      <header className="bg-card shadow-sm border-b sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+      <header className="bg-card/80 backdrop-blur-md shadow-sm border-b border-border/50 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
             {/* Mobile menu button */}
             <div className="md:hidden">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="h-9 w-9 p-0"
+                className="h-10 w-10 p-0 rounded-xl"
               >
                 {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
@@ -155,41 +158,42 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex space-x-1">
+            <nav className="hidden md:flex items-center space-x-2">
               {navigation.filter(item => item.show).map((item) => {
                 const Icon = item.icon;
+                const isActive = location.pathname === item.href;
                 return (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      location.pathname === item.href
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    className={`group flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                     }`}
                   >
-                    <Icon className="h-4 w-4 mr-2" />
+                    <Icon className="h-4 w-4 mr-3" />
                     <span className="hidden lg:inline">{item.name}</span>
                   </Link>
                 );
               })}
             </nav>
 
-            {/* Right side items - simplified */}
-            <div className="flex items-center space-x-2">
+            {/* Right side items */}
+            <div className="flex items-center space-x-3">
               {/* Messages Button */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleMessagesClick}
-                className="relative h-9"
+                className="relative h-11 px-4 rounded-xl border-border/50 hover:bg-accent/50 transition-all duration-200"
               >
                 <MessageSquare className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Mensagens</span>
+                <span className="hidden sm:inline font-medium">Mensagens</span>
                 {unreadCount > 0 && (
                   <Badge 
                     variant="destructive" 
-                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs font-bold"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 flex items-center justify-center text-xs font-bold shadow-lg"
                   >
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </Badge>
@@ -197,19 +201,24 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               </Button>
               
               {/* User menu */}
-              <div className="flex items-center space-x-2">
-                <div className="flex items-center space-x-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+              <div className="flex items-center space-x-3 bg-accent/30 rounded-xl p-2">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-bold text-sm">
                       {user.name?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden sm:block">
-                    <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+                    <p className="text-sm font-semibold leading-none">{user.name}</p>
+                    <p className="text-xs text-muted-foreground capitalize mt-1">{user.role}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={handleLogout} className="h-9 w-9 p-0">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleLogout} 
+                  className="h-10 w-10 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+                >
                   <LogOut className="h-4 w-4" />
                 </Button>
               </div>
@@ -219,22 +228,23 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t bg-card">
-            <div className="px-2 pt-2 pb-3 space-y-1">
+          <div className="md:hidden border-t bg-card/95 backdrop-blur-md">
+            <div className="px-4 pt-4 pb-6 space-y-2">
               {navigation.filter(item => item.show).map((item) => {
                 const Icon = item.icon;
+                const isActive = location.pathname === item.href;
                 return (
                   <Link
                     key={item.name}
                     to={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center px-3 py-3 rounded-md text-base font-medium transition-colors ${
-                      location.pathname === item.href
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    className={`flex items-center px-4 py-4 rounded-xl text-base font-medium transition-all duration-200 ${
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-lg"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                     }`}
                   >
-                    <Icon className="h-5 w-5 mr-3" />
+                    <Icon className="h-5 w-5 mr-4" />
                     {item.name}
                   </Link>
                 );
@@ -243,12 +253,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               {/* Mobile Messages Button */}
               <button
                 onClick={handleMessagesClick}
-                className="flex items-center w-full px-3 py-3 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                className="flex items-center w-full px-4 py-4 rounded-xl text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-200"
               >
-                <MessageSquare className="h-5 w-5 mr-3" />
+                <MessageSquare className="h-5 w-5 mr-4" />
                 Mensagens
                 {unreadCount > 0 && (
-                  <Badge variant="destructive" className="ml-auto">
+                  <Badge variant="destructive" className="ml-auto shadow-lg">
                     {unreadCount}
                   </Badge>
                 )}
@@ -259,8 +269,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {children}
+      <main className="max-w-7xl mx-auto py-8 px-6 lg:px-8">
+        <div className="space-y-8">
+          {children}
+        </div>
       </main>
 
       {/* Floating Action Button */}

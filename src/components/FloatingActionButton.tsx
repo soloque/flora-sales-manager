@@ -10,14 +10,14 @@ export function FloatingActionButton() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-8 right-8 z-50">
       {/* Secondary actions - only show when open */}
       {isOpen && (
-        <div className="absolute bottom-16 right-0 flex flex-col gap-3 mb-2">
-          <div className="flex flex-col gap-2 p-2 bg-card border rounded-lg shadow-lg">
+        <div className="absolute bottom-20 right-0 flex flex-col gap-3 mb-2 animate-fade-in">
+          <div className="flex flex-col gap-3 p-4 bg-card/90 backdrop-blur-md border border-border/50 rounded-2xl shadow-2xl">
             <ThemeToggle />
             <NotificationBell />
-            <Button variant="ghost" size="sm" asChild className="h-9 w-9 p-0">
+            <Button variant="ghost" size="sm" asChild className="h-10 w-10 p-0 rounded-xl hover:bg-accent/50">
               <Link to="/settings">
                 <Settings className="h-4 w-4" />
               </Link>
@@ -29,13 +29,13 @@ export function FloatingActionButton() {
       {/* Main floating button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+        className="h-16 w-16 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 bg-gradient-to-br from-primary to-primary/80 hover:scale-105"
         size="icon"
       >
         {isOpen ? (
-          <X className="h-6 w-6" />
+          <X className="h-7 w-7 transition-transform duration-200" />
         ) : (
-          <Plus className="h-6 w-6" />
+          <Plus className="h-7 w-7 transition-transform duration-200" />
         )}
       </Button>
     </div>

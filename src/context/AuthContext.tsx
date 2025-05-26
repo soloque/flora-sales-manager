@@ -64,48 +64,101 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    let mounted = true;
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
+        
+        if (!mounted) return;
+        
         setSession(session);
         
         if (session?.user) {
-          const userProfile = await fetchUserProfile(session.user);
-          setUser(userProfile);
-          
-          // Run database validation when user logs in
-          if (event === 'SIGNED_IN') {
-            setTimeout(() => {
-              validateAndCleanDatabase(session.user.id);
-            }, 1000);
+          try {
+            const userProfile = await fetchUserProfile(session.user);
+            if (mounted) {
+              setUser(userProfile);
+              
+              // Run database validation when user logs in
+              if (event === 'SIGNED_IN') {
+                setTimeout(() => {
+                  validateAndCleanDatabase(session.user.id);
+                }, 1000);
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching user profile:', error);
+            if (mounted) {
+              setUser(null);
+            }
           }
         } else {
-          setUser(null);
+          if (mounted) {
+            setUser(null);
+          }
         }
         
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      
-      if (session?.user) {
-        const userProfile = await fetchUserProfile(session.user);
-        setUser(userProfile);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        // Run validation for existing session
-        setTimeout(() => {
-          validateAndCleanDatabase(session.user.id);
-        }, 1000);
-      }
-      
-      setLoading(false);
-    });
+        if (error) {
+          console.error('Error getting session:', error);
+          if (mounted) {
+            setLoading(false);
+          }
+          return;
+        }
 
-    return () => subscription.unsubscribe();
+        if (!mounted) return;
+        
+        setSession(session);
+        
+        if (session?.user) {
+          try {
+            const userProfile = await fetchUserProfile(session.user);
+            if (mounted) {
+              setUser(userProfile);
+              
+              // Run validation for existing session
+              setTimeout(() => {
+                validateAndCleanDatabase(session.user.id);
+              }, 1000);
+            }
+          } catch (error) {
+            console.error('Error fetching user profile on init:', error);
+            if (mounted) {
+              setUser(null);
+            }
+          }
+        }
+        
+        if (mounted) {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -134,6 +187,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
@@ -147,6 +201,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error signing out:', error);
       // Even if there's an error, redirect to login
       window.location.href = '/login';
+    } finally {
+      setLoading(false);
     }
   };
 

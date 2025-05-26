@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -118,7 +119,9 @@ const PlanManagement = () => {
   };
 
   const isCurrentPlan = (planName: string): boolean => {
-    return currentPlan?.planName === planName;
+    // Use Stripe data if available, otherwise use currentPlan
+    const activePlan = stripeSubscription?.subscribed ? stripeSubscription.plan : currentPlan?.planName;
+    return activePlan === planName;
   };
 
   const handleUpgrade = async (planName: string) => {
@@ -164,6 +167,21 @@ const PlanManagement = () => {
                 stripeSubscription.plan === 'profissional' ? -1 : 3
   } : currentPlan;
 
+  const getPlanPriceDisplay = (planName: string): string => {
+    switch (planName) {
+      case 'free':
+        return 'Grátis';
+      case 'popular':
+        return 'R$ 100/mês';
+      case 'crescimento':
+        return 'R$ 200/mês';
+      case 'profissional':
+        return 'R$ 600/mês';
+      default:
+        return 'N/A';
+    }
+  };
+
   const getCurrentPlanBenefits = () => {
     if (!displayPlan) return [];
     
@@ -182,24 +200,11 @@ const PlanManagement = () => {
                 <CardTitle className="flex items-center gap-2">
                   Plano Atual
                   <Badge variant="secondary">
-                    {getPlanDisplayName(displayPlan.planName)}
+                    {availablePlans.find(p => p.name === displayPlan.planName)?.displayName || displayPlan.planName}
                   </Badge>
                 </CardTitle>
                 <CardDescription>
-                  {(() => {
-                    switch (displayPlan.planName) {
-                      case 'free':
-                        return 'Grátis';
-                      case 'popular':
-                        return 'R$ 100/mês';
-                      case 'crescimento':
-                        return 'R$ 200/mês';
-                      case 'profissional':
-                        return 'R$ 600/mês';
-                      default:
-                        return getPlanPrice(displayPlan.planName);
-                    }
-                  })()} • {' '}
+                  {getPlanPriceDisplay(displayPlan.planName)} • {' '}
                   {displayPlan.maxSellers === -1 
                     ? 'Vendedores ilimitados' 
                     : `Até ${displayPlan.maxSellers} vendedores`

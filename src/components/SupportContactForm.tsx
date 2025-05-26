@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +31,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { MessageSquare, Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   reason: z.string().min(1, "Selecione um motivo"),
@@ -75,29 +75,23 @@ const SupportContactForm = ({ children }: SupportContactFormProps) => {
     setIsSubmitting(true);
     
     try {
-      // Create email body
-      const emailBody = `
-        NOVO CONTATO DE SUPORTE - SalesCanvas
-        
-        Motivo: ${data.reason}
-        
-        Descrição do Problema:
-        ${data.description}
-        
-        Informações de Contato:
-        Email: ${data.email}
-        ${data.phone ? `Telefone/WhatsApp: ${data.phone}` : ''}
-        
-        Data: ${new Date().toLocaleString('pt-BR')}
-      `;
+      console.log("Enviando dados do formulário:", data);
 
-      // Create mailto link
-      const subject = encodeURIComponent(`[SalesCanvas] ${data.reason}`);
-      const body = encodeURIComponent(emailBody);
-      const mailtoLink = `mailto:dealerempresarial@gmail.com?subject=${subject}&body=${body}`;
-      
-      // Open email client
-      window.open(mailtoLink, '_blank');
+      const { data: result, error } = await supabase.functions.invoke('send-support-email', {
+        body: {
+          reason: data.reason,
+          description: data.description,
+          email: data.email,
+          phone: data.phone,
+        },
+      });
+
+      if (error) {
+        console.error("Erro ao enviar email:", error);
+        throw error;
+      }
+
+      console.log("Email enviado com sucesso:", result);
       
       // Show success message
       toast({

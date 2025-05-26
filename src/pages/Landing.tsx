@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,27 +39,48 @@ const Landing = () => {
 
   const plans = [
     {
-      name: "Gratuito",
-      price: "R$ 0",
+      name: "Starter",
+      price: "R$ 200",
       period: "/mês",
-      description: "Perfeito para começar",
-      features: ["Até 10 vendas/mês", "1 vendedor", "Relatórios básicos"],
+      description: "Ideal para pequenos negócios",
+      features: [
+        "Até 10 vendedores",
+        "Controle de comissões", 
+        "Relatórios básicos",
+        "Registro de vendas",
+        "Verificação de CEP",
+        "7 dias gratuitos"
+      ],
       highlighted: false
     },
     {
-      name: "Profissional",
-      price: "R$ 49",
+      name: "Business",
+      price: "R$ 600",
       period: "/mês",
-      description: "Para times em crescimento",
-      features: ["Vendas ilimitadas", "Até 5 vendedores", "Relatórios avançados", "Suporte prioritário"],
+      description: "Para negócios em crescimento",
+      features: [
+        "Vendedores ilimitados",
+        "Tudo do plano Starter",
+        "Relatórios avançados", 
+        "Controle de estoque",
+        "Análise financeira detalhada",
+        "+R$100 a cada 10 vendedores extras"
+      ],
       highlighted: true
     },
     {
       name: "Enterprise",
-      price: "R$ 149",
+      price: "R$ 1.200",
       period: "/mês",
-      description: "Para grandes equipes",
-      features: ["Vendas ilimitadas", "Vendedores ilimitados", "API personalizada", "Suporte 24/7"],
+      description: "Para grandes operações",
+      features: [
+        "Vendedores ilimitados",
+        "Tudo do plano Business",
+        "API personalizada",
+        "Suporte prioritário", 
+        "Customizações específicas",
+        "Sem cobrança por vendedores extras"
+      ],
       highlighted: false
     }
   ];
@@ -221,7 +241,7 @@ const Landing = () => {
                       variant={plan.highlighted ? "default" : "outline"}
                     >
                       <Link to="/register">
-                        {plan.name === "Gratuito" ? "Começar Grátis" : "Iniciar Teste"}
+                        Começar Teste Gratuito
                       </Link>
                     </Button>
                   </div>

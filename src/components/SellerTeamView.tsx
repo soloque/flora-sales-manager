@@ -1,15 +1,17 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { User } from "@/types";
-import { MessageSquare, Mail, User as UserIcon, LogOut, Search } from "lucide-react";
+import { MessageSquare, Mail, User as UserIcon, LogOut, Search, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatModal } from "@/components/ChatModal";
 import { formatDistance } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "@/components/ui/use-toast";
+import { Link } from "react-router-dom";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -284,11 +286,25 @@ const SellerTeamView = () => {
                   <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">
                     Informações da Equipe
                   </h3>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
                     Você faz parte da equipe de vendas gerenciada por {owner.name}. 
                     Para questões sobre comissões, metas ou outras dúvidas relacionadas à equipe, 
                     entre em contato diretamente através do chat.
                   </p>
+                  
+                  <div className="flex gap-2">
+                    <Button asChild>
+                      <Link to="/sales/new">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Registrar Nova Venda
+                      </Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <Link to="/sales">
+                        Minhas Vendas
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : (

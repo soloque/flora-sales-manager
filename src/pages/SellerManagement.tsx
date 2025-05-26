@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -8,13 +7,14 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Sale } from "@/types";
-import { AlertCircle, UserPlus } from "lucide-react";
+import { AlertCircle, UserPlus, Users } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import TeamMembersList from "@/components/TeamMembersList";
 import { createNotification } from "@/services/notificationService";
 import TeamRequestsList from "@/components/TeamRequestsList";
 import TeamInviteModal from "@/components/TeamInviteModal";
 import SellerTeamView from "@/components/SellerTeamView";
+import VirtualSellerModal from "@/components/VirtualSellerModal";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,7 @@ const SellerManagement = () => {
   const [searchEmail, setSearchEmail] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isVirtualSellerModalOpen, setIsVirtualSellerModalOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -257,6 +258,33 @@ const SellerManagement = () => {
     }
   };
 
+  const refreshTeamData = async () => {
+    if (!user || !isOwner) return;
+    
+    try {
+      const { data: teamData, error: teamError } = await supabase.rpc(
+        'get_team_members',
+        { owner_id_param: user.id }
+      );
+      
+      if (teamError) throw teamError;
+      
+      if (teamData) {
+        const members = teamData.map(member => ({
+          id: member.id,
+          name: member.name || "",
+          email: member.email || "",
+          role: member.role as any,
+          createdAt: new Date(member.created_at),
+          avatar_url: member.avatar_url
+        }));
+        setTeamMembers(members);
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar dados da equipe:", error);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
@@ -308,6 +336,15 @@ const SellerManagement = () => {
             </CardDescription>
           </div>
           <div className="flex gap-2">
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => setIsVirtualSellerModalOpen(true)}
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Criar Vendedor Virtual
+            </Button>
+            
             <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">
@@ -367,6 +404,12 @@ const SellerManagement = () => {
         requests={teamRequests}
         onApprove={handleApproveRequest}
         onReject={handleRejectRequest}
+      />
+
+      <VirtualSellerModal 
+        isOpen={isVirtualSellerModalOpen}
+        onClose={() => setIsVirtualSellerModalOpen(false)}
+        onSuccess={refreshTeamData}
       />
     </div>
   );

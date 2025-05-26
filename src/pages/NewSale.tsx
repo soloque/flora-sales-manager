@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useSellerSubscription } from "@/hooks/useSellerSubscription";
 import { Button } from "@/components/ui/button";
@@ -29,6 +28,8 @@ interface Seller {
 const NewSale = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preSelectedSellerId = searchParams.get('sellerId');
   const { subscriptionInfo, loading: subscriptionLoading, checkCanRegisterSale } = useSellerSubscription();
   const [isOwner, setIsOwner] = useState(false);
   const [hasOwner, setHasOwner] = useState(false);
@@ -49,7 +50,7 @@ const NewSale = () => {
     observations: "",
     quantity: 1,
     unitPrice: 0,
-    assignedSellerId: "",
+    assignedSellerId: preSelectedSellerId || "",
     newSellerName: "",
     newSellerEmail: "",
   });
@@ -94,6 +95,16 @@ const NewSale = () => {
     
     checkSellerTeam();
   }, [user]);
+
+  // Update assignedSellerId when preSelectedSellerId changes
+  useEffect(() => {
+    if (preSelectedSellerId) {
+      setFormData(prev => ({
+        ...prev,
+        assignedSellerId: preSelectedSellerId
+      }));
+    }
+  }, [preSelectedSellerId]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -494,6 +505,10 @@ const NewSale = () => {
   const totalPrice = formData.quantity * formData.unitPrice;
   const commission = totalPrice * 0.2;
 
+  // Get selected seller info for display
+  const selectedSeller = allSellers.find(s => s.id === formData.assignedSellerId);
+  const isPreSelectedVirtualSeller = selectedSeller?.is_virtual;
+
   return (
     <Card>
       <CardHeader>
@@ -507,10 +522,17 @@ const NewSale = () => {
               (Proprietário)
             </span>
           )}
+          {isPreSelectedVirtualSeller && (
+            <span className="text-sm font-normal text-blue-600 bg-blue-100 px-2 py-1 rounded">
+              para {selectedSeller?.name} (Virtual)
+            </span>
+          )}
         </CardTitle>
         <CardDescription>
           {isOwner 
-            ? "Registre uma nova venda e atribua a um vendedor da sua equipe ou crie um novo vendedor virtual" 
+            ? isPreSelectedVirtualSeller 
+              ? `Registrando venda para o vendedor virtual ${selectedSeller?.name}`
+              : "Registre uma nova venda e atribua a um vendedor da sua equipe ou crie um novo vendedor virtual"
             : "Registre uma nova venda no sistema"
           }
         </CardDescription>
@@ -530,6 +552,7 @@ const NewSale = () => {
                   <Select 
                     value={formData.assignedSellerId} 
                     onValueChange={(value) => handleInputChange('assignedSellerId', value)}
+                    disabled={!!preSelectedSellerId}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione um vendedor ou deixe vazio para atribuir a você" />
@@ -544,6 +567,11 @@ const NewSale = () => {
                       <SelectItem value="new">➕ Criar novo vendedor virtual</SelectItem>
                     </SelectContent>
                   </Select>
+                  {preSelectedSellerId && (
+                    <p className="text-sm text-blue-600 mt-1">
+                      Vendedor pré-selecionado da lista de equipe
+                    </p>
+                  )}
                 </div>
 
                 {/* New seller fields */}

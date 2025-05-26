@@ -12,11 +12,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatDistance } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MessageSquare, Mail, UserCheck, Bot } from "lucide-react";
+import { MessageSquare, Mail, UserCheck, Bot, Plus } from "lucide-react";
 import { SellerDeleteConfirm } from "@/components/SellerActions";
 import { ChatModal } from "@/components/ChatModal";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface TeamMembersListProps {
   teamMembers: User[];
@@ -33,6 +34,7 @@ interface VirtualSeller {
 
 const TeamMembersList = ({ teamMembers }: TeamMembersListProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [virtualSellers, setVirtualSellers] = useState<VirtualSeller[]>([]);
@@ -118,6 +120,11 @@ const TeamMembersList = ({ teamMembers }: TeamMembersListProps) => {
     } catch (error) {
       console.error("Error deleting virtual seller:", error);
     }
+  };
+
+  const handleNewSaleForVirtualSeller = (virtualSellerId: string) => {
+    // Navigate to new sale page with pre-selected virtual seller
+    navigate(`/sales/new?sellerId=${virtualSellerId}`);
   };
   
   return (
@@ -206,13 +213,24 @@ const TeamMembersList = ({ teamMembers }: TeamMembersListProps) => {
                             />
                           </>
                         ) : (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteVirtualSeller(seller.id)}
-                          >
-                            Remover
-                          </Button>
+                          <>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleNewSaleForVirtualSeller(seller.id)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Nova Venda
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteVirtualSeller(seller.id)}
+                            >
+                              Remover
+                            </Button>
+                          </>
                         )}
                       </div>
                     </TableCell>

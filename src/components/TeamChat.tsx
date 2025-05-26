@@ -1,9 +1,8 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
@@ -33,7 +32,6 @@ export function TeamChat({ selectedMember, onClose }: TeamChatProps) {
   useEffect(() => {
     if (!user || !selectedMember) return;
     
-    // Load chat messages
     const fetchMessages = async () => {
       try {
         const { data, error } = await supabase.from('direct_messages')
@@ -60,7 +58,6 @@ export function TeamChat({ selectedMember, onClose }: TeamChatProps) {
           
           setMessages(chatMessages);
           
-          // Mark received messages as read
           const receivedMsgIds = chatMessages
             .filter(msg => msg.sender_id === selectedMember.id && msg.receiver_id === user.id && !msg.read)
             .map(msg => msg.id);
@@ -78,7 +75,6 @@ export function TeamChat({ selectedMember, onClose }: TeamChatProps) {
     
     fetchMessages();
     
-    // Set up realtime subscription
     const channel = supabase
       .channel('direct_messages_chat')
       .on('postgres_changes', 
@@ -91,7 +87,6 @@ export function TeamChat({ selectedMember, onClose }: TeamChatProps) {
         async (payload) => {
           const newMsg = payload.new as any;
           
-          // Only add if it's from the selected member
           if (newMsg.sender_id === selectedMember.id) {
             const message: DirectMessage = {
               id: newMsg.id,
@@ -105,7 +100,6 @@ export function TeamChat({ selectedMember, onClose }: TeamChatProps) {
             
             setMessages(prev => [...prev, message]);
             
-            // Mark as read automatically since chat is open
             await supabase.rpc('mark_message_as_read', { 
               message_id_param: newMsg.id 
             });
@@ -155,71 +149,79 @@ export function TeamChat({ selectedMember, onClose }: TeamChatProps) {
   };
   
   return (
-    <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            <div>
-              <CardTitle>Chat com {selectedMember?.name}</CardTitle>
-              <CardDescription>Mensagens diretas</CardDescription>
-            </div>
+    <Card className="w-full border-0 shadow-none">
+      <CardHeader className="pb-4">
+        <div className="flex items-center gap-3">
+          <MessageSquare className="h-5 w-5 text-primary" />
+          <div>
+            <CardTitle className="text-lg">Chat com {selectedMember?.name}</CardTitle>
+            <CardDescription>Mensagens diretas</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Fechar
-          </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="h-[400px] overflow-y-auto border rounded-md p-4 bg-muted/20">
-          {messages.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-muted-foreground">
-              <p>Nenhuma mensagem ainda. Envie uma mensagem para iniciar a conversa.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((msg) => {
-                const isSentByMe = msg.sender_id === user?.id;
-                
-                return (
-                  <div 
-                    key={msg.id} 
-                    className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'}`}
-                  >
+      
+      <CardContent className="px-0">
+        <ScrollArea className="h-[450px] px-6">
+          <div className="space-y-4">
+            {messages.length === 0 ? (
+              <div className="h-[400px] flex items-center justify-center text-center">
+                <div className="space-y-3">
+                  <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto" />
+                  <p className="text-muted-foreground max-w-sm">
+                    Nenhuma mensagem ainda. Envie uma mensagem para iniciar a conversa.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {messages.map((msg) => {
+                  const isSentByMe = msg.sender_id === user?.id;
+                  
+                  return (
                     <div 
-                      className={`max-w-[80%] rounded-lg p-3 ${
-                        isSentByMe 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'bg-muted'
-                      }`}
+                      key={msg.id} 
+                      className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className="text-sm">{msg.message}</div>
-                      <div className="flex items-center justify-end gap-1 mt-1">
-                        <span className="text-xs opacity-70">
-                          {formatMessageDate(msg.created_at)}
-                        </span>
-                        {isSentByMe && (
-                          <Check 
-                            className={`h-3 w-3 ${msg.read ? 'text-green-500' : 'opacity-70'}`} 
-                          />
-                        )}
+                      <div 
+                        className={`max-w-[75%] rounded-lg p-3 shadow-sm ${
+                          isSentByMe 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted border'
+                        }`}
+                      >
+                        <div className="text-sm leading-relaxed">{msg.message}</div>
+                        <div className="flex items-center justify-end gap-1 mt-2">
+                          <span className="text-xs opacity-70">
+                            {formatMessageDate(msg.created_at)}
+                          </span>
+                          {isSentByMe && (
+                            <Check 
+                              className={`h-3 w-3 ${
+                                msg.read 
+                                  ? 'text-green-400' 
+                                  : 'opacity-50'
+                              }`} 
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </>
+            )}
+          </div>
+        </ScrollArea>
       </CardContent>
-      <CardFooter>
-        <div className="flex w-full gap-2">
+      
+      <CardFooter className="px-6 pt-4">
+        <div className="flex w-full gap-3">
           <Textarea
             placeholder="Digite sua mensagem..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            className="resize-none flex-1"
+            className="resize-none flex-1 min-h-[80px] bg-background dark:bg-muted/50 border-input dark:border-muted-foreground/20 focus-visible:ring-ring dark:focus-visible:ring-primary"
             rows={2}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -231,7 +233,8 @@ export function TeamChat({ selectedMember, onClose }: TeamChatProps) {
           <Button 
             onClick={sendMessage} 
             disabled={isSending || !newMessage.trim()}
-            className="self-end"
+            className="self-end h-[80px] px-6"
+            size="default"
           >
             <Send className="h-4 w-4 mr-2" />
             Enviar

@@ -1,5 +1,6 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { TeamChat } from "@/components/TeamChat";
 import { User } from "@/types";
 
@@ -14,15 +15,21 @@ export function ChatModal({ isOpen, onClose, selectedMember }: ChatModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Chat com {selectedMember.name}</DialogTitle>
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="px-6 py-4 border-b bg-background">
+          <DialogTitle className="text-lg font-semibold">
+            Chat com {selectedMember.name}
+          </DialogTitle>
         </DialogHeader>
-        <div className="h-[600px] overflow-hidden">
-          <TeamChat 
-            selectedMember={selectedMember} 
-            onClose={onClose}
-          />
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-[calc(85vh-80px)]">
+            <div className="p-6">
+              <TeamChat 
+                selectedMember={selectedMember} 
+                onClose={onClose}
+              />
+            </div>
+          </ScrollArea>
         </div>
       </DialogContent>
     </Dialog>

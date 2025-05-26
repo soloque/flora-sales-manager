@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquare, Send, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
@@ -30,7 +30,6 @@ export function DirectMessage({ receiver, onClose, isModal = false }: DirectMess
     
     const fetchMessages = async () => {
       try {
-        // Fetch messages sent by current user to receiver
         const { data: sentMessages, error: sentError } = await supabase
           .from('direct_messages')
           .select('*')
@@ -40,7 +39,6 @@ export function DirectMessage({ receiver, onClose, isModal = false }: DirectMess
           
         if (sentError) throw sentError;
         
-        // Fetch messages sent to current user from receiver
         const { data: receivedMessages, error: receivedError } = await supabase
           .from('direct_messages')
           .select('*')
@@ -50,7 +48,6 @@ export function DirectMessage({ receiver, onClose, isModal = false }: DirectMess
           
         if (receivedError) throw receivedError;
         
-        // Mark received messages as read
         if (receivedMessages && receivedMessages.length > 0) {
           const unreadMessages = receivedMessages.filter(msg => !msg.read);
           if (unreadMessages.length > 0) {
@@ -63,7 +60,6 @@ export function DirectMessage({ receiver, onClose, isModal = false }: DirectMess
           }
         }
         
-        // Combine and sort messages
         const allMessages = [...(sentMessages || []), ...(receivedMessages || [])].sort((a, b) => {
           return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
         });
@@ -81,7 +77,6 @@ export function DirectMessage({ receiver, onClose, isModal = false }: DirectMess
     
     fetchMessages();
     
-    // Subscribe to new messages from this user
     const channel = supabase
       .channel('direct_messages_changes')
       .on(
@@ -93,11 +88,9 @@ export function DirectMessage({ receiver, onClose, isModal = false }: DirectMess
           filter: `receiver_id=eq.${user.id}`,
         },
         async (payload) => {
-          // Only add if it's from the current conversation partner
           if (payload.new.sender_id === receiver.id) {
             setMessages(prev => [...prev, payload.new as DirectMessageType]);
             
-            // Mark as read immediately
             await supabase
               .from('direct_messages')
               .update({ read: true })
@@ -113,7 +106,6 @@ export function DirectMessage({ receiver, onClose, isModal = false }: DirectMess
   }, [user, receiver]);
   
   useEffect(() => {
-    // Scroll to bottom when messages change
     scrollToBottom();
   }, [messages]);
   
@@ -127,7 +119,6 @@ export function DirectMessage({ receiver, onClose, isModal = false }: DirectMess
     setLoading(true);
     
     try {
-      // Call the custom function to send a message
       const { data, error } = await supabase.rpc('send_direct_message', {
         sender_id_param: user.id,
         sender_name_param: user.name,
@@ -137,7 +128,6 @@ export function DirectMessage({ receiver, onClose, isModal = false }: DirectMess
       
       if (error) throw error;
       
-      // Optimistically add message to UI
       const optimisticMessage: DirectMessageType = {
         id: crypto.randomUUID(),
         sender_id: user.id,
@@ -151,7 +141,6 @@ export function DirectMessage({ receiver, onClose, isModal = false }: DirectMess
       setMessages([...messages, optimisticMessage]);
       setNewMessage("");
       
-      // Create notification for receiver
       await createNotification(
         receiver.id,
         "Nova mensagem",
@@ -187,78 +176,83 @@ export function DirectMessage({ receiver, onClose, isModal = false }: DirectMess
     });
   };
   
-  // If either user is missing, don't render
   if (!user || !receiver) return null;
   
   return (
-    <Card className={isModal ? "w-full h-full" : "w-full h-[500px]"}>
-      <CardHeader className="border-b py-3">
+    <Card className={`${isModal ? "w-full h-full border-0 shadow-none" : "w-full h-[500px]"}`}>
+      <CardHeader className="border-b py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Avatar>
+            <Avatar className="h-10 w-10">
               <AvatarImage src={receiver.avatar_url} alt={receiver.name} />
-              <AvatarFallback>{getInitials(receiver.name)}</AvatarFallback>
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                {getInitials(receiver.name)}
+              </AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle className="text-base">{receiver.name}</CardTitle>
-              <p className="text-xs text-muted-foreground">{
-                receiver.role === "owner" ? "Proprietário" : 
-                receiver.role === "inactive" ? "Inativo" : "Vendedor"
-              }</p>
+              <CardTitle className="text-lg">{receiver.name}</CardTitle>
+              <p className="text-sm text-muted-foreground capitalize">
+                {receiver.role === "owner" ? "Proprietário" : 
+                 receiver.role === "inactive" ? "Inativo" : "Vendedor"}
+              </p>
             </div>
           </div>
           {!isModal && (
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <Button variant="outline" size="sm" onClick={onClose}>
               Fechar
             </Button>
           )}
         </div>
       </CardHeader>
       
-      <CardContent className="p-3 overflow-y-auto" style={{ height: "calc(100% - 140px)" }}>
-        {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-4">
-            <MessageSquare size={40} className="text-muted-foreground mb-2" />
-            <p className="text-muted-foreground">Nenhuma mensagem ainda. Envie a primeira mensagem para iniciar a conversa.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {messages.map((msg) => {
-              const isCurrentUser = msg.sender_id === user.id;
-              
-              return (
-                <div 
-                  key={msg.id} 
-                  className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-                >
+      <CardContent className="p-0 flex-1 overflow-hidden">
+        <ScrollArea className="h-[calc(100%-140px)] px-4">
+          {messages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center p-6">
+              <MessageSquare size={48} className="text-muted-foreground mb-4" />
+              <p className="text-muted-foreground max-w-sm">
+                Nenhuma mensagem ainda. Envie a primeira mensagem para iniciar a conversa.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4 py-4">
+              {messages.map((msg) => {
+                const isCurrentUser = msg.sender_id === user.id;
+                
+                return (
                   <div 
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      isCurrentUser 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-accent'
-                    }`}
+                    key={msg.id} 
+                    className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
                   >
-                    <p>{msg.message}</p>
-                    <div className="flex items-center justify-end mt-1 space-x-1">
-                      <span className="text-xs opacity-75">
-                        {formatTime(msg.created_at)}
-                      </span>
-                      {isCurrentUser && msg.read && (
-                        <Check className="h-3 w-3 opacity-75" />
-                      )}
+                    <div 
+                      className={`max-w-[75%] rounded-lg p-3 shadow-sm ${
+                        isCurrentUser 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted border'
+                      }`}
+                    >
+                      <p className="text-sm leading-relaxed">{msg.message}</p>
+                      <div className="flex items-center justify-end mt-2 space-x-1">
+                        <span className="text-xs opacity-75">
+                          {formatTime(msg.created_at)}
+                        </span>
+                        {isCurrentUser && msg.read && (
+                          <Check className="h-3 w-3 text-green-400" />
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </ScrollArea>
       </CardContent>
       
-      <CardFooter className="border-t p-3">
+      <CardFooter className="border-t p-4">
         <form 
-          className="flex w-full space-x-2" 
+          className="flex w-full space-x-3" 
           onSubmit={(e) => {
             e.preventDefault();
             sendMessage();
@@ -268,10 +262,15 @@ export function DirectMessage({ receiver, onClose, isModal = false }: DirectMess
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Digite sua mensagem..."
-            className="flex-1"
+            className="flex-1 bg-background dark:bg-muted/50 border-input dark:border-muted-foreground/20 focus-visible:ring-ring dark:focus-visible:ring-primary"
             disabled={loading}
           />
-          <Button type="submit" size="icon" disabled={loading || !newMessage.trim()}>
+          <Button 
+            type="submit" 
+            size="icon" 
+            disabled={loading || !newMessage.trim()}
+            className="shrink-0"
+          >
             <Send className="h-4 w-4" />
           </Button>
         </form>

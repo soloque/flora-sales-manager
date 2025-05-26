@@ -1,4 +1,3 @@
-
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -127,30 +126,18 @@ const Layout = () => {
             <Link to="/dashboard" className="flex items-center space-x-2">
               <div className="relative">
                 <div className="bg-gradient-to-br from-primary to-primary/80 p-2 rounded-xl shadow-lg transition-all duration-200">
-                  {/* Custom triangle logo */}
+                  {/* Triângulo simples sem bordas */}
                   <div className="h-5 w-5 relative">
                     <svg viewBox="0 0 100 100" className="h-full w-full text-primary-foreground">
                       <path 
-                        d="M50 10 L85 80 L15 80 Z" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="8"
-                      />
-                      <path 
-                        d="M50 25 L72 70 L28 70 Z" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="6"
-                      />
-                      <path 
-                        d="M50 40 L60 60 L40 60 Z" 
+                        d="M50 15 L80 75 L20 75 Z" 
                         fill="currentColor"
                       />
                     </svg>
                   </div>
                 </div>
               </div>
-              <span className="font-bold text-xl">Sales Canvas</span>
+              <span className="font-bold text-xl">SalesCanvas</span>
             </Link>
           </div>
           

@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useSellerSubscription } from "@/hooks/useSellerSubscription";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/services/notificationService";
-import { AlertCircle, Loader2, XCircle, Users, Bot } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2, Users, Bot } from "lucide-react";
 import { fetchAddressByCep } from "@/services/cepService";
 import { Link } from "react-router-dom";
 
@@ -30,14 +28,11 @@ const NewSale = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preSelectedSellerId = searchParams.get('sellerId');
-  const { subscriptionInfo, loading: subscriptionLoading, checkCanRegisterSale } = useSellerSubscription();
   const [isOwner, setIsOwner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCheckingTeam, setIsCheckingTeam] = useState(true);
   const [isFetchingAddress, setIsFetchingAddress] = useState(false);
   const [allSellers, setAllSellers] = useState<Seller[]>([]);
   const [preSelectedSeller, setPreSelectedSeller] = useState<Seller | null>(null);
-  const [canRegisterSale, setCanRegisterSale] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -62,17 +57,14 @@ const NewSale = () => {
       return;
     }
     
-    const checkUserPermissions = async () => {
-      setIsCheckingTeam(true);
-      const userIsOwner = user.role === "owner";
-      setIsOwner(userIsOwner);
-      
-      try {
-        if (userIsOwner) {
-          // Owner can always register sales
-          setCanRegisterSale(true);
-          
-          // Get all sellers for owner
+    // Simplified permission check
+    const userIsOwner = user.role === "owner";
+    setIsOwner(userIsOwner);
+    
+    // Get sellers for owner
+    if (userIsOwner) {
+      const getSellers = async () => {
+        try {
           const { data, error } = await supabase.rpc(
             'get_all_sellers_for_owner',
             { owner_id_param: user.id }
@@ -89,32 +81,14 @@ const NewSale = () => {
               }
             }
           }
-        } else {
-          // For sellers, check if they can register sales
-          if (checkCanRegisterSale) {
-            const canRegister = await checkCanRegisterSale();
-            setCanRegisterSale(canRegister);
-          } else if (subscriptionInfo) {
-            setCanRegisterSale(subscriptionInfo.canRegister || subscriptionInfo.isTeamMember);
-          } else {
-            // Check if seller has owner/team
-            const { data: teamData } = await supabase.rpc(
-              'get_seller_team', 
-              { seller_id_param: user.id }
-            );
-            setCanRegisterSale(teamData && teamData.length > 0);
-          }
+        } catch (error) {
+          console.error("Error fetching sellers:", error);
         }
-      } catch (error) {
-        console.error("Error checking permissions:", error);
-        setCanRegisterSale(userIsOwner); // Fallback: owners can always register
-      } finally {
-        setIsCheckingTeam(false);
-      }
-    };
-    
-    checkUserPermissions();
-  }, [user, preSelectedSellerId, checkCanRegisterSale, subscriptionInfo]);
+      };
+      
+      getSellers();
+    }
+  }, [user, preSelectedSellerId]);
 
   // Update assignedSellerId when preSelectedSellerId changes
   useEffect(() => {
@@ -365,66 +339,6 @@ const NewSale = () => {
     }
   };
 
-  // Show loading while checking permissions
-  if (isCheckingTeam) {
-    return (
-      <div className="flex items-center justify-center h-[50vh]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Verificando permissões...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show permission denied if user cannot register sales
-  if (!canRegisterSale) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <XCircle className="h-6 w-6 text-red-500" />
-            <span>Permissão Negada</span>
-          </CardTitle>
-          <CardDescription>
-            Você não tem permissão para registrar vendas no momento.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Limite Atingido ou Sem Permissão</AlertTitle>
-            <AlertDescription>
-              {subscriptionInfo && !subscriptionInfo.canRegister 
-                ? `Você utilizou ${subscriptionInfo.salesUsed} de ${subscriptionInfo.salesLimit} vendas gratuitas.`
-                : "Você precisa estar vinculado a um proprietário ou ter um plano pago para registrar vendas."
-              }
-            </AlertDescription>
-          </Alert>
-          
-          <div className="flex flex-col items-center py-6 space-y-4">
-            <div className="text-6xl mb-4">🔒</div>
-            <p className="text-center mb-4">
-              Escolha uma das opções abaixo para continuar:
-            </p>
-            <div className="flex space-x-4">
-              <Button asChild>
-                <Link to="/pricing">
-                  Upgrade para R$ 200/mês
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to="/team">
-                  Solicitar Vínculo
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   const totalPrice = formData.quantity * formData.unitPrice;
   const commission = totalPrice * 0.2;
 
@@ -535,32 +449,6 @@ const NewSale = () => {
                         Adicione vendedores aqui
                       </Link>
                     </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Seller subscription info */}
-            {!isOwner && subscriptionInfo && (
-              <div className="border p-4 rounded-md bg-blue-50">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-blue-800">
-                      {subscriptionInfo.isTeamMember ? 'Membro de Time' : 'Plano Gratuito'}
-                    </p>
-                    <p className="text-sm text-blue-600">
-                      {subscriptionInfo.isTeamMember 
-                        ? 'Vendas ilimitadas'
-                        : `${subscriptionInfo.salesUsed} de ${subscriptionInfo.salesLimit} vendas utilizadas`
-                      }
-                    </p>
-                  </div>
-                  {!subscriptionInfo.isTeamMember && subscriptionInfo.salesUsed >= subscriptionInfo.salesLimit * 0.8 && (
-                    <Button asChild size="sm" variant="outline">
-                      <Link to="/pricing">
-                        Upgrade
-                      </Link>
-                    </Button>
                   )}
                 </div>
               </div>

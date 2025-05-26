@@ -24,39 +24,34 @@ const AutoResponseBot = () => {
   const keydownListenerRef = useRef<((event: KeyboardEvent) => void) | null>(null);
   const [messages, setMessages] = useState<BotMessage[]>([
     {
-      key: "F1",
+      key: "0",
       message: "Está sim\nEm quais frutíferas você tem interesse?",
       description: "Mensagem de confirmação e pergunta sobre interesse"
     },
     {
-      key: "F2", 
+      key: "1", 
       message: "Fica R$ 129 com frete grátis e pagamento na entrega. 1 metro.",
       description: "Preço para 1 muda"
     },
     {
-      key: "F3",
+      key: "2",
       message: "As 2 saem por R$ 139 com frete grátis e pagamento na entrega. Todas com 1 metro.",
       description: "Preço para 2 mudas"
     },
     {
-      key: "F4",
+      key: "3",
       message: "As 3 saem por R$ 199 com frete grátis e pagamento na entrega. Todas com 1 metro.",
       description: "Preço para 3 mudas"
     },
     {
-      key: "F5",
+      key: "4",
       message: "As 4 saem por R$ 259 com frete grátis e pagamento na entrega. Todas com 1 metro.",
       description: "Preço para 4 mudas"
     },
     {
-      key: "F6",
+      key: "5",
       message: "Amora\nAcerola\nAbacate\nBanana\nCajá\nCaju\nCarambola\nFigo\nFramboesa\nJaca\nJabuticaba\nLaranja\nLimão\nTangerinas\nPera\nPêssego\nUva\nNectarina\nEntre outras. Normalmente entre R$ 60 e 90. Em quais tem interesse?",
       description: "Lista de frutíferas disponíveis"
-    },
-    {
-      key: "F7",
-      message: "Olá, temos\nTem interesse em mais alguma frutífera?",
-      description: "Saudação e pergunta adicional"
     }
   ]);
 
@@ -87,6 +82,20 @@ const AutoResponseBot = () => {
     setMessages(updated);
   };
 
+  const addNewMessage = () => {
+    const newMessage: BotMessage = {
+      key: "",
+      message: "",
+      description: "Nova mensagem"
+    };
+    setMessages([...messages, newMessage]);
+  };
+
+  const removeMessage = (index: number) => {
+    const updated = messages.filter((_, i) => i !== index);
+    setMessages(updated);
+  };
+
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text.replace(/\\n/g, '\n'));
@@ -114,14 +123,14 @@ const AutoResponseBot = () => {
       return;
     }
 
-    const pressedKey = event.key.toUpperCase();
+    const pressedKey = event.key;
     const message = messages.find(msg => msg.key === pressedKey);
     
     if (message) {
       event.preventDefault();
       
-      if (message.key === "F1" || message.key === "F7") {
-        // Para F1 e F7, enviar múltiplas mensagens
+      if (message.key === "0" || message.message.includes('\n')) {
+        // Para mensagens com múltiplas linhas, enviar cada linha separadamente
         const lines = message.message.split('\n');
         lines.forEach((line, index) => {
           setTimeout(() => {
@@ -143,9 +152,10 @@ const AutoResponseBot = () => {
     document.addEventListener('keydown', keydownListenerRef.current);
     setIsRunning(true);
     
+    const keys = messages.map(m => m.key).filter(k => k).join(', ');
     toast({
       title: "Bot ativado!",
-      description: "Pressione F1-F7 para usar as mensagens automáticas. As mensagens serão copiadas automaticamente.",
+      description: `Pressione ${keys} para usar as mensagens automáticas. As mensagens serão copiadas automaticamente.`,
       duration: 3000
     });
   };
@@ -206,7 +216,7 @@ const AutoResponseBot = () => {
             <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
               <CheckCircle className="h-5 w-5" />
               <span className="font-medium">Bot ativo!</span>
-              <span className="text-sm">Pressione F1-F7 para usar as mensagens. Elas serão copiadas automaticamente.</span>
+              <span className="text-sm">Pressione as teclas configuradas para usar as mensagens. Elas serão copiadas automaticamente.</span>
             </div>
             {lastUsedKey && (
               <div className="mt-2 text-xs text-green-600 dark:text-green-400">
@@ -238,27 +248,42 @@ const AutoResponseBot = () => {
             <CardHeader>
               <CardTitle>Configurar Mensagens</CardTitle>
               <CardDescription>
-                Personalize as mensagens que serão copiadas automaticamente por cada tecla de atalho
+                Personalize as teclas e mensagens que serão copiadas automaticamente
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4">
                 {messages.map((msg, index) => (
-                  <div key={msg.key} className="border rounded-lg p-4 space-y-3">
+                  <div key={index} className="border rounded-lg p-4 space-y-3">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline">{msg.key}</Badge>
-                      <Input
-                        placeholder="Descrição"
-                        value={msg.description}
-                        onChange={(e) => updateMessage(index, 'description', e.target.value)}
-                        className="flex-1"
-                      />
+                      <div className="flex items-center gap-2 flex-1">
+                        <Label className="text-sm">Tecla:</Label>
+                        <Input
+                          placeholder="Ex: 0, F1, a, etc"
+                          value={msg.key}
+                          onChange={(e) => updateMessage(index, 'key', e.target.value)}
+                          className="w-24"
+                        />
+                        <Input
+                          placeholder="Descrição"
+                          value={msg.description}
+                          onChange={(e) => updateMessage(index, 'description', e.target.value)}
+                          className="flex-1"
+                        />
+                      </div>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => copyToClipboard(msg.message)}
                       >
                         <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => removeMessage(index)}
+                      >
+                        ×
                       </Button>
                     </div>
                     <div>
@@ -277,9 +302,14 @@ const AutoResponseBot = () => {
                 ))}
               </div>
 
-              <Button onClick={saveMessages}>
-                Salvar Configurações
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={addNewMessage} variant="outline">
+                  Adicionar Nova Mensagem
+                </Button>
+                <Button onClick={saveMessages}>
+                  Salvar Configurações
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -299,9 +329,9 @@ const AutoResponseBot = () => {
                     1
                   </div>
                   <div>
-                    <h3 className="font-medium">Configure as Mensagens</h3>
+                    <h3 className="font-medium">Configure as Mensagens e Teclas</h3>
                     <p className="text-sm text-muted-foreground">
-                      Na aba "Configurações", personalize as mensagens para cada tecla (F1-F7).
+                      Na aba "Configurações", personalize as teclas (0-9, F1-F12, letras) e mensagens.
                       Salve as configurações quando terminar.
                     </p>
                   </div>
@@ -326,7 +356,7 @@ const AutoResponseBot = () => {
                   <div>
                     <h3 className="font-medium">Use os Atalhos</h3>
                     <p className="text-sm text-muted-foreground">
-                      Pressione as teclas F1-F7 para copiar automaticamente as mensagens.
+                      Pressione as teclas configuradas para copiar automaticamente as mensagens.
                       Cole onde desejar usando Ctrl+V.
                     </p>
                   </div>
@@ -352,7 +382,8 @@ const AutoResponseBot = () => {
                 <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
                   <li>• O bot funciona em qualquer aba do navegador enquanto estiver ativo</li>
                   <li>• As mensagens são copiadas automaticamente - basta colar onde desejar</li>
-                  <li>• F1 e F7 podem enviar múltiplas mensagens em sequência</li>
+                  <li>• Você pode usar qualquer tecla: números (0-9), letras (a-z) ou teclas especiais (F1-F12)</li>
+                  <li>• Mensagens com múltiplas linhas são enviadas em sequência</li>
                   <li>• Use o botão de cópia ao lado de cada mensagem para testar</li>
                 </ul>
               </div>
@@ -370,7 +401,7 @@ const AutoResponseBot = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {messages.map((msg) => (
+                {messages.filter(msg => msg.key).map((msg) => (
                   <div key={msg.key} className="flex items-start gap-3 p-3 border rounded-lg">
                     <Badge variant="outline" className="mt-0.5">
                       {msg.key}
@@ -394,6 +425,11 @@ const AutoResponseBot = () => {
                   </div>
                 ))}
               </div>
+              {messages.filter(msg => msg.key).length === 0 && (
+                <p className="text-center text-muted-foreground py-8">
+                  Nenhum atalho configurado. Vá para a aba "Configurações" para adicionar mensagens.
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

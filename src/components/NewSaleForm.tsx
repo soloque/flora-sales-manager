@@ -10,6 +10,8 @@ import { SellerAssignmentSection } from "./form-sections/SellerAssignmentSection
 import { CustomerInfoSection } from "./form-sections/CustomerInfoSection";
 import { SaleValueSection } from "./form-sections/SaleValueSection";
 import { SaleSummary } from "./form-sections/SaleSummary";
+import { ObservationsSection } from "./form-sections/ObservationsSection";
+import { FormHeader } from "./form-sections/FormHeader";
 import { useNewSaleForm } from "@/hooks/useNewSaleForm";
 
 interface Seller {
@@ -38,27 +40,18 @@ export function NewSaleForm() {
   const isOwner = user?.role === "owner";
 
   useEffect(() => {
-    console.log("NewSaleForm component mounted");
-    console.log("User:", user);
-    console.log("PreSelectedSellerId:", preSelectedSellerId);
-
     if (!user) {
-      console.log("No user, redirecting to login");
       navigate("/login");
       return;
     }
     
     if (isOwner) {
-      console.log("User is owner, fetching sellers");
       const getSellers = async () => {
         try {
           const { data, error } = await supabase.rpc(
             'get_all_sellers_for_owner',
             { owner_id_param: user.id }
           );
-          
-          console.log("Sellers data:", data);
-          console.log("Sellers error:", error);
           
           if (!error && data) {
             setAllSellers(data);
@@ -174,70 +167,65 @@ export function NewSaleForm() {
   const totalPrice = formData.quantity * formData.unitPrice;
   const commission = totalPrice * 0.2;
 
-  console.log("Rendering NewSaleForm component");
-  console.log("IsOwner:", isOwner);
-  console.log("AllSellers:", allSellers);
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-            <path d="M5 12h14"/><path d="M12 5v14"/>
-          </svg>
-          Nova Venda
-          {isOwner && (
-            <span className="text-sm font-normal text-muted-foreground">
-              (Proprietário)
-            </span>
-          )}
-        </CardTitle>
-        <CardDescription>
-          Registre uma nova venda no sistema
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-6">
-          {isOwner && (
-            <SellerAssignmentSection
+    <div className="space-y-6">
+      <FormHeader isOwner={isOwner} />
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Registrar Nova Venda</CardTitle>
+          <CardDescription>
+            Preencha os dados da venda abaixo
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-6">
+            {isOwner && (
+              <SellerAssignmentSection
+                formData={formData}
+                handleInputChange={handleInputChange}
+                allSellers={allSellers}
+                preSelectedSellerId={preSelectedSellerId}
+              />
+            )}
+            
+            <CustomerInfoSection
               formData={formData}
               handleInputChange={handleInputChange}
-              allSellers={allSellers}
-              preSelectedSellerId={preSelectedSellerId}
             />
-          )}
-          
-          <CustomerInfoSection
-            formData={formData}
-            handleInputChange={handleInputChange}
-          />
-          
-          <SaleValueSection
-            formData={formData}
-            handleInputChange={handleInputChange}
-          />
-          
-          <SaleSummary
-            totalPrice={totalPrice}
-            commission={commission}
-            isOwner={isOwner}
-            formData={formData}
-            allSellers={allSellers}
-          />
-        </CardContent>
-        <CardFooter className="flex justify-end space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate(-1)}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Registrando..." : "Registrar Venda"}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+            
+            <SaleValueSection
+              formData={formData}
+              handleInputChange={handleInputChange}
+            />
+            
+            <ObservationsSection
+              formData={formData}
+              handleInputChange={handleInputChange}
+            />
+            
+            <SaleSummary
+              totalPrice={totalPrice}
+              commission={commission}
+              isOwner={isOwner}
+              formData={formData}
+              allSellers={allSellers}
+            />
+          </CardContent>
+          <CardFooter className="flex justify-end space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(-1)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Registrando..." : "Registrar Venda"}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   );
 }

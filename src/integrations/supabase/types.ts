@@ -236,6 +236,7 @@ export type Database = {
           date: string
           description: string | null
           id: string
+          is_virtual_seller: boolean | null
           observations: string | null
           profit: number | null
           quantity: number | null
@@ -261,6 +262,7 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+          is_virtual_seller?: boolean | null
           observations?: string | null
           profit?: number | null
           quantity?: number | null
@@ -286,6 +288,7 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+          is_virtual_seller?: boolean | null
           observations?: string | null
           profit?: number | null
           quantity?: number | null
@@ -542,6 +545,33 @@ export type Database = {
         }
         Relationships: []
       }
+      virtual_sellers: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -570,6 +600,20 @@ export type Database = {
           is_annual_param?: boolean
         }
         Returns: Json
+      }
+      delete_virtual_seller: {
+        Args: { seller_id_param: string; owner_id_param: string }
+        Returns: undefined
+      }
+      get_all_sellers_for_owner: {
+        Args: { owner_id_param: string }
+        Returns: {
+          id: string
+          name: string
+          email: string
+          type: string
+          is_virtual: boolean
+        }[]
       }
       get_seller_subscription_info: {
         Args: { seller_id_param: string }

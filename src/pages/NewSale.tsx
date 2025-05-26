@@ -18,6 +18,14 @@ import { fetchAddressByCep } from "@/services/cepService";
 import { User } from "@/types";
 import { Link } from "react-router-dom";
 
+interface Seller {
+  id: string;
+  name: string;
+  email: string;
+  type: string;
+  is_virtual: boolean;
+}
+
 const NewSale = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -27,7 +35,7 @@ const NewSale = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingTeam, setIsCheckingTeam] = useState(true);
   const [isFetchingAddress, setIsFetchingAddress] = useState(false);
-  const [teamMembers, setTeamMembers] = useState<User[]>([]);
+  const [allSellers, setAllSellers] = useState<Seller[]>([]);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -65,24 +73,16 @@ const NewSale = () => {
         } else if (user.role === "owner") {
           setHasOwner(true);
           
-          // Get team members for owner
+          // Get all sellers (real + virtual) for owner
           const { data, error } = await supabase.rpc(
-            'get_team_members',
+            'get_all_sellers_for_owner',
             { owner_id_param: user.id }
           );
           
           if (error) throw error;
           
           if (data) {
-            const members = data.map(member => ({
-              id: member.id,
-              name: member.name || "",
-              email: member.email || "",
-              role: member.role as any,
-              createdAt: new Date(member.created_at),
-              avatar_url: member.avatar_url
-            }));
-            setTeamMembers(members);
+            setAllSellers(data);
           }
         }
       } catch (error) {
@@ -285,18 +285,33 @@ const NewSale = () => {
       // Determine seller info
       let sellerId = user.id;
       let sellerName = user.name;
+      let isVirtualSeller = false;
       
       if (isOwner && formData.assignedSellerId) {
         if (formData.assignedSellerId === "new") {
-          // Creating a new seller - use provided name and a temporary ID
-          sellerId = `temp_${Date.now()}`;
-          sellerName = formData.newSellerName;
+          // Create a new virtual seller
+          const { data: virtualSeller, error: virtualSellerError } = await supabase
+            .from('virtual_sellers')
+            .insert({
+              name: formData.newSellerName,
+              email: formData.newSellerEmail,
+              owner_id: user.id
+            })
+            .select()
+            .single();
+          
+          if (virtualSellerError) throw virtualSellerError;
+          
+          sellerId = virtualSeller.id;
+          sellerName = virtualSeller.name;
+          isVirtualSeller = true;
         } else {
-          // Owner is assigning sale to an existing team member
-          const assignedSeller = teamMembers.find(member => member.id === formData.assignedSellerId);
+          // Owner is assigning sale to an existing seller
+          const assignedSeller = allSellers.find(seller => seller.id === formData.assignedSellerId);
           if (assignedSeller) {
             sellerId = assignedSeller.id;
             sellerName = assignedSeller.name;
+            isVirtualSeller = assignedSeller.is_virtual;
           }
         }
       }
@@ -321,16 +336,17 @@ const NewSale = () => {
           customer_city: formData.city,
           customer_state: formData.state,
           customer_zipcode: formData.cep,
-          customer_order: formData.order
+          customer_order: formData.order,
+          is_virtual_seller: isVirtualSeller
         })
         .select()
         .single();
         
       if (error) throw error;
       
-      // Send notifications
-      if (isOwner && formData.assignedSellerId && formData.assignedSellerId !== user.id && formData.assignedSellerId !== "new") {
-        // Owner assigned sale to an existing team member, notify the seller
+      // Send notifications only for real team members (not virtual sellers)
+      if (isOwner && formData.assignedSellerId && formData.assignedSellerId !== user.id && formData.assignedSellerId !== "new" && !isVirtualSeller) {
+        // Owner assigned sale to a real team member, notify the seller
         await createNotification(
           formData.assignedSellerId,
           "Venda atribuída a você",
@@ -494,7 +510,7 @@ const NewSale = () => {
         </CardTitle>
         <CardDescription>
           {isOwner 
-            ? "Registre uma nova venda e atribua a um vendedor da sua equipe ou crie um novo vendedor" 
+            ? "Registre uma nova venda e atribua a um vendedor da sua equipe ou crie um novo vendedor virtual" 
             : "Registre uma nova venda no sistema"
           }
         </CardDescription>
@@ -520,12 +536,12 @@ const NewSale = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">Atribuir a mim (proprietário)</SelectItem>
-                      {teamMembers.map((member) => (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.name} ({member.email})
+                      {allSellers.map((seller) => (
+                        <SelectItem key={seller.id} value={seller.id}>
+                          {seller.name} ({seller.email}) {seller.is_virtual ? '(Virtual)' : '(Real)'}
                         </SelectItem>
                       ))}
-                      <SelectItem value="new">➕ Criar novo vendedor</SelectItem>
+                      <SelectItem value="new">➕ Criar novo vendedor virtual</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -533,7 +549,7 @@ const NewSale = () => {
                 {/* New seller fields */}
                 {formData.assignedSellerId === "new" && (
                   <div className="border rounded-lg p-4 bg-yellow-50/50 space-y-3">
-                    <h4 className="font-medium text-yellow-800">Dados do Novo Vendedor</h4>
+                    <h4 className="font-medium text-yellow-800">Dados do Novo Vendedor Virtual</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="newSellerName">Nome do Vendedor *</Label>
@@ -558,12 +574,12 @@ const NewSale = () => {
                       </div>
                     </div>
                     <p className="text-sm text-yellow-700">
-                      Este vendedor será registrado no sistema com esta venda.
+                      Este vendedor virtual será criado no sistema. Vendedores virtuais não podem fazer login.
                     </p>
                   </div>
                 )}
 
-                {teamMembers.length === 0 && formData.assignedSellerId !== "new" && (
+                {allSellers.length === 0 && formData.assignedSellerId !== "new" && (
                   <p className="text-sm text-muted-foreground">
                     Você ainda não tem vendedores na sua equipe. 
                     <Link to="/team" className="text-primary hover:underline ml-1">
@@ -756,8 +772,8 @@ const NewSale = () => {
                 <span>Vendedor responsável:</span>
                 <span>
                   {formData.assignedSellerId === "new" 
-                    ? formData.newSellerName || "Novo vendedor"
-                    : teamMembers.find(m => m.id === formData.assignedSellerId)?.name || "Você"
+                    ? formData.newSellerName || "Novo vendedor virtual"
+                    : allSellers.find(s => s.id === formData.assignedSellerId)?.name || "Você"
                   }
                 </span>
               </div>

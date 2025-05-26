@@ -89,8 +89,8 @@ const SubscriptionBanner = () => {
           </Button>
         </div>
       </CardContent>
-    );
-  }
+    </Card>
+  );
 };
 
 export default SubscriptionBanner;

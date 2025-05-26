@@ -22,8 +22,8 @@ const Dashboard = () => {
         </p>
       </div>
 
-      {/* Banner Section */}
-      {user?.role === "owner" ? <SubscriptionBanner /> : <SellerPlanBanner />}
+      {/* Banner Section - mantendo apenas quando necessário */}
+      {user?.role === "seller" && <SellerPlanBanner />}
       
       {/* Dashboard Content */}
       <DashboardSummary />

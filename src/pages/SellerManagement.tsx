@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Sale } from "@/types";
-import { AlertCircle, UserPlus, Users } from "lucide-react";
+import { AlertCircle, UserPlus, Users, PlusCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import TeamMembersList from "@/components/TeamMembersList";
 import { createNotification } from "@/services/notificationService";
@@ -15,6 +15,7 @@ import TeamRequestsList from "@/components/TeamRequestsList";
 import TeamInviteModal from "@/components/TeamInviteModal";
 import SellerTeamView from "@/components/SellerTeamView";
 import VirtualSellerModal from "@/components/VirtualSellerModal";
+import { NewSaleModal } from "@/components/NewSaleModal";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,8 @@ const SellerManagement = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isVirtualSellerModalOpen, setIsVirtualSellerModalOpen] = useState(false);
+  const [isNewSaleModalOpen, setIsNewSaleModalOpen] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<any>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -127,6 +130,61 @@ const SellerManagement = () => {
       }
     } catch (error) {
       console.error("Erro ao buscar dados da equipe:", error);
+    }
+  };
+
+  const checkSellerLimits = async () => {
+    if (!user || !isOwner) return false;
+
+    try {
+      // Buscar o plano atual
+      const { data: subscription, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error("Erro ao buscar plano:", error);
+        return false;
+      }
+
+      setCurrentPlan(subscription);
+
+      // Contar vendedores atuais (reais + virtuais)
+      const { data: teamData } = await supabase.rpc(
+        'get_team_members',
+        { owner_id_param: user.id }
+      );
+
+      const { data: virtualData } = await supabase
+        .from('virtual_sellers')
+        .select('*')
+        .eq('owner_id', user.id);
+
+      const totalSellers = (teamData?.length || 0) + (virtualData?.length || 0);
+      const maxSellers = subscription?.max_sellers || 3; // Default para plano free
+
+      if (totalSellers >= maxSellers) {
+        toast({
+          variant: "destructive",
+          title: "Limite de vendedores atingido",
+          description: `Seu plano permite apenas ${maxSellers} vendedores. Você já possui ${totalSellers}. Faça upgrade para adicionar mais vendedores.`
+        });
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Erro ao verificar limites:", error);
+      return false;
+    }
+  };
+
+  const handleCreateVirtualSeller = async () => {
+    const canCreate = await checkSellerLimits();
+    if (canCreate) {
+      setIsVirtualSellerModalOpen(true);
     }
   };
 
@@ -257,6 +315,11 @@ const SellerManagement = () => {
     await fetchTeamData();
   };
 
+  const handleSaleCreated = () => {
+    // Refresh sales or any other data if needed
+    console.log("Venda criada com sucesso");
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
@@ -299,19 +362,43 @@ const SellerManagement = () => {
 
   return (
     <div className="space-y-6">
+      {/* Botão Nova Venda em posição destacada */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Ações Rápidas</CardTitle>
+              <CardDescription>
+                Registre uma nova venda ou gerencie sua equipe
+              </CardDescription>
+            </div>
+            <Button onClick={() => setIsNewSaleModalOpen(true)}>
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Nova Venda
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Gerenciamento de Vendedores</CardTitle>
             <CardDescription>
               Gerencie sua equipe de vendedores reais e virtuais
+              {currentPlan && (
+                <span className="block mt-1 text-sm">
+                  Plano atual: {currentPlan.plan_name} • 
+                  Limite: {currentPlan.max_sellers === -1 ? 'Ilimitado' : `${currentPlan.max_sellers} vendedores`}
+                </span>
+              )}
             </CardDescription>
           </div>
           <div className="flex gap-2">
             <Button 
               size="sm" 
               variant="outline"
-              onClick={() => setIsVirtualSellerModalOpen(true)}
+              onClick={handleCreateVirtualSeller}
             >
               <Users className="h-4 w-4 mr-2" />
               Criar Vendedor Virtual
@@ -382,6 +469,12 @@ const SellerManagement = () => {
         isOpen={isVirtualSellerModalOpen}
         onClose={() => setIsVirtualSellerModalOpen(false)}
         onSuccess={refreshTeamData}
+      />
+
+      <NewSaleModal 
+        open={isNewSaleModalOpen}
+        onOpenChange={setIsNewSaleModalOpen}
+        onSaleCreated={handleSaleCreated}
       />
     </div>
   );

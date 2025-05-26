@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Crown, Users, Zap, AlertTriangle } from "lucide-react";
+import { Check, Crown, Users, Zap, AlertTriangle, Settings } from "lucide-react";
 import { usePlanManagement } from "@/hooks/usePlanManagement";
 import { useStripeSubscription } from "@/hooks/useStripeSubscription";
 import {
@@ -161,6 +161,13 @@ const PlanManagement = () => {
                 stripeSubscription.plan === 'profissional' ? -1 : 3
   } : currentPlan;
 
+  const getCurrentPlanBenefits = () => {
+    if (!displayPlan) return [];
+    
+    const plan = availablePlans.find(p => p.name === displayPlan.planName);
+    return plan ? plan.features : [];
+  };
+
   return (
     <div className="space-y-6">
       {/* Current Plan */}
@@ -192,9 +199,41 @@ const PlanManagement = () => {
                    displayPlan.status === 'trialing' ? 'Teste' : displayPlan.status}
                 </Badge>
                 {stripeSubscription?.subscribed && (
-                  <Button variant="outline" onClick={handleManageSubscription}>
-                    Gerenciar Assinatura
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Gerenciar Assinatura
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Gerenciar Assinatura</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Você será redirecionado para o portal do Stripe onde poderá:
+                          <br /><br />
+                          • Ver histórico de pagamentos<br />
+                          • Atualizar método de pagamento<br />
+                          • Baixar faturas<br />
+                          • Cancelar sua assinatura
+                          <br /><br />
+                          <strong>Atenção:</strong> Se cancelar, você perderá acesso aos seguintes benefícios:
+                          <br />
+                          {getCurrentPlanBenefits().map((benefit, index) => (
+                            <span key={index}>• {benefit}<br /></span>
+                          ))}
+                          <br />
+                          Tem certeza que deseja prosseguir?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleManageSubscription}>
+                          Prosseguir para o Portal
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
               </div>
             </div>

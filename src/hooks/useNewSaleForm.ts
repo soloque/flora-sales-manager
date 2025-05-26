@@ -1,8 +1,8 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "@/components/ui/use-toast";
 
-export function useNewSaleForm(preSelectedSellerId?: string | null) {
+export function useNewSaleForm() {
   const [formData, setFormData] = useState({
     customerName: "",
     customerPhone: "",
@@ -14,19 +14,7 @@ export function useNewSaleForm(preSelectedSellerId?: string | null) {
     observations: "",
     quantity: 1,
     unitPrice: 0,
-    assignedSellerId: preSelectedSellerId || "",
-    newSellerName: "",
-    newSellerEmail: "",
   });
-
-  useEffect(() => {
-    if (preSelectedSellerId) {
-      setFormData(prev => ({
-        ...prev,
-        assignedSellerId: preSelectedSellerId
-      }));
-    }
-  }, [preSelectedSellerId]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -80,26 +68,6 @@ export function useNewSaleForm(preSelectedSellerId?: string | null) {
       });
       return false;
     }
-
-    if (formData.assignedSellerId === "new") {
-      if (!formData.newSellerName.trim()) {
-        toast({
-          variant: "destructive",
-          title: "Campo obrigatório",
-          description: "Nome do vendedor é obrigatório."
-        });
-        return false;
-      }
-      
-      if (!formData.newSellerEmail.trim()) {
-        toast({
-          variant: "destructive",
-          title: "Campo obrigatório",
-          description: "Email do vendedor é obrigatório."
-        });
-        return false;
-      }
-    }
     
     return true;
   };
@@ -116,9 +84,6 @@ export function useNewSaleForm(preSelectedSellerId?: string | null) {
       observations: "",
       quantity: 1,
       unitPrice: 0,
-      assignedSellerId: preSelectedSellerId || "",
-      newSellerName: "",
-      newSellerEmail: "",
     });
   };
 

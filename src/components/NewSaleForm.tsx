@@ -6,36 +6,23 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { SellerAssignmentSection } from "./form-sections/SellerAssignmentSection";
 import { CustomerInfoSection } from "./form-sections/CustomerInfoSection";
 import { SaleValueSection } from "./form-sections/SaleValueSection";
-import { SaleSummary } from "./form-sections/SaleSummary";
 import { ObservationsSection } from "./form-sections/ObservationsSection";
 import { FormHeader } from "./form-sections/FormHeader";
 import { useNewSaleForm } from "@/hooks/useNewSaleForm";
 
-interface Seller {
-  id: string;
-  name: string;
-  email: string;
-  type: string;
-  is_virtual: boolean;
-}
-
 export function NewSaleForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const preSelectedSellerId = searchParams.get('sellerId');
   const [isLoading, setIsLoading] = useState(false);
-  const [allSellers, setAllSellers] = useState<Seller[]>([]);
   
   const {
     formData,
     handleInputChange,
     validateForm,
     resetForm
-  } = useNewSaleForm(preSelectedSellerId);
+  } = useNewSaleForm();
 
   const isOwner = user?.role === "owner";
 
@@ -44,26 +31,7 @@ export function NewSaleForm() {
       navigate("/login");
       return;
     }
-    
-    if (isOwner) {
-      const getSellers = async () => {
-        try {
-          const { data, error } = await supabase.rpc(
-            'get_all_sellers_for_owner',
-            { owner_id_param: user.id }
-          );
-          
-          if (!error && data) {
-            setAllSellers(data);
-          }
-        } catch (error) {
-          console.error("Error fetching sellers:", error);
-        }
-      };
-      
-      getSellers();
-    }
-  }, [user, navigate, preSelectedSellerId, isOwner]);
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,37 +53,6 @@ export function NewSaleForm() {
       const commissionRate = 20;
       const commission = totalPrice * (commissionRate / 100);
       
-      let sellerId = user.id;
-      let sellerName = user.name;
-      let isVirtualSeller = false;
-      
-      if (isOwner && formData.assignedSellerId) {
-        if (formData.assignedSellerId === "new") {
-          const { data: virtualSeller, error: virtualSellerError } = await supabase
-            .from('virtual_sellers')
-            .insert({
-              name: formData.newSellerName,
-              email: formData.newSellerEmail,
-              owner_id: user.id
-            })
-            .select()
-            .single();
-          
-          if (virtualSellerError) throw virtualSellerError;
-          
-          sellerId = virtualSeller.id;
-          sellerName = virtualSeller.name;
-          isVirtualSeller = true;
-        } else {
-          const assignedSeller = allSellers.find(seller => seller.id === formData.assignedSellerId);
-          if (assignedSeller) {
-            sellerId = assignedSeller.id;
-            sellerName = assignedSeller.name;
-            isVirtualSeller = assignedSeller.is_virtual;
-          }
-        }
-      }
-      
       const { data: saleData, error } = await supabase
         .from('sales')
         .insert({
@@ -124,8 +61,8 @@ export function NewSaleForm() {
           quantity: formData.quantity,
           unit_price: formData.unitPrice,
           total_price: totalPrice,
-          seller_id: sellerId,
-          seller_name: sellerName,
+          seller_id: user.id,
+          seller_name: user.name,
           commission: commission,
           commission_rate: commissionRate,
           status: "pending",
@@ -137,7 +74,7 @@ export function NewSaleForm() {
           customer_state: formData.state,
           customer_zipcode: formData.cep,
           customer_order: formData.order,
-          is_virtual_seller: isVirtualSeller
+          is_virtual_seller: false
         })
         .select()
         .single();
@@ -146,9 +83,7 @@ export function NewSaleForm() {
       
       toast({
         title: "Venda registrada com sucesso!",
-        description: `Venda no valor de R$ ${totalPrice.toFixed(2)} foi registrada${
-          isOwner && formData.assignedSellerId ? ` para ${sellerName}` : ''
-        }.`
+        description: `Venda no valor de R$ ${totalPrice.toFixed(2)} foi registrada.`
       });
       
       navigate("/sales");
@@ -180,15 +115,6 @@ export function NewSaleForm() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6">
-            {isOwner && (
-              <SellerAssignmentSection
-                formData={formData}
-                handleInputChange={handleInputChange}
-                allSellers={allSellers}
-                preSelectedSellerId={preSelectedSellerId}
-              />
-            )}
-            
             <CustomerInfoSection
               formData={formData}
               handleInputChange={handleInputChange}
@@ -204,13 +130,20 @@ export function NewSaleForm() {
               handleInputChange={handleInputChange}
             />
             
-            <SaleSummary
-              totalPrice={totalPrice}
-              commission={commission}
-              isOwner={isOwner}
-              formData={formData}
-              allSellers={allSellers}
-            />
+            <div className="border p-4 rounded-md bg-muted/30">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Valor Total:</span>
+                <span className="text-xl font-bold">
+                  R$ {totalPrice.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-sm text-muted-foreground">Comissão (20%):</span>
+                <span className="text-sm">
+                  R$ {commission.toFixed(2)}
+                </span>
+              </div>
+            </div>
           </CardContent>
           <CardFooter className="flex justify-end space-x-2">
             <Button

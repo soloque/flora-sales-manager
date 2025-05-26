@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   Table, 
   TableBody, 
@@ -14,6 +15,8 @@ import {
 import { Sale, OrderStatus } from "@/types";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { Download } from "lucide-react";
+import { exportToCSV, formatDateForFilename } from "@/utils/exportUtils";
 
 const SalesHistory = () => {
   const { user } = useAuth();
@@ -21,6 +24,7 @@ const SalesHistory = () => {
   
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -95,6 +99,32 @@ const SalesHistory = () => {
     }
   };
 
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const csvData = sales.map(sale => ({
+        'Data': format(new Date(sale.date), "dd/MM/yyyy"),
+        'Cliente': sale.customerInfo.name,
+        'Telefone': sale.customerInfo.phone,
+        'Pedido': sale.customerInfo.order,
+        ...(isOwner && { 'Vendedor': sale.sellerName }),
+        'Valor': `R$ ${sale.totalPrice.toFixed(2)}`,
+        'Comissão': `R$ ${sale.commission.toFixed(2)}`,
+        ...(isOwner && { 'Custo': `R$ ${(sale.costPrice || 0).toFixed(2)}` }),
+        ...(isOwner && { 'Lucro': `R$ ${(sale.profit || 0).toFixed(2)}` }),
+        'Status': sale.status,
+        'Observações': sale.observations || ''
+      }));
+
+      const filename = `historico-vendas-${formatDateForFilename(new Date())}`;
+      exportToCSV(csvData, filename);
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
       case "pending":
@@ -139,10 +169,23 @@ const SalesHistory = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Histórico de Vendas</CardTitle>
-          <CardDescription>
-            Histórico de vendas dos últimos 3 meses
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Histórico de Vendas</CardTitle>
+              <CardDescription>
+                Histórico de vendas dos últimos 3 meses
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={handleExportCSV}
+              disabled={isExporting || sales.length === 0}
+              variant="outline"
+              size="sm"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {isExporting ? "Exportando..." : "Baixar CSV"}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex justify-between items-center">

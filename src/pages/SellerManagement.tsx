@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import TeamMembersList from "@/components/TeamMembersList";
 import { createNotification } from "@/services/notificationService";
 import TeamRequestsList from "@/components/TeamRequestsList";
 import TeamInviteModal from "@/components/TeamInviteModal";
+import SellerTeamView from "@/components/SellerTeamView";
 import {
   Dialog,
   DialogContent,
@@ -266,29 +268,9 @@ const SellerManagement = () => {
     );
   }
 
+  // Show seller team view for sellers
   if (isSeller) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Gerenciamento de Vendedores</CardTitle>
-            <CardDescription>
-              Como vendedor, você pode solicitar vínculo a proprietários de times.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Acesso Limitado</AlertTitle>
-              <AlertDescription>
-                Apenas proprietários podem gerenciar times de vendedores.
-                Entre em contato com um proprietário para se juntar a um time.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <SellerTeamView />;
   }
 
   if (!isOwner) {

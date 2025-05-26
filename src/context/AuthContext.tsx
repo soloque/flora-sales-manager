@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, UserRole } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -128,6 +129,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
+      // Clear any cached data
+      localStorage.clear();
+      sessionStorage.clear();
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     }

@@ -29,6 +29,8 @@ const Layout = () => {
 
   const handleSignOut = async () => {
     await logout();
+    // Force navigation to login page
+    window.location.href = "/login";
   };
 
   // Filter navigation based on user role
@@ -39,11 +41,17 @@ const Layout = () => {
       { name: "Histórico", href: "/sales-history", icon: FileText },
       { name: "Equipe", href: "/team", icon: Users },
       { name: "Mensagens", href: "/messages", icon: MessageSquare },
-      { name: "Inventário", href: "/inventory", icon: Package },
-      { name: "Comissões", href: "/commission-settings", icon: CreditCard },
-      { name: "Planos", href: "/plan-management", icon: Crown },
       { name: "Configurações", href: "/settings", icon: Settings },
     ];
+
+    // Add owner-specific navigation items
+    if (user && user.role === "owner") {
+      baseNavigation.splice(5, 0, 
+        { name: "Inventário", href: "/inventory", icon: Package },
+        { name: "Comissões", href: "/commission-settings", icon: CreditCard },
+        { name: "Planos", href: "/plan-management", icon: Crown }
+      );
+    }
 
     // Add "Nova Venda" only for sellers (not owners)
     if (user && user.role !== "owner") {

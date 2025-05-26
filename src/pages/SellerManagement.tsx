@@ -44,25 +44,7 @@ const SellerManagement = () => {
       setIsLoading(true);
       try {
         if (isOwner) {
-          // Get team members for owner
-          const { data: teamData, error: teamError } = await supabase.rpc(
-            'get_team_members',
-            { owner_id_param: user.id }
-          );
-          
-          if (teamError) throw teamError;
-          
-          if (teamData) {
-            const members = teamData.map(member => ({
-              id: member.id,
-              name: member.name || "",
-              email: member.email || "",
-              role: member.role as any,
-              createdAt: new Date(member.created_at),
-              avatar_url: member.avatar_url
-            }));
-            setTeamMembers(members);
-          }
+          await fetchTeamData();
           
           // Get sales data for analytics
           const { data: salesData, error: salesError } = await supabase
@@ -119,6 +101,34 @@ const SellerManagement = () => {
     
     fetchData();
   }, [user, isOwner]);
+
+  const fetchTeamData = async () => {
+    if (!user) return;
+    
+    try {
+      // Get team members for owner
+      const { data: teamData, error: teamError } = await supabase.rpc(
+        'get_team_members',
+        { owner_id_param: user.id }
+      );
+      
+      if (teamError) throw teamError;
+      
+      if (teamData) {
+        const members = teamData.map(member => ({
+          id: member.id,
+          name: member.name || "",
+          email: member.email || "",
+          role: member.role as any,
+          createdAt: new Date(member.created_at),
+          avatar_url: member.avatar_url
+        }));
+        setTeamMembers(members);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar dados da equipe:", error);
+    }
+  };
 
   const handleAddSeller = async () => {
     if (!searchEmail.trim()) {
@@ -183,22 +193,7 @@ const SellerManagement = () => {
       );
 
       // Refresh team members
-      const { data: teamData } = await supabase.rpc(
-        'get_team_members',
-        { owner_id_param: user!.id }
-      );
-      
-      if (teamData) {
-        const members = teamData.map(member => ({
-          id: member.id,
-          name: member.name || "",
-          email: member.email || "",
-          role: member.role as any,
-          createdAt: new Date(member.created_at),
-          avatar_url: member.avatar_url
-        }));
-        setTeamMembers(members);
-      }
+      await fetchTeamData();
 
       setSearchEmail("");
       toast({
@@ -259,30 +254,7 @@ const SellerManagement = () => {
   };
 
   const refreshTeamData = async () => {
-    if (!user || !isOwner) return;
-    
-    try {
-      const { data: teamData, error: teamError } = await supabase.rpc(
-        'get_team_members',
-        { owner_id_param: user.id }
-      );
-      
-      if (teamError) throw teamError;
-      
-      if (teamData) {
-        const members = teamData.map(member => ({
-          id: member.id,
-          name: member.name || "",
-          email: member.email || "",
-          role: member.role as any,
-          createdAt: new Date(member.created_at),
-          avatar_url: member.avatar_url
-        }));
-        setTeamMembers(members);
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar dados da equipe:", error);
-    }
+    await fetchTeamData();
   };
 
   if (isLoading) {
@@ -332,7 +304,7 @@ const SellerManagement = () => {
           <div>
             <CardTitle>Gerenciamento de Vendedores</CardTitle>
             <CardDescription>
-              Gerencie sua equipe de vendedores e acompanhe o desempenho
+              Gerencie sua equipe de vendedores reais e virtuais
             </CardDescription>
           </div>
           <div className="flex gap-2">

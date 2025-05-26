@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Download, Play, Square, Settings, Info, Keyboard } from "lucide-react";
+import { Play, Square, Settings, Info, Keyboard, Copy, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface BotMessage {
@@ -20,6 +20,8 @@ interface BotMessage {
 const AutoResponseBot = () => {
   const { toast } = useToast();
   const [isRunning, setIsRunning] = useState(false);
+  const [lastUsedKey, setLastUsedKey] = useState<string>("");
+  const keydownListenerRef = useRef<((event: KeyboardEvent) => void) | null>(null);
   const [messages, setMessages] = useState<BotMessage[]>([
     {
       key: "F1",
@@ -85,78 +87,91 @@ const AutoResponseBot = () => {
     setMessages(updated);
   };
 
-  const generatePythonScript = () => {
-    const script = `import pyautogui
-import time
-import keyboard
-import pyperclip
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text.replace(/\\n/g, '\n'));
+      setLastUsedKey(text);
+      
+      toast({
+        title: "Mensagem copiada!",
+        description: "A mensagem foi copiada para a área de transferência. Cole onde desejar.",
+        duration: 2000
+      });
+    } catch (error) {
+      console.error('Erro ao copiar:', error);
+      toast({
+        title: "Erro ao copiar",
+        description: "Não foi possível copiar a mensagem. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
 
-# Tempo de espera para você posicionar o cursor
-print("Bot de Respostas Automáticas - PlantPro")
-print("Posicione o cursor em um campo de texto...")
-time.sleep(5)
+  const handleKeyPress = (event: KeyboardEvent) => {
+    // Verifica se não está digitando em um input
+    const target = event.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+      return;
+    }
 
-def disparar_mensagens(mensagem):
-    # Copia a mensagem para a área de transferência (com acentos)
-    pyperclip.copy(mensagem)
+    const pressedKey = event.key.toUpperCase();
+    const message = messages.find(msg => msg.key === pressedKey);
+    
+    if (message) {
+      event.preventDefault();
+      
+      if (message.key === "F1" || message.key === "F7") {
+        // Para F1 e F7, enviar múltiplas mensagens
+        const lines = message.message.split('\n');
+        lines.forEach((line, index) => {
+          setTimeout(() => {
+            copyToClipboard(line);
+          }, index * 1000);
+        });
+      } else {
+        copyToClipboard(message.message);
+      }
+    }
+  };
 
-    # Obtém a posição atual do cursor
-    x, y = pyautogui.position()
+  const startBot = () => {
+    if (keydownListenerRef.current) {
+      document.removeEventListener('keydown', keydownListenerRef.current);
+    }
 
-    # Clica no local atual do cursor
-    pyautogui.click(x, y)
-
-    # Cole o texto da área de transferência
-    keyboard.press_and_release('ctrl+v')
-
-    # Pequeno atraso
-    time.sleep(0.5)
-
-    # Pressiona Enter
-    keyboard.press_and_release('enter')
-
-    # Aguarda 1 segundo antes de inserir a próxima mensagem
-    time.sleep(1)
-
-# Configurações das mensagens
-${messages.map(msg => {
-  if (msg.key === "F1" || msg.key === "F7") {
-    const lines = msg.message.split('\n');
-    return `# ${msg.description}
-mensagens_${msg.key.toLowerCase()} = [
-${lines.map(line => `    "${line.replace(/"/g, '\\"')}"`).join(',\n')}
-]
-keyboard.add_hotkey('${msg.key}', lambda: [disparar_mensagens(mensagem) for mensagem in mensagens_${msg.key.toLowerCase()}])`;
-  } else {
-    return `# ${msg.description}
-mensagem_${msg.key.toLowerCase()} = "${msg.message.replace(/"/g, '\\"')}"
-keyboard.add_hotkey('${msg.key}', lambda: disparar_mensagens(mensagem_${msg.key.toLowerCase()}))`;
-  }
-}).join('\n\n')}
-
-print("Bot ativo! Pressione as teclas F1-F7 para enviar mensagens.")
-print("Pressione Ctrl+C para parar o bot.")
-
-try:
-    while True:
-        time.sleep(0.1)
-except KeyboardInterrupt:
-    print("\\nBot parado.")
-`;
-
-    const blob = new Blob([script], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'plantpro_autobot.py';
-    a.click();
-    URL.revokeObjectURL(url);
-
+    keydownListenerRef.current = handleKeyPress;
+    document.addEventListener('keydown', keydownListenerRef.current);
+    setIsRunning(true);
+    
     toast({
-      title: "Script baixado",
-      description: "O arquivo Python foi baixado. Execute-o em seu computador para ativar o bot."
+      title: "Bot ativado!",
+      description: "Pressione F1-F7 para usar as mensagens automáticas. As mensagens serão copiadas automaticamente.",
+      duration: 3000
     });
   };
+
+  const stopBot = () => {
+    if (keydownListenerRef.current) {
+      document.removeEventListener('keydown', keydownListenerRef.current);
+      keydownListenerRef.current = null;
+    }
+    setIsRunning(false);
+    setLastUsedKey("");
+    
+    toast({
+      title: "Bot desativado",
+      description: "O bot de respostas automáticas foi parado."
+    });
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (keydownListenerRef.current) {
+        document.removeEventListener('keydown', keydownListenerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -167,12 +182,40 @@ except KeyboardInterrupt:
             Configure e use respostas automáticas para agilizar seu atendimento
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <Badge variant={isRunning ? "default" : "secondary"}>
             {isRunning ? "Ativo" : "Inativo"}
           </Badge>
+          {isRunning ? (
+            <Button onClick={stopBot} variant="destructive">
+              <Square className="h-4 w-4 mr-2" />
+              Parar Bot
+            </Button>
+          ) : (
+            <Button onClick={startBot}>
+              <Play className="h-4 w-4 mr-2" />
+              Iniciar Bot
+            </Button>
+          )}
         </div>
       </div>
+
+      {isRunning && (
+        <Card className="border-green-200 bg-green-50 dark:bg-green-900/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+              <CheckCircle className="h-5 w-5" />
+              <span className="font-medium">Bot ativo!</span>
+              <span className="text-sm">Pressione F1-F7 para usar as mensagens. Elas serão copiadas automaticamente.</span>
+            </div>
+            {lastUsedKey && (
+              <div className="mt-2 text-xs text-green-600 dark:text-green-400">
+                Última mensagem copiada: "{lastUsedKey.length > 50 ? lastUsedKey.substring(0, 50) + '...' : lastUsedKey}"
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="config" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
@@ -195,7 +238,7 @@ except KeyboardInterrupt:
             <CardHeader>
               <CardTitle>Configurar Mensagens</CardTitle>
               <CardDescription>
-                Personalize as mensagens que serão enviadas por cada tecla de atalho
+                Personalize as mensagens que serão copiadas automaticamente por cada tecla de atalho
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -210,6 +253,13 @@ except KeyboardInterrupt:
                         onChange={(e) => updateMessage(index, 'description', e.target.value)}
                         className="flex-1"
                       />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyToClipboard(msg.message)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
                     </div>
                     <div>
                       <Label>Mensagem</Label>
@@ -220,22 +270,16 @@ except KeyboardInterrupt:
                         rows={3}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Use \n para quebras de linha
+                        Use quebras de linha para múltiplas mensagens (uma por linha)
                       </p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="flex gap-2">
-                <Button onClick={saveMessages}>
-                  Salvar Configurações
-                </Button>
-                <Button variant="outline" onClick={generatePythonScript}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Baixar Bot
-                </Button>
-              </div>
+              <Button onClick={saveMessages}>
+                Salvar Configurações
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -245,7 +289,7 @@ except KeyboardInterrupt:
             <CardHeader>
               <CardTitle>Como Usar o Bot</CardTitle>
               <CardDescription>
-                Siga estes passos para configurar e usar o bot de respostas automáticas
+                Siga estes passos para usar o bot de respostas automáticas
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -268,9 +312,9 @@ except KeyboardInterrupt:
                     2
                   </div>
                   <div>
-                    <h3 className="font-medium">Baixe o Script Python</h3>
+                    <h3 className="font-medium">Inicie o Bot</h3>
                     <p className="text-sm text-muted-foreground">
-                      Clique em "Baixar Bot" para baixar o arquivo Python com suas configurações.
+                      Clique em "Iniciar Bot" para ativar as funcionalidades de resposta automática.
                     </p>
                   </div>
                 </div>
@@ -280,9 +324,10 @@ except KeyboardInterrupt:
                     3
                   </div>
                   <div>
-                    <h3 className="font-medium">Instale as Dependências</h3>
+                    <h3 className="font-medium">Use os Atalhos</h3>
                     <p className="text-sm text-muted-foreground">
-                      Execute no terminal: <code className="bg-muted px-1 rounded">pip install pyautogui keyboard pyperclip</code>
+                      Pressione as teclas F1-F7 para copiar automaticamente as mensagens.
+                      Cole onde desejar usando Ctrl+V.
                     </p>
                   </div>
                 </div>
@@ -292,23 +337,9 @@ except KeyboardInterrupt:
                     4
                   </div>
                   <div>
-                    <h3 className="font-medium">Execute o Bot</h3>
+                    <h3 className="font-medium">Pare Quando Necessário</h3>
                     <p className="text-sm text-muted-foreground">
-                      Execute o arquivo Python e posicione o cursor no campo de texto onde deseja enviar as mensagens.
-                      Você terá 5 segundos para posicionar o cursor.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
-                    5
-                  </div>
-                  <div>
-                    <h3 className="font-medium">Use os Atalhos</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Pressione as teclas F1-F7 para enviar as mensagens automaticamente.
-                      O bot enviará a mensagem e pressionará Enter automaticamente.
+                      Clique em "Parar Bot" quando não precisar mais das respostas automáticas.
                     </p>
                   </div>
                 </div>
@@ -316,13 +347,13 @@ except KeyboardInterrupt:
 
               <Separator />
 
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">⚠️ Importante</h4>
-                <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
-                  <li>• O bot funciona apenas no Windows/Desktop</li>
-                  <li>• Mantenha o cursor no campo de texto ativo</li>
-                  <li>• Para parar o bot, pressione Ctrl+C no terminal</li>
-                  <li>• Teste primeiro em um bloco de notas antes de usar em conversas</li>
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">💡 Dicas</h4>
+                <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                  <li>• O bot funciona em qualquer aba do navegador enquanto estiver ativo</li>
+                  <li>• As mensagens são copiadas automaticamente - basta colar onde desejar</li>
+                  <li>• F1 e F7 podem enviar múltiplas mensagens em sequência</li>
+                  <li>• Use o botão de cópia ao lado de cada mensagem para testar</li>
                 </ul>
               </div>
             </CardContent>
@@ -353,6 +384,13 @@ except KeyboardInterrupt:
                         }
                       </p>
                     </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copyToClipboard(msg.message)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
                   </div>
                 ))}
               </div>

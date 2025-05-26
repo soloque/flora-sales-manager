@@ -5,18 +5,15 @@ import { useAuth } from "@/context/AuthContext";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    // Wait for auth to load before making decisions
-    if (loading) return;
-    
     if (isAuthenticated) {
-      navigate("/dashboard", { replace: true });
+      navigate("/dashboard");
     } else {
-      navigate("/login", { replace: true });
+      navigate("/");
     }
-  }, [isAuthenticated, loading, navigate]);
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

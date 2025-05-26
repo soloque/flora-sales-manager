@@ -5,9 +5,11 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTheme } from "@/context/ThemeContext";
-import { Moon, Sun, BarChart3, TrendingUp } from "lucide-react";
+import { Moon, Sun, Gift } from "lucide-react";
+import { UserRole } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 
 const Register = () => {
@@ -15,15 +17,16 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<UserRole>("seller");
   const [isLoading, setIsLoading] = useState(false);
   const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
 
-  // If already authenticated, redirect to dashboard
+  // Se já estiver autenticado, redireciona para a página inicial
   if (isAuthenticated) {
-    navigate("/dashboard");
+    navigate("/");
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,137 +36,169 @@ const Register = () => {
       toast({
         variant: "destructive",
         title: "Senhas não coincidem",
-        description: "Verifique se as senhas são iguais.",
+        description: "Por favor, verifique se as senhas estão iguais.",
       });
       return;
     }
-
+    
+    if (password.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Senha muito curta",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
-      await register(email, password, name);
+      await register(email, password, name, role);
       toast({
-        title: "Registro realizado com sucesso",
-        description: "Você foi registrado com sucesso. Faça login para continuar.",
+        title: "Conta criada com sucesso!",
+        description: `Bem-vindo ao sistema! Você tem 7 dias de teste gratuito como ${role === 'owner' ? 'proprietário' : 'vendedor'}!`,
       });
-      navigate("/login");
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Falha no registro",
-        description: error.message || "Erro ao criar conta. Tente novamente.",
-      });
+      navigate("/");
+    } catch (error) {
+      // O erro já será tratado no AuthContext
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/10 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Button
         variant="outline"
         size="icon"
         onClick={toggleTheme}
-        className="fixed top-4 right-4 h-12 w-12 rounded-xl border-border/50 bg-background/80 backdrop-blur-md"
+        className="fixed top-4 right-4"
       >
         {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
       </Button>
 
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <Link to="/" className="inline-flex items-center space-x-3 text-primary hover:text-primary/80 transition-all duration-200 group mb-8">
-            <div className="relative">
-              <div className="bg-gradient-to-br from-primary to-primary/80 p-3 rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-200">
-                <BarChart3 className="h-6 w-6 text-primary-foreground" />
-                <TrendingUp className="h-3 w-3 absolute -top-1 -right-1 text-blue-400 bg-background rounded-full p-0.5" />
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-3xl font-bold leading-none bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                VendaFlow
-              </span>
-              <span className="text-xs text-muted-foreground leading-none font-medium">
-                Gestão de Vendas
-              </span>
-            </div>
-          </Link>
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-primary">VendaFlow</h1>
+          <p className="text-muted-foreground mt-2">Sistema de Gerenciamento de Vendas de Plantas</p>
         </div>
 
-        <Card className="shadow-2xl border-0 bg-card/80 backdrop-blur-sm">
-          <CardHeader className="space-y-4 pb-6">
-            <CardTitle className="text-2xl font-bold text-center">Criar sua conta</CardTitle>
-            <CardDescription className="text-center text-base">
-              Preencha os dados abaixo para criar sua conta gratuita
+        {/* Trial Banner */}
+        <Card className="mb-6 border-green-200 bg-green-50">
+          <CardContent className="pt-4">
+            <div className="flex items-center space-x-3">
+              <Gift className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="font-medium text-green-800">7 Dias Gratuitos</p>
+                <p className="text-sm text-green-600">
+                  Teste todas as funcionalidades sem compromisso
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Criar conta</CardTitle>
+            <CardDescription>
+              Preencha os dados abaixo para criar sua conta e começar seu teste gratuito
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium">Nome completo</Label>
+                <Label htmlFor="name">Nome completo</Label>
                 <Input
                   id="name"
-                  type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  placeholder="Seu nome completo"
-                  className="h-12 rounded-xl border-border/50 bg-background/50"
+                  placeholder="Digite seu nome completo"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="seu@email.com"
-                  className="h-12 rounded-xl border-border/50 bg-background/50"
+                  placeholder="Digite seu email"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+                <Label htmlFor="password">Senha</Label>
                 <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  placeholder="********"
-                  className="h-12 rounded-xl border-border/50 bg-background/50"
+                  placeholder="Digite sua senha (mín. 6 caracteres)"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirmar senha</Label>
+                <Label htmlFor="confirmPassword">Confirmar senha</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  placeholder="********"
-                  className="h-12 rounded-xl border-border/50 bg-background/50"
+                  placeholder="Confirme sua senha"
                 />
               </div>
-              <Button type="submit" className="w-full h-12 rounded-xl font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-300" disabled={isLoading}>
-                {isLoading ? "Criando conta..." : "Criar conta gratuita"}
+              <div className="space-y-3">
+                <Label>Tipo de conta</Label>
+                <RadioGroup
+                  value={role}
+                  onValueChange={(value) => setRole(value as UserRole)}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <RadioGroupItem value="owner" id="owner" />
+                    <div>
+                      <Label htmlFor="owner" className="font-medium cursor-pointer">
+                        Proprietário
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Dono do negócio, gerencia vendedores e comissões
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <RadioGroupItem value="seller" id="seller" />
+                    <div>
+                      <Label htmlFor="seller" className="font-medium cursor-pointer">
+                        Vendedor
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Registra vendas e acompanha comissões
+                      </p>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Registrando..." : "Começar Teste Gratuito"}
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4 pt-0">
+          <CardFooter className="flex justify-center">
             <p className="text-center text-sm text-muted-foreground">
               Já tem uma conta?{" "}
-              <Link to="/login" className="text-primary hover:underline font-medium">
-                Faça login aqui
+              <Link to="/login" className="text-primary hover:underline">
+                Entrar
               </Link>
             </p>
           </CardFooter>
         </Card>
         
-        <div className="text-center">
-          <Link to="/" className="text-primary hover:underline text-sm font-medium">
-            ← Voltar para página inicial
+        <div className="mt-6 text-center">
+          <Link to="/pricing" className="text-primary hover:underline">
+            Ver planos de assinatura
           </Link>
         </div>
       </div>

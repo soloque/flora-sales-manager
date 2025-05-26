@@ -9,35 +9,19 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useTheme } from "@/context/ThemeContext";
 import { Moon, Sun, BarChart3, TrendingUp } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { useEffect } from "react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login, isAuthenticated, loading } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
 
-  // Check if already authenticated and redirect
-  useEffect(() => {
-    if (!loading && isAuthenticated) {
-      navigate("/dashboard");
-    }
-  }, [isAuthenticated, loading, navigate]);
-
-  // Don't render login form if already authenticated
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
+  // If already authenticated, redirect to dashboard
   if (isAuthenticated) {
-    return null; // Will redirect via useEffect
+    navigate("/dashboard");
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,13 +34,12 @@ const Login = () => {
         title: "Login bem-sucedido",
         description: "Você foi autenticado com sucesso.",
       });
-      // Navigation will happen via useEffect
-    } catch (error: any) {
-      console.error('Login error:', error);
+      navigate("/dashboard");
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Falha no login",
-        description: error.message || "Credenciais inválidas. Tente novamente.",
+        description: "Credenciais inválidas. Tente novamente.",
       });
     } finally {
       setIsLoading(false);

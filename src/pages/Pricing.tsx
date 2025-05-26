@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -69,7 +68,7 @@ const Pricing = () => {
     {
       name: "Enterprise",
       description: "Solução completa para grandes operações",
-      price: "custom", // Custom pricing
+      price: "custom" as const, // Custom pricing
       features: [
         "Tudo do plano Professional",
         "API personalizada",
@@ -158,12 +157,12 @@ const Pricing = () => {
                   ) : (
                     <>
                       <span className="text-2xl font-bold">
-                        R$ {(plan.price / (isAnnual ? 12 : 1)).toFixed(0)}
+                        R$ {typeof plan.price === "number" ? (plan.price / (isAnnual ? 12 : 1)).toFixed(0) : "0"}
                       </span>
                       <span className="text-muted-foreground">
                         /{isAnnual ? "mês" : "mês"}
                       </span>
-                      {isAnnual && plan.price > 0 && (
+                      {isAnnual && typeof plan.price === "number" && plan.price > 0 && (
                         <div className="text-xs text-muted-foreground mt-1">
                           Faturado anualmente como R$ {plan.price},00
                         </div>

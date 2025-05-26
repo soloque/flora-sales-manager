@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, UserRole } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +12,6 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  signOut: () => void;
   register: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
 }
@@ -137,9 +137,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Alias for logout to maintain compatibility
-  const signOut = logout;
-
   const register = async (email: string, password: string, name: string, role: UserRole) => {
     setLoading(true);
     try {
@@ -224,7 +221,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         loading,
         login,
         logout,
-        signOut,
         register,
         updateProfile,
       }}

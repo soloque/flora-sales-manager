@@ -1,6 +1,7 @@
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "@/components/Layout";
+import Landing from "@/pages/Landing";
 import Index from "@/pages/Index";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -30,24 +31,32 @@ function App() {
         <AuthProvider>
           <BrowserRouter>
             <Toaster />
-            <Layout>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/sales" element={<SalesList />} />
-                <Route path="/sales/new" element={<NewSale />} />
-                <Route path="/commissions" element={<CommissionDetails />} />
-                <Route path="/commission-settings" element={<CommissionSettings />} />
-                <Route path="/sellers" element={<SellerManagement />} />
-                <Route path="/inventory" element={<Inventory />} />
-                <Route path="/settings" element={<UserSettings />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/messages" element={<Messages />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Layout>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Landing />} />
+              <Route path="/landing" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/pricing" element={<Pricing />} />
+              
+              {/* Protected routes with Layout */}
+              <Route path="/*" element={
+                <Layout>
+                  <Routes>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/sales" element={<SalesList />} />
+                    <Route path="/sales/new" element={<NewSale />} />
+                    <Route path="/commissions" element={<CommissionDetails />} />
+                    <Route path="/commission-settings" element={<CommissionSettings />} />
+                    <Route path="/sellers" element={<SellerManagement />} />
+                    <Route path="/inventory" element={<Inventory />} />
+                    <Route path="/settings" element={<UserSettings />} />
+                    <Route path="/messages" element={<Messages />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Layout>
+              } />
+            </Routes>
           </BrowserRouter>
         </AuthProvider>
       </ThemeProvider>

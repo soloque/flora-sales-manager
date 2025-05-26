@@ -8,14 +8,17 @@ const Dashboard = () => {
   const { user } = useAuth();
   
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="text-center space-y-4 py-8">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent">
-          Bem-vindo ao VendaFlow
-        </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Gerencie suas vendas de forma inteligente e eficiente com nossa plataforma completa
+    <div className="space-y-6">
+      {/* Discrete Welcome Message */}
+      <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-2xl p-6 border border-primary/10">
+        <div className="flex items-center space-x-3">
+          <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+          <p className="text-lg font-medium text-foreground">
+            Olá, <span className="text-primary font-semibold">{user?.name}</span> 👋
+          </p>
+        </div>
+        <p className="text-muted-foreground mt-1 ml-5">
+          Bem-vindo de volta! Vamos acompanhar seus resultados hoje.
         </p>
       </div>
 

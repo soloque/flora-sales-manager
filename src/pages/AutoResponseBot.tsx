@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Play, Square, Settings, Info, Keyboard, Copy, CheckCircle } from "lucide-react";
+import { Play, Square, Settings, Info, Keyboard, Copy, CheckCircle, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface BotMessage {
@@ -21,7 +21,9 @@ const AutoResponseBot = () => {
   const { toast } = useToast();
   const [isRunning, setIsRunning] = useState(false);
   const [lastUsedKey, setLastUsedKey] = useState<string>("");
+  const [isInInputField, setIsInInputField] = useState(false);
   const keydownListenerRef = useRef<((event: KeyboardEvent) => void) | null>(null);
+  const focusListenerRef = useRef<((event: FocusEvent) => void) | null>(null);
   const [messages, setMessages] = useState<BotMessage[]>([
     {
       key: "0",
@@ -103,7 +105,7 @@ const AutoResponseBot = () => {
       
       toast({
         title: "Mensagem copiada!",
-        description: "A mensagem foi copiada para a área de transferência. Cole onde desejar.",
+        description: "A mensagem foi copiada para a área de transferência. Cole onde desejar com Ctrl+V.",
         duration: 2000
       });
     } catch (error) {
@@ -116,10 +118,49 @@ const AutoResponseBot = () => {
     }
   };
 
-  const handleKeyPress = (event: KeyboardEvent) => {
-    // Verifica se não está digitando em um input
+  const isInputElement = (element: HTMLElement): boolean => {
+    const inputTypes = ['INPUT', 'TEXTAREA', 'SELECT'];
+    return inputTypes.includes(element.tagName) || 
+           element.contentEditable === 'true' || 
+           element.hasAttribute('contenteditable') ||
+           element.closest('[contenteditable="true"]') !== null ||
+           element.closest('input') !== null ||
+           element.closest('textarea') !== null;
+  };
+
+  const handleFocus = (event: FocusEvent) => {
     const target = event.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+    if (isInputElement(target)) {
+      setIsInInputField(true);
+      console.log('Entrando em campo de input - bot temporariamente desabilitado');
+    }
+  };
+
+  const handleBlur = (event: FocusEvent) => {
+    const target = event.target as HTMLElement;
+    if (isInputElement(target)) {
+      // Pequeno delay para evitar falsos positivos
+      setTimeout(() => {
+        const activeElement = document.activeElement as HTMLElement;
+        if (!activeElement || !isInputElement(activeElement)) {
+          setIsInInputField(false);
+          console.log('Saindo de campo de input - bot reabilitado');
+        }
+      }, 100);
+    }
+  };
+
+  const handleKeyPress = (event: KeyboardEvent) => {
+    // Se estiver em um campo de input, não processa
+    if (isInInputField) {
+      console.log('Bot desabilitado - digitando em campo de texto');
+      return;
+    }
+
+    // Verificação adicional do elemento ativo
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement && isInputElement(activeElement)) {
+      setIsInInputField(true);
       return;
     }
 
@@ -128,6 +169,9 @@ const AutoResponseBot = () => {
     
     if (message) {
       event.preventDefault();
+      event.stopPropagation();
+      
+      console.log(`Tecla ${pressedKey} pressionada - copiando mensagem:`, message.message);
       
       if (message.key === "0" || message.message.includes('\n')) {
         // Para mensagens com múltiplas linhas, enviar cada linha separadamente
@@ -147,16 +191,26 @@ const AutoResponseBot = () => {
     if (keydownListenerRef.current) {
       document.removeEventListener('keydown', keydownListenerRef.current);
     }
+    if (focusListenerRef.current) {
+      document.removeEventListener('focusin', focusListenerRef.current);
+      document.removeEventListener('focusout', focusListenerRef.current);
+    }
 
     keydownListenerRef.current = handleKeyPress;
-    document.addEventListener('keydown', keydownListenerRef.current);
+    focusListenerRef.current = handleFocus;
+    
+    document.addEventListener('keydown', keydownListenerRef.current, true);
+    document.addEventListener('focusin', handleFocus, true);
+    document.addEventListener('focusout', handleBlur, true);
+    
     setIsRunning(true);
+    setIsInInputField(false);
     
     const keys = messages.map(m => m.key).filter(k => k).join(', ');
     toast({
       title: "Bot ativado!",
-      description: `Pressione ${keys} para usar as mensagens automáticas. As mensagens serão copiadas automaticamente.`,
-      duration: 3000
+      description: `Pressione ${keys} para usar as mensagens automáticas. O bot detecta automaticamente quando você está digitando.`,
+      duration: 4000
     });
   };
 
@@ -165,8 +219,14 @@ const AutoResponseBot = () => {
       document.removeEventListener('keydown', keydownListenerRef.current);
       keydownListenerRef.current = null;
     }
+    if (focusListenerRef.current) {
+      document.removeEventListener('focusin', focusListenerRef.current);
+      document.removeEventListener('focusout', focusListenerRef.current);
+      focusListenerRef.current = null;
+    }
     setIsRunning(false);
     setLastUsedKey("");
+    setIsInInputField(false);
     
     toast({
       title: "Bot desativado",
@@ -180,8 +240,21 @@ const AutoResponseBot = () => {
       if (keydownListenerRef.current) {
         document.removeEventListener('keydown', keydownListenerRef.current);
       }
+      if (focusListenerRef.current) {
+        document.removeEventListener('focusin', focusListenerRef.current);
+        document.removeEventListener('focusout', focusListenerRef.current);
+      }
     };
   }, []);
+
+  const getSuggestedKeys = () => {
+    return [
+      { key: "0", desc: "Números (0-9) - podem conflitar em alguns sites" },
+      { key: "F1", desc: "Teclas de função (F1-F12) - mais confiáveis" },
+      { key: "q", desc: "Letras (a-z) - funcionam bem na maioria dos sites" },
+      { key: "Shift", desc: "Modificadores - use com cuidado" }
+    ];
+  };
 
   return (
     <div className="space-y-6">
@@ -196,6 +269,12 @@ const AutoResponseBot = () => {
           <Badge variant={isRunning ? "default" : "secondary"}>
             {isRunning ? "Ativo" : "Inativo"}
           </Badge>
+          {isRunning && isInInputField && (
+            <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              Pausado (digitando)
+            </Badge>
+          )}
           {isRunning ? (
             <Button onClick={stopBot} variant="destructive">
               <Square className="h-4 w-4 mr-2" />
@@ -216,9 +295,14 @@ const AutoResponseBot = () => {
             <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
               <CheckCircle className="h-5 w-5" />
               <span className="font-medium">Bot ativo!</span>
-              <span className="text-sm">Pressione as teclas configuradas para usar as mensagens. Elas serão copiadas automaticamente.</span>
+              <span className="text-sm">
+                {isInInputField 
+                  ? "Pausado enquanto você digita. As teclas voltarão a funcionar quando sair do campo de texto."
+                  : "Pressione as teclas configuradas para copiar as mensagens automaticamente."
+                }
+              </span>
             </div>
-            {lastUsedKey && (
+            {lastUsedKey && !isInInputField && (
               <div className="mt-2 text-xs text-green-600 dark:text-green-400">
                 Última mensagem copiada: "{lastUsedKey.length > 50 ? lastUsedKey.substring(0, 50) + '...' : lastUsedKey}"
               </div>
@@ -252,6 +336,14 @@ const AutoResponseBot = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">💡 Dica para Facebook</h4>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  No Facebook, use preferencialmente as teclas F1-F12 ou letras em vez de números (0-9) 
+                  para evitar conflitos com os atalhos nativos da plataforma.
+                </p>
+              </div>
+              
               <div className="grid gap-4">
                 {messages.map((msg, index) => (
                   <div key={index} className="border rounded-lg p-4 space-y-3">
@@ -259,7 +351,7 @@ const AutoResponseBot = () => {
                       <div className="flex items-center gap-2 flex-1">
                         <Label className="text-sm">Tecla:</Label>
                         <Input
-                          placeholder="Ex: 0, F1, a, etc"
+                          placeholder="Ex: F1, q, 0, etc"
                           value={msg.key}
                           onChange={(e) => updateMessage(index, 'key', e.target.value)}
                           className="w-24"
@@ -331,8 +423,8 @@ const AutoResponseBot = () => {
                   <div>
                     <h3 className="font-medium">Configure as Mensagens e Teclas</h3>
                     <p className="text-sm text-muted-foreground">
-                      Na aba "Configurações", personalize as teclas (0-9, F1-F12, letras) e mensagens.
-                      Salve as configurações quando terminar.
+                      Na aba "Configurações", personalize as teclas e mensagens. Para o Facebook, 
+                      recomendamos usar F1-F12 ou letras em vez de números.
                     </p>
                   </div>
                 </div>
@@ -344,7 +436,8 @@ const AutoResponseBot = () => {
                   <div>
                     <h3 className="font-medium">Inicie o Bot</h3>
                     <p className="text-sm text-muted-foreground">
-                      Clique em "Iniciar Bot" para ativar as funcionalidades de resposta automática.
+                      Clique em "Iniciar Bot" para ativar as funcionalidades. O bot detecta automaticamente 
+                      quando você está digitando e se pausa nesses momentos.
                     </p>
                   </div>
                 </div>
@@ -357,7 +450,7 @@ const AutoResponseBot = () => {
                     <h3 className="font-medium">Use os Atalhos</h3>
                     <p className="text-sm text-muted-foreground">
                       Pressione as teclas configuradas para copiar automaticamente as mensagens.
-                      Cole onde desejar usando Ctrl+V.
+                      Cole onde desejar usando Ctrl+V. O bot funciona em qualquer aba do navegador.
                     </p>
                   </div>
                 </div>
@@ -380,11 +473,21 @@ const AutoResponseBot = () => {
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">💡 Dicas</h4>
                 <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                  <li>• O bot funciona em qualquer aba do navegador enquanto estiver ativo</li>
-                  <li>• As mensagens são copiadas automaticamente - basta colar onde desejar</li>
-                  <li>• Você pode usar qualquer tecla: números (0-9), letras (a-z) ou teclas especiais (F1-F12)</li>
+                  <li>• O bot detecta automaticamente quando você está digitando e se pausa</li>
+                  <li>• Use F1-F12 ou letras no Facebook para melhor compatibilidade</li>
+                  <li>• As mensagens são copiadas automaticamente - basta colar com Ctrl+V</li>
                   <li>• Mensagens com múltiplas linhas são enviadas em sequência</li>
-                  <li>• Use o botão de cópia ao lado de cada mensagem para testar</li>
+                  <li>• O bot funciona em qualquer aba do navegador enquanto estiver ativo</li>
+                </ul>
+              </div>
+
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">⚠️ Problemas no Facebook?</h4>
+                <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+                  <li>• Se as teclas numéricas (0-9) não funcionarem, use F1-F12 ou letras</li>
+                  <li>• Clique fora do campo de texto antes de usar os atalhos</li>
+                  <li>• Verifique se o bot não está pausado (indicador "Pausado (digitando)")</li>
+                  <li>• Recarregue a página e reative o bot se necessário</li>
                 </ul>
               </div>
             </CardContent>

@@ -195,6 +195,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           email: string | null
+          free_sales_remaining: number | null
           id: string
           name: string | null
           role: string | null
@@ -203,6 +204,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email?: string | null
+          free_sales_remaining?: number | null
           id: string
           name?: string | null
           role?: string | null
@@ -211,6 +213,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email?: string | null
+          free_sales_remaining?: number | null
           id?: string
           name?: string | null
           role?: string | null
@@ -338,6 +341,59 @@ export type Database = {
             columns: ["settings_id"]
             isOneToOne: false
             referencedRelation: "commission_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_subscriptions: {
+        Row: {
+          created_at: string | null
+          id: string
+          plan_type: string
+          price_per_month: number | null
+          sales_limit: number | null
+          seller_id: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_end: string | null
+          subscription_start: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          plan_type?: string
+          price_per_month?: number | null
+          sales_limit?: number | null
+          seller_id: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end?: string | null
+          subscription_start?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          plan_type?: string
+          price_per_month?: number | null
+          sales_limit?: number | null
+          seller_id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end?: string | null
+          subscription_start?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_subscriptions_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -483,6 +539,21 @@ export type Database = {
       can_add_seller: {
         Args: { user_id_param: string }
         Returns: boolean
+      }
+      can_register_sale: {
+        Args: { seller_id_param: string }
+        Returns: boolean
+      }
+      get_seller_subscription_info: {
+        Args: { seller_id_param: string }
+        Returns: {
+          is_team_member: boolean
+          subscription_status: string
+          plan_type: string
+          sales_used: number
+          sales_limit: number
+          can_register: boolean
+        }[]
       }
       get_seller_team: {
         Args: { seller_id_param: string }

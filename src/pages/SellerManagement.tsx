@@ -215,12 +215,8 @@ const SellerManagement = () => {
   };
 
   const handleSendMessage = (member: User) => {
-    // This would open a message modal or navigate to messages
-    console.log("Send message to:", member);
-    toast({
-      title: "Funcionalidade em desenvolvimento",
-      description: "O sistema de mensagens será implementado em breve."
-    });
+    // This is now handled by the ChatModal in TeamMembersList
+    console.log("Message handling moved to ChatModal");
   };
 
   const handleApproveRequest = async (requestId: string) => {

@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useSellerSubscription } from "@/hooks/useSellerSubscription";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,14 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/services/notificationService";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, XCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { fetchAddressByCep } from "@/services/cepService";
 import { User } from "@/types";
+import { Link } from "react-router-dom";
 
 const NewSale = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { subscriptionInfo, loading: subscriptionLoading, checkCanRegisterSale } = useSellerSubscription();
   const [isOwner, setIsOwner] = useState(false);
   const [hasOwner, setHasOwner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -222,12 +224,23 @@ const NewSale = () => {
       });
       return;
     }
+
+    // Verificar se pode registrar venda
+    const canRegister = await checkCanRegisterSale();
+    if (!canRegister) {
+      toast({
+        variant: "destructive",
+        title: "Limite de vendas atingido",
+        description: "Você atingiu o limite de vendas do seu plano. Faça upgrade para continuar."
+      });
+      return;
+    }
     
-    if (!hasOwner) {
+    if (!hasOwner && !isOwner && !subscriptionInfo?.isTeamMember) {
       toast({
         variant: "destructive",
         title: "Sem vínculo com proprietário",
-        description: "Você precisa estar vinculado a um proprietário para registrar vendas."
+        description: "Você precisa estar vinculado a um proprietário ou ter um plano pago para registrar vendas."
       });
       return;
     }
@@ -333,24 +346,70 @@ const NewSale = () => {
     }
   };
 
-  if (isCheckingTeam) {
+  if (isCheckingTeam || subscriptionLoading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Verificando vínculo com proprietário...</p>
+          <p className="text-muted-foreground">Verificando permissões...</p>
         </div>
       </div>
     );
   }
 
-  if (!hasOwner && !isOwner) {
+  // Verificar se vendedor pode registrar vendas
+  if (!isOwner && subscriptionInfo && !subscriptionInfo.canRegister) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <XCircle className="h-6 w-6 text-red-500" />
+            <span>Limite de Vendas Atingido</span>
+          </CardTitle>
+          <CardDescription>
+            Você atingiu o limite de vendas do seu plano.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Upgrade Necessário</AlertTitle>
+            <AlertDescription>
+              Você utilizou {subscriptionInfo.salesUsed} de {subscriptionInfo.salesLimit} vendas gratuitas.
+              Para continuar registrando vendas, faça upgrade para o plano pago ou solicite vínculo a um proprietário.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="flex flex-col items-center py-6 space-y-4">
+            <div className="text-6xl mb-4">📈</div>
+            <p className="text-center mb-4">
+              Escolha uma das opções abaixo para continuar:
+            </p>
+            <div className="flex space-x-4">
+              <Button asChild>
+                <Link to="/pricing">
+                  Upgrade para R$ 200/mês
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/sellers">
+                  Solicitar Vínculo
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!hasOwner && !isOwner && !subscriptionInfo?.isTeamMember) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Registro de Vendas Indisponível</CardTitle>
           <CardDescription>
-            Você precisa estar vinculado a um proprietário para registrar vendas.
+            Você precisa estar vinculado a um proprietário ou ter um plano pago para registrar vendas.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -358,19 +417,27 @@ const NewSale = () => {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Atenção!</AlertTitle>
             <AlertDescription>
-              Para registrar vendas, você precisa fazer parte de um time de vendas.
-              Entre em contato com um proprietário para se vincular a um time.
+              Para registrar vendas, você precisa fazer parte de um time de vendas ou ter um plano pago.
             </AlertDescription>
           </Alert>
           
-          <div className="flex flex-col items-center py-6">
+          <div className="flex flex-col items-center py-6 space-y-4">
             <div className="text-6xl mb-4">🔒</div>
             <p className="text-center mb-4">
-              Acesse o gerenciamento de vendedores para solicitar vínculo a um proprietário.
+              Escolha uma das opções abaixo:
             </p>
-            <Button onClick={() => navigate("/sellers")}>
-              Gerenciar Vendedores
-            </Button>
+            <div className="flex space-x-4">
+              <Button asChild>
+                <Link to="/pricing">
+                  Plano R$ 200/mês
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/sellers">
+                  Solicitar Vínculo
+                </Link>
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -388,6 +455,32 @@ const NewSale = () => {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {/* Mostrar informações do plano se for vendedor */}
+          {!isOwner && subscriptionInfo && (
+            <div className="border p-4 rounded-md bg-blue-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-blue-800">
+                    {subscriptionInfo.isTeamMember ? 'Membro de Time' : 'Plano Gratuito'}
+                  </p>
+                  <p className="text-sm text-blue-600">
+                    {subscriptionInfo.isTeamMember 
+                      ? 'Vendas ilimitadas'
+                      : `${subscriptionInfo.salesUsed} de ${subscriptionInfo.salesLimit} vendas utilizadas`
+                    }
+                  </p>
+                </div>
+                {!subscriptionInfo.isTeamMember && subscriptionInfo.salesUsed >= subscriptionInfo.salesLimit * 0.8 && (
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/pricing">
+                      Upgrade
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
           {isOwner && teamMembers.length > 0 && (
             <div className="space-y-2">
               <Label>Atribuir venda para vendedor (opcional)</Label>

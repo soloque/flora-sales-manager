@@ -41,10 +41,23 @@ const Register = () => {
       return;
     }
     
+    if (password.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Senha muito curta",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
       await register(email, password, name, role);
+      toast({
+        title: "Conta criada com sucesso!",
+        description: `Bem-vindo ao sistema como ${role === 'owner' ? 'proprietário' : 'vendedor'}!`,
+      });
       navigate("/");
     } catch (error) {
       // O erro já será tratado no AuthContext
@@ -86,6 +99,7 @@ const Register = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  placeholder="Digite seu nome completo"
                 />
               </div>
               <div className="space-y-2">
@@ -96,6 +110,7 @@ const Register = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  placeholder="Digite seu email"
                 />
               </div>
               <div className="space-y-2">
@@ -106,6 +121,7 @@ const Register = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  placeholder="Digite sua senha (mín. 6 caracteres)"
                 />
               </div>
               <div className="space-y-2">
@@ -116,22 +132,37 @@ const Register = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  placeholder="Confirme sua senha"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Tipo de conta</Label>
                 <RadioGroup
                   value={role}
                   onValueChange={(value) => setRole(value as UserRole)}
-                  className="flex flex-col space-y-1"
+                  className="space-y-2"
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                     <RadioGroupItem value="owner" id="owner" />
-                    <Label htmlFor="owner">Proprietário (Dono do negócio)</Label>
+                    <div>
+                      <Label htmlFor="owner" className="font-medium cursor-pointer">
+                        Proprietário
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Dono do negócio, gerencia vendedores e comissões
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                     <RadioGroupItem value="seller" id="seller" />
-                    <Label htmlFor="seller">Vendedor</Label>
+                    <div>
+                      <Label htmlFor="seller" className="font-medium cursor-pointer">
+                        Vendedor
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Registra vendas e acompanha comissões
+                      </p>
+                    </div>
                   </div>
                 </RadioGroup>
               </div>

@@ -14,6 +14,7 @@ import SellerManagement from "@/pages/SellerManagement";
 import Inventory from "@/pages/Inventory";
 import UserSettings from "@/pages/UserSettings";
 import Pricing from "@/pages/Pricing";
+import Messages from "@/pages/Messages";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
@@ -43,6 +44,7 @@ function App() {
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/settings" element={<UserSettings />} />
                 <Route path="/pricing" element={<Pricing />} />
+                <Route path="/messages" element={<Messages />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>

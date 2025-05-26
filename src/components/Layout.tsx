@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Logo } from "@/components/Logo";
-import { SubscriptionBanner } from "@/components/SubscriptionBanner";
-import { SellerPlanBanner } from "@/components/SellerPlanBanner";
-import { FloatingNewSaleButton } from "@/components/FloatingNewSaleButton";
+import SubscriptionBanner from "@/components/SubscriptionBanner";
+import SellerPlanBanner from "@/components/SellerPlanBanner";
+import FloatingNewSaleButton from "@/components/FloatingNewSaleButton";
 import { 
   LogOut, 
   BarChart3, 
@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 const Layout = () => {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -100,7 +100,7 @@ const Layout = () => {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await logout();
       navigate("/login");
     } catch (error) {
       console.error("Erro ao fazer logout:", error);

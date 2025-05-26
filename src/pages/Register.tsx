@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTheme } from "@/context/ThemeContext";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Gift } from "lucide-react";
 import { UserRole } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -56,7 +56,7 @@ const Register = () => {
       await register(email, password, name, role);
       toast({
         title: "Conta criada com sucesso!",
-        description: `Bem-vindo ao sistema como ${role === 'owner' ? 'proprietário' : 'vendedor'}!`,
+        description: `Bem-vindo ao sistema! Você tem 7 dias de teste gratuito como ${role === 'owner' ? 'proprietário' : 'vendedor'}!`,
       });
       navigate("/");
     } catch (error) {
@@ -79,15 +79,30 @@ const Register = () => {
 
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary">Plant Sales</h1>
+          <h1 className="text-4xl font-bold text-primary">VendaFlow</h1>
           <p className="text-muted-foreground mt-2">Sistema de Gerenciamento de Vendas de Plantas</p>
         </div>
+
+        {/* Trial Banner */}
+        <Card className="mb-6 border-green-200 bg-green-50">
+          <CardContent className="pt-4">
+            <div className="flex items-center space-x-3">
+              <Gift className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="font-medium text-green-800">7 Dias Gratuitos</p>
+                <p className="text-sm text-green-600">
+                  Teste todas as funcionalidades sem compromisso
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>Criar conta</CardTitle>
             <CardDescription>
-              Preencha os dados abaixo para criar sua conta
+              Preencha os dados abaixo para criar sua conta e começar seu teste gratuito
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -167,7 +182,7 @@ const Register = () => {
                 </RadioGroup>
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Registrando..." : "Registrar"}
+                {isLoading ? "Registrando..." : "Começar Teste Gratuito"}
               </Button>
             </form>
           </CardContent>

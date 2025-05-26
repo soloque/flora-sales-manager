@@ -342,6 +342,51 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          max_sellers: number
+          plan_name: string
+          price_per_month: number
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_end_date: string | null
+          trial_end_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_sellers?: number
+          plan_name: string
+          price_per_month: number
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
+          trial_end_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_sellers?: number
+          plan_name?: string
+          price_per_month?: number
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
+          trial_end_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           created_at: string | null
@@ -434,6 +479,10 @@ export type Database = {
       add_team_member: {
         Args: { owner_id_param: string; seller_id_param: string }
         Returns: undefined
+      }
+      can_add_seller: {
+        Args: { user_id_param: string }
+        Returns: boolean
       }
       get_seller_team: {
         Args: { seller_id_param: string }

@@ -23,27 +23,30 @@ const Pricing = () => {
         "Registro de vendas",
         "Verificação de CEP",
         "Modo escuro/claro",
+        "Sistema de mensagens",
+        "7 dias gratuitos",
       ],
       highlighted: false,
-      cta: "Começar agora",
+      cta: "Começar teste gratuito",
       sellerLimit: 10,
     },
     {
       name: "Business",
-      description: "Para negócios em crescimento com até 50 vendedores",
+      description: "Para negócios em crescimento - cada 10 vendedores extras +R$100",
       price: isAnnual ? 6480 : 600, // R$600/mo or R$540/mo annually (R$6480/year)
       features: [
-        "Até 50 vendedores",
+        "Vendedores ilimitados",
         "Tudo do plano Starter",
         "Relatórios avançados",
         "Controle de estoque",
         "Análise financeira detalhada",
         "Personalização de comissões",
         "Comunicação com equipe",
+        "+R$100 a cada 10 vendedores extras",
       ],
       highlighted: true,
       cta: "Plano recomendado",
-      sellerLimit: 50,
+      sellerLimit: null, // Unlimited with extra cost
     },
     {
       name: "Enterprise",
@@ -57,6 +60,7 @@ const Pricing = () => {
         "Customizações específicas",
         "Integrações avançadas",
         "Backup diário",
+        "Sem cobrança por vendedores extras",
       ],
       highlighted: false,
       cta: "Entre em contato",
@@ -182,8 +186,51 @@ const Pricing = () => {
         </div>
       </div>
 
-      {/* FAQ */}
+      {/* Pricing Model Explanation */}
       <div className="bg-muted py-16">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <h2 className="text-3xl font-bold text-center mb-8">
+            Como Funciona a Cobrança
+          </h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Plano Starter</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Ideal para pequenos negócios com até 10 vendedores.
+                </p>
+                <div className="space-y-2">
+                  <p><strong>Preço:</strong> R$ 200/mês</p>
+                  <p><strong>Vendedores inclusos:</strong> Até 10</p>
+                  <p><strong>Vendedores extras:</strong> Não disponível</p>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Planos Business e Enterprise</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Para negócios que precisam de mais vendedores.
+                </p>
+                <div className="space-y-2">
+                  <p><strong>Business:</strong> R$ 600/mês base</p>
+                  <p><strong>Enterprise:</strong> R$ 1.200/mês base</p>
+                  <p><strong>Vendedores extras (Business):</strong> +R$ 100 a cada 10 vendedores adicionais</p>
+                  <p><strong>Vendedores extras (Enterprise):</strong> Inclusos sem cobrança adicional</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* FAQ */}
+      <div className="bg-background py-16">
         <div className="container mx-auto px-4 max-w-4xl">
           <h2 className="text-3xl font-bold text-center mb-8">
             Perguntas Frequentes
@@ -194,17 +241,17 @@ const Pricing = () => {
                 Como funciona o período de teste?
               </h3>
               <p>
-                Você tem acesso a todas as funcionalidades do plano escolhido por 7 dias. 
-                Após esse período, será necessário fornecer os dados de pagamento para continuar utilizando o sistema.
+                Você tem acesso a todas as funcionalidades do plano Starter por 7 dias gratuitamente. 
+                Após esse período, será necessário escolher um plano para continuar utilizando o sistema.
               </p>
             </div>
             <div>
               <h3 className="text-xl font-semibold mb-2">
-                Como é calculada a cobrança pelos vendedores?
+                Como é calculada a cobrança pelos vendedores extras?
               </h3>
               <p>
-                O preço base do plano inclui um número específico de vendedores. 
-                Para cada 10 vendedores adicionais além do limite, há um acréscimo de R$100 mensais.
+                No plano Business, para cada grupo de 10 vendedores adicionais além dos inclusos no plano base, 
+                há um acréscimo de R$100 mensais. No Enterprise, vendedores adicionais estão inclusos.
               </p>
             </div>
             <div>
@@ -218,11 +265,11 @@ const Pricing = () => {
             </div>
             <div>
               <h3 className="text-xl font-semibold mb-2">
-                Como funciona o pagamento?
+                O que acontece quando o teste gratuito termina?
               </h3>
               <p>
-                Utilizamos o Stripe como nossa plataforma de pagamento, garantindo total segurança 
-                nas transações. Aceitamos cartões de crédito e boleto bancário.
+                Após 7 dias, você precisará escolher um plano pago para continuar usando o sistema. 
+                Seus dados serão preservados durante a transição.
               </p>
             </div>
           </div>
@@ -233,7 +280,7 @@ const Pricing = () => {
       <footer className="bg-background border-t py-8">
         <div className="container mx-auto px-4 text-center">
           <p className="text-muted-foreground">
-            &copy; {new Date().getFullYear()} Plant Sales - Sistema de Gerenciamento de Vendas de Plantas
+            &copy; {new Date().getFullYear()} VendaFlow - Sistema de Gerenciamento de Vendas de Plantas
           </p>
           <div className="mt-4">
             <Link to="/login" className="text-primary hover:underline mx-2">

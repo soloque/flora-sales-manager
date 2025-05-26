@@ -18,6 +18,7 @@ import Pricing from "@/pages/Pricing";
 import Messages from "@/pages/Messages";
 import SalesHistory from "@/pages/SalesHistory";
 import PlanManagement from "@/pages/PlanManagement";
+import Help from "@/pages/Help";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
@@ -54,6 +55,7 @@ function App() {
                 <Route path="/settings" element={<UserSettings />} />
                 <Route path="/messages" element={<Messages />} />
                 <Route path="/plan-management" element={<PlanManagement />} />
+                <Route path="/help" element={<Help />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>

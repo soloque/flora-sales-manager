@@ -1,3 +1,4 @@
+
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,8 @@ import {
   CreditCard,
   Crown,
   Menu,
-  TrendingUp
+  TrendingUp,
+  HelpCircle
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -40,12 +42,13 @@ const Layout = () => {
       { name: "Histórico", href: "/sales-history", icon: FileText },
       { name: "Equipe", href: "/team", icon: Users },
       { name: "Mensagens", href: "/messages", icon: MessageSquare },
+      { name: "Ajuda", href: "/help", icon: HelpCircle },
       { name: "Configurações", href: "/settings", icon: Settings },
     ];
 
     // Add owner-specific navigation items
     if (user && user.role === "owner") {
-      baseNavigation.splice(5, 0, 
+      baseNavigation.splice(6, 0, 
         { name: "Inventário", href: "/inventory", icon: Package },
         { name: "Comissões", href: "/commission-settings", icon: CreditCard },
         { name: "Planos", href: "/plan-management", icon: Crown }

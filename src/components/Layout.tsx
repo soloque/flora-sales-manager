@@ -1,275 +1,273 @@
 
-import { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useTheme } from "@/context/ThemeContext";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { NotificationBell } from "@/components/NotificationBell";
 import { 
-  Moon, 
-  Sun, 
-  UserRound, 
   Home, 
-  FileText, 
+  ShoppingCart, 
+  Users, 
+  Package, 
   Settings, 
   LogOut, 
-  Database, 
-  BarChart, 
-  Users 
+  DollarSign,
+  MessageSquare,
+  BarChart3,
+  Menu,
+  X
 } from "lucide-react";
-import { NotificationBell } from "@/components/NotificationBell";
+import { supabase } from "@/integrations/supabase/client";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const { user, isAuthenticated, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const isOwner = user?.role === "owner";
 
+  // Check for unread messages
   useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 768);
+    if (!user) return;
+
+    const fetchUnreadCount = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('direct_messages')
+          .select('id')
+          .eq('receiver_id', user.id)
+          .eq('read', false);
+
+        if (error) throw error;
+        setUnreadCount(data?.length || 0);
+      } catch (error) {
+        console.error("Error fetching unread messages:", error);
+      }
     };
 
-    checkScreenSize();
-    window.addEventListener("resize", checkScreenSize);
-    return () => window.removeEventListener("resize", checkScreenSize);
-  }, []);
+    fetchUnreadCount();
 
-  useEffect(() => {
-    // Close mobile sidebar when navigating
-    setMobileSidebarOpen(false);
-  }, [location.pathname]);
+    // Set up real-time subscription for unread messages
+    const channel = supabase
+      .channel('unread_messages')
+      .on('postgres_changes', 
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'direct_messages',
+          filter: `receiver_id=eq.${user.id}`
+        },
+        () => {
+          fetchUnreadCount();
+        }
+      )
+      .on('postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'direct_messages',
+          filter: `receiver_id=eq.${user.id}`
+        },
+        () => {
+          fetchUnreadCount();
+        }
+      )
+      .subscribe();
 
-  useEffect(() => {
-    // Set avatar URL from user data
-    if (user?.avatar_url) {
-      setAvatarUrl(user.avatar_url);
-    }
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated && !location.pathname.includes("/login")) {
-      navigate("/login");
-    }
-  }, [isAuthenticated, location, navigate]);
+  const handleMessagesClick = () => {
+    navigate("/messages");
+    setIsMobileMenuOpen(false);
+  };
 
-  if (!isAuthenticated && !location.pathname.includes("/login")) {
-    return null; // Will redirect to login
-  }
+  const navigation = [
+    { name: "Dashboard", href: "/dashboard", icon: Home, show: true },
+    { name: "Vendas", href: "/sales", icon: ShoppingCart, show: true },
+    { name: "Comissões", href: "/commissions", icon: DollarSign, show: true },
+    { name: "Configurar Comissões", href: "/commission-settings", icon: BarChart3, show: isOwner },
+    { name: "Gerenciar Vendedores", href: "/sellers", icon: Users, show: isOwner },
+    { name: "Estoque", href: "/inventory", icon: Package, show: isOwner },
+    { name: "Configurações", href: "/settings", icon: Settings, show: true },
+  ];
 
-  // Skip layout for login and register pages
-  if (location.pathname.includes("/login") || location.pathname.includes("/register")) {
+  // Don't show layout on login/register pages
+  if (location.pathname === "/login" || location.pathname === "/register") {
     return <>{children}</>;
   }
 
-  const getInitials = (name?: string) => {
-    if (!name) return "U";
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
-  // Updated navigation items with Portuguese labels
-  const ownerLinks = [
-    { name: "Dashboard", path: "/", icon: <Home className="w-5 h-5" /> },
-    { name: "Vendas", path: "/sales", icon: <FileText className="w-5 h-5" /> },
-    { name: "Comissões", path: "/commissions", icon: <BarChart className="w-5 h-5" /> },
-    { name: "Vendedores", path: "/sellers", icon: <UserRound className="w-5 h-5" /> },
-    { name: "Estoque", path: "/inventory", icon: <Database className="w-5 h-5" /> },
-    { name: "Configurações", path: "/settings", icon: <Settings className="w-5 h-5" /> },
-  ];
-
-  const sellerLinks = [
-    { name: "Dashboard", path: "/", icon: <Home className="w-5 h-5" /> },
-    { name: "Vendas", path: "/sales", icon: <FileText className="w-5 h-5" /> },
-    { name: "Comissões", path: "/commissions", icon: <BarChart className="w-5 h-5" /> },
-    { name: "Configurações", path: "/settings", icon: <Settings className="w-5 h-5" /> },
-  ];
-
-  const links = user?.role === "owner" ? ownerLinks : sellerLinks;
-
-  const sidebarWidth = isSidebarCollapsed ? "w-16" : "w-64";
-  const sidebarClass = isMobile
-    ? `fixed left-0 top-0 z-40 h-full transform transition-transform duration-300 ease-in-out ${
-        isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-      } w-64`
-    : `${sidebarWidth} transition-all duration-300 ease-in-out h-screen`;
-
-  // Text for the page title
-  const getPageTitle = () => {
-    const path = location.pathname;
-    
-    // Check standard routes
-    const foundLink = links.find((link) => link.path === path);
-    if (foundLink) return foundLink.name;
-    
-    // Handle special cases
-    switch (path) {
-      case "/commissions":
-        return "Comissões";
-      case "/commission-settings":
-        return "Configurações de Comissões";
-      case "/sellers":
-        return "Vendedores";
-      case "/settings":
-        return "Configurações";
-      case "/inventory":
-        return "Estoque";
-      default:
-        return "Dashboard";
-    }
-  };
+  // Show login prompt if not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <h2 className="text-2xl font-bold">Acesso Necessário</h2>
+              <p className="text-muted-foreground">
+                Você precisa estar logado para acessar esta página.
+              </p>
+              <div className="flex gap-2 justify-center">
+                <Button asChild>
+                  <Link to="/login">Fazer Login</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/register">Registrar</Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Backdrop for mobile sidebar */}
-      {isMobile && isMobileSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30"
-          onClick={() => setMobileSidebarOpen(false)}
-        ></div>
-      )}
-
-      {/* Sidebar */}
-      <aside className={`bg-sidebar text-sidebar-foreground ${sidebarClass}`}>
-        <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
-            <div className={`flex items-center ${isSidebarCollapsed ? "justify-center" : ""}`}>
-              {!isSidebarCollapsed && (
-                <span className="text-xl font-bold">Plant Sales</span>
-              )}
-              {isSidebarCollapsed && (
-                <span className="text-xl font-bold">PS</span>
-              )}
-            </div>
-            {!isMobile && (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Mobile menu button */}
+            <div className="md:hidden">
               <Button
                 variant="ghost"
-                size="icon"
-                onClick={() => setSidebarCollapsed(!isSidebarCollapsed)}
-                className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                size="sm"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               >
-                {isSidebarCollapsed ? "→" : "←"}
+                {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </Button>
-            )}
-          </div>
+            </div>
 
-          <div className="flex-grow overflow-y-auto py-4">
-            <nav>
-              <ul className="space-y-2">
-                {links.map((link) => (
-                  <li key={link.path}>
-                    <Link
-                      to={link.path}
-                      className={`flex items-center px-4 py-3 ${
-                        location.pathname === link.path
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground"
-                      } ${isSidebarCollapsed ? "justify-center" : ""}`}
-                    >
-                      <span className="mr-3">{link.icon}</span>
-                      {!isSidebarCollapsed && <span>{link.name}</span>}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            {/* Logo */}
+            <div className="flex items-center">
+              <Link to="/dashboard" className="text-xl font-bold text-primary">
+                VendaFlow
+              </Link>
+            </div>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex space-x-8">
+              {navigation.filter(item => item.show).map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      location.pathname === item.href
+                        ? "bg-primary text-primary-foreground"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 mr-2" />
+                    {item.name}
+                  </Link>
+                );
+              })}
             </nav>
-          </div>
 
-          <div className="p-4 border-t border-sidebar-border">
-            <Link to="/settings" className={`flex items-center ${isSidebarCollapsed ? "justify-center" : "justify-between"}`}>
-              {!isSidebarCollapsed && (
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={avatarUrl || ""} alt={user?.name} />
-                    <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
+            {/* Right side items */}
+            <div className="flex items-center space-x-4">
+              {/* Messages Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleMessagesClick}
+                className="relative"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Mensagens
+                {unreadCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Badge>
+                )}
+              </Button>
+
+              <NotificationBell />
+              
+              {/* User menu */}
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      {user.name?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="font-medium text-sm">{user?.name}</p>
-                    <p className="text-xs opacity-75">
-                      {user?.role === "owner" ? "Administrador" : "Vendedor"}
-                    </p>
+                  <div className="hidden sm:block">
+                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-xs text-gray-500 capitalize">{user.role}</p>
                   </div>
                 </div>
-              )}
-              {isSidebarCollapsed && (
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={avatarUrl || ""} alt={user?.name} />
-                  <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
-                </Avatar>
-              )}
-              {!isSidebarCollapsed && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleLogout}
-                  className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  title="Logout"
-                >
-                  <LogOut className="h-5 w-5" />
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4" />
                 </Button>
-              )}
-            </Link>
+              </div>
+            </div>
           </div>
         </div>
-      </aside>
+
+        {/* Mobile Navigation */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t bg-white">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              {navigation.filter(item => item.show).map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      location.pathname === item.href
+                        ? "bg-primary text-primary-foreground"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5 mr-3" />
+                    {item.name}
+                  </Link>
+                );
+              })}
+              
+              {/* Mobile Messages Button */}
+              <button
+                onClick={handleMessagesClick}
+                className="flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              >
+                <MessageSquare className="h-5 w-5 mr-3" />
+                Mensagens
+                {unreadCount > 0 && (
+                  <Badge variant="destructive" className="ml-auto">
+                    {unreadCount}
+                  </Badge>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </header>
 
       {/* Main content */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        {/* Header */}
-        <header className="bg-background border-b p-4 flex justify-between items-center">
-          {isMobile && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setMobileSidebarOpen(true)}
-              className="mr-2"
-            >
-              ☰
-            </Button>
-          )}
-          <h1 className="text-2xl font-bold">
-            {getPageTitle()}
-          </h1>
-          <div className="flex items-center gap-3">
-            {isAuthenticated && <NotificationBell />}
-            {isSidebarCollapsed && !isMobile && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-foreground"
-                title="Logout"
-              >
-                <LogOut className="h-5 w-5" />
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={toggleTheme}
-            >
-              {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-            </Button>
-          </div>
-        </header>
-
-        {/* Content */}
-        <main className="flex-1 overflow-y-auto p-4">{children}</main>
-      </div>
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {children}
+      </main>
     </div>
   );
 };

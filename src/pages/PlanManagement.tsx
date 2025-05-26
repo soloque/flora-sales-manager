@@ -2,8 +2,20 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Crown, Users, Zap } from "lucide-react";
+import { Check, Crown, Users, Zap, AlertTriangle } from "lucide-react";
 import { usePlanManagement } from "@/hooks/usePlanManagement";
+import { useStripeSubscription } from "@/hooks/useStripeSubscription";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const PlanManagement = () => {
   const { 
@@ -14,6 +26,12 @@ const PlanManagement = () => {
     getPlanDisplayName, 
     getPlanPrice 
   } = usePlanManagement();
+  
+  const { 
+    subscription: stripeSubscription, 
+    openCustomerPortal, 
+    createCheckoutSession 
+  } = useStripeSubscription();
 
   const availablePlans = [
     {
@@ -83,18 +101,21 @@ const PlanManagement = () => {
   ];
 
   const canUpgrade = (planName: string): boolean => {
+    if (!currentPlan) return planName !== "free";
+    
+    const currentPlanIndex = availablePlans.findIndex(p => p.name === currentPlan.planName);
+    const targetPlanIndex = availablePlans.findIndex(p => p.name === planName);
+    
+    return targetPlanIndex > currentPlanIndex;
+  };
+
+  const canDowngrade = (planName: string): boolean => {
     if (!currentPlan) return false;
     
-    switch (planName) {
-      case "popular":
-        return currentPlan.canUpgradeToPopular;
-      case "crescimento":
-        return currentPlan.canUpgradeToCrescimento;
-      case "profissional":
-        return currentPlan.canUpgradeToProfissional;
-      default:
-        return false;
-    }
+    const currentPlanIndex = availablePlans.findIndex(p => p.name === currentPlan.planName);
+    const targetPlanIndex = availablePlans.findIndex(p => p.name === planName);
+    
+    return targetPlanIndex < currentPlanIndex;
   };
 
   const isCurrentPlan = (planName: string): boolean => {
@@ -102,7 +123,19 @@ const PlanManagement = () => {
   };
 
   const handleUpgrade = async (planName: string) => {
+    if (planName === "free") {
+      await upgradePlan(planName);
+    } else {
+      await createCheckoutSession(planName, false);
+    }
+  };
+
+  const handleDowngrade = async (planName: string) => {
     await upgradePlan(planName);
+  };
+
+  const handleManageSubscription = async () => {
+    await openCustomerPortal();
   };
 
   if (loading) {
@@ -119,10 +152,19 @@ const PlanManagement = () => {
     );
   }
 
+  // Use Stripe subscription data if available, otherwise fallback to currentPlan
+  const displayPlan = stripeSubscription?.subscribed ? {
+    planName: stripeSubscription.plan,
+    status: stripeSubscription.status,
+    maxSellers: stripeSubscription.plan === 'popular' ? 10 : 
+                stripeSubscription.plan === 'crescimento' ? 20 : 
+                stripeSubscription.plan === 'profissional' ? -1 : 3
+  } : currentPlan;
+
   return (
     <div className="space-y-6">
       {/* Current Plan */}
-      {currentPlan && (
+      {displayPlan && (
         <Card className="border-primary">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -130,23 +172,31 @@ const PlanManagement = () => {
                 <CardTitle className="flex items-center gap-2">
                   Plano Atual
                   <Badge variant="secondary">
-                    {getPlanDisplayName(currentPlan.planName)}
+                    {getPlanDisplayName(displayPlan.planName)}
                   </Badge>
                 </CardTitle>
                 <CardDescription>
-                  {getPlanPrice(currentPlan.planName)} • {' '}
-                  {currentPlan.maxSellers === -1 
+                  {getPlanPrice(displayPlan.planName)} • {' '}
+                  {displayPlan.maxSellers === -1 
                     ? 'Vendedores ilimitados' 
-                    : `Até ${currentPlan.maxSellers} vendedores`
+                    : `Até ${displayPlan.maxSellers} vendedores`
                   }
                 </CardDescription>
               </div>
-              <Badge 
-                variant={currentPlan.status === 'active' ? 'default' : 'secondary'}
-                className="capitalize"
-              >
-                {currentPlan.status === 'active' ? 'Ativo' : currentPlan.status}
-              </Badge>
+              <div className="flex gap-2">
+                <Badge 
+                  variant={displayPlan.status === 'active' || displayPlan.status === 'trialing' ? 'default' : 'secondary'}
+                  className="capitalize"
+                >
+                  {displayPlan.status === 'active' ? 'Ativo' : 
+                   displayPlan.status === 'trialing' ? 'Teste' : displayPlan.status}
+                </Badge>
+                {stripeSubscription?.subscribed && (
+                  <Button variant="outline" onClick={handleManageSubscription}>
+                    Gerenciar Assinatura
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
         </Card>
@@ -160,6 +210,7 @@ const PlanManagement = () => {
             const Icon = plan.icon;
             const isCurrent = isCurrentPlan(plan.name);
             const canUpgradeThis = canUpgrade(plan.name);
+            const canDowngradeThis = canDowngrade(plan.name);
             
             return (
               <Card 
@@ -197,16 +248,54 @@ const PlanManagement = () => {
                     ))}
                   </ul>
                   
-                  <Button
-                    variant={isCurrent ? "secondary" : "default"}
-                    className="w-full"
-                    disabled={isCurrent || !canUpgradeThis || upgrading}
-                    onClick={() => handleUpgrade(plan.name)}
-                  >
-                    {upgrading ? "Processando..." : 
-                     isCurrent ? "Plano Atual" : 
-                     canUpgradeThis ? `Fazer Upgrade` : "Não Disponível"}
-                  </Button>
+                  <div className="space-y-2">
+                    {isCurrent ? (
+                      <Button variant="secondary" className="w-full" disabled>
+                        Plano Atual
+                      </Button>
+                    ) : canUpgradeThis ? (
+                      <Button
+                        variant="default"
+                        className="w-full"
+                        disabled={upgrading}
+                        onClick={() => handleUpgrade(plan.name)}
+                      >
+                        {upgrading ? "Processando..." : `Fazer Upgrade`}
+                      </Button>
+                    ) : canDowngradeThis ? (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" className="w-full">
+                            <AlertTriangle className="h-4 w-4 mr-2" />
+                            Fazer Downgrade
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar Downgrade</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja fazer downgrade para o plano {plan.displayName}? 
+                              Você perderá acesso a algumas funcionalidades e sua capacidade de vendedores será reduzida.
+                              {plan.name === "free" && " Esta ação cancelará sua assinatura atual."}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDowngrade(plan.name)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Confirmar Downgrade
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    ) : (
+                      <Button variant="outline" className="w-full" disabled>
+                        Não Disponível
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -239,9 +328,9 @@ const PlanManagement = () => {
               <h4 className="font-semibold mb-2">Política de Mudanças:</h4>
               <ul className="space-y-1 text-sm text-muted-foreground">
                 <li>• Você pode fazer upgrade a qualquer momento</li>
-                <li>• Downgrades são aplicados no próximo ciclo</li>
+                <li>• Downgrades são aplicados imediatamente</li>
                 <li>• O plano Free é sempre gratuito</li>
-                <li>• Sem taxas de cancelamento</li>
+                <li>• Use "Gerenciar Assinatura" para cancelar planos pagos</li>
               </ul>
             </div>
           </div>

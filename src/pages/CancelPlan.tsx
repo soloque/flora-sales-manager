@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, ArrowLeft, Check, X } from "lucide-react";
 import { useStripeSubscription } from "@/hooks/useStripeSubscription";
 import { usePlanManagement } from "@/hooks/usePlanManagement";
+import SupportContactForm from "@/components/SupportContactForm";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -312,9 +312,11 @@ const CancelPlan = () => {
               <p className="text-sm text-muted-foreground mb-3">
                 Entre em contato conosco antes de tomar uma decisão. Podemos ajudar a encontrar uma solução.
               </p>
-              <Button variant="outline" size="sm">
-                Falar com Suporte
-              </Button>
+              <SupportContactForm>
+                <Button variant="outline" size="sm">
+                  Falar com Suporte
+                </Button>
+              </SupportContactForm>
             </div>
             <div>
               <h4 className="font-semibold mb-2">Quer apenas pausar temporariamente?</h4>

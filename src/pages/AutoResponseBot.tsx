@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -185,7 +186,7 @@ const AutoResponseBot = () => {
   };
 
   return (
-    <div className={`${isMobile ? 'space-y-3 p-0' : 'space-y-4 md:space-y-6 p-4 md:p-0'} w-full`}>
+    <div className={`${isMobile ? 'w-full min-h-screen p-4' : 'space-y-4 md:space-y-6 p-4 md:p-0'} w-full`}>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
         <div>
           <h1 className={`${isMobile ? 'text-xl' : 'text-2xl md:text-3xl'} font-bold`}>Bot Copia & Cola</h1>
@@ -232,8 +233,8 @@ const AutoResponseBot = () => {
         </Card>
       )}
 
-      <Tabs defaultValue="config" className="space-y-3 md:space-y-4">
-        <TabsList className={`grid w-full grid-cols-3 ${isMobile ? 'h-auto' : 'h-auto'}`}>
+      <Tabs defaultValue="config" className="space-y-3 md:space-y-4 w-full">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="config" className={`flex flex-col md:flex-row items-center gap-1 md:gap-2 ${isMobile ? 'p-2 text-xs' : 'p-2 md:p-3'}`}>
             <Settings className="h-3 w-3 md:h-4 md:w-4" />
             <span className={isMobile ? 'text-xs' : 'text-xs md:text-sm'}>Config</span>

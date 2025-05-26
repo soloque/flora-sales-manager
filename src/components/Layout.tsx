@@ -134,7 +134,6 @@ const Layout = () => {
                 <Menu className="h-5 w-5" />
               </Button>
               <Logo />
-              <span className="font-semibold text-base">PlantPro</span>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -159,7 +158,6 @@ const Layout = () => {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-2">
                   <Logo />
-                  <span className="font-semibold">PlantPro</span>
                 </div>
                 <Button variant="ghost" size="sm" onClick={closeSidebar}>
                   <X className="h-5 w-5" />
@@ -199,7 +197,7 @@ const Layout = () => {
         )}
 
         {/* Mobile Main content */}
-        <main className="p-4 w-full min-h-[calc(100vh-3.5rem)]">
+        <main className="w-full min-h-[calc(100vh-3.5rem)]">
           <Outlet />
         </main>
       </div>
@@ -214,7 +212,6 @@ const Layout = () => {
         <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-4">
             <Logo />
-            <span className="font-semibold text-lg">PlantPro</span>
           </div>
           
           <div className="flex items-center space-x-4">

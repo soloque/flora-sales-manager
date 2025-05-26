@@ -23,13 +23,13 @@ const Landing = () => {
     },
     {
       icon: TrendingUp,
-      title: "Análises Avançadas",
-      description: "Gráficos e métricas detalhadas para otimizar seus resultados"
+      title: "Análises Básicas",
+      description: "Gráficos e métricas para otimizar seus resultados"
     },
     {
       icon: Shield,
       title: "Dados Seguros",
-      description: "Seus dados protegidos com a mais alta segurança"
+      description: "Seus dados protegidos com segurança"
     },
     {
       icon: Zap,
@@ -49,7 +49,6 @@ const Landing = () => {
         "Até 50 clientes",
         "Relatórios básicos",
         "Registro de vendas",
-        "Marca d'água nos relatórios",
         "Suporte por email"
       ],
       highlighted: false
@@ -64,7 +63,6 @@ const Landing = () => {
         "Clientes ilimitados",
         "Controle de comissões", 
         "Relatórios básicos",
-        "Verificação de CEP",
         "Suporte prioritário"
       ],
       highlighted: false
@@ -79,7 +77,6 @@ const Landing = () => {
         "Clientes ilimitados",
         "Tudo do plano Starter",
         "Relatórios avançados", 
-        "Controle de estoque",
         "Análise financeira detalhada"
       ],
       highlighted: true
@@ -91,10 +88,8 @@ const Landing = () => {
       description: "Para grandes operações",
       features: [
         "Tudo do plano Professional",
-        "API personalizada",
         "Suporte 24/7",
         "Customizações específicas",
-        "Integrações avançadas",
         "Treinamento incluso"
       ],
       highlighted: false
@@ -178,7 +173,7 @@ const Landing = () => {
               Tudo que Você Precisa
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Funcionalidades poderosas para otimizar suas vendas e crescer seu negócio
+              Funcionalidades essenciais para otimizar suas vendas e crescer seu negócio
             </p>
           </div>
           
@@ -275,7 +270,7 @@ const Landing = () => {
             Pronto para Revolucionar suas Vendas?
           </h2>
           <p className="text-xl text-muted-foreground">
-            Junte-se a milhares de empresas que já transformaram seus resultados com o VendaFlow
+            Junte-se a empresas que já transformaram seus resultados com o VendaFlow
           </p>
           <Button asChild size="lg" className="h-16 px-12 text-xl font-bold rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300">
             <Link to="/register">

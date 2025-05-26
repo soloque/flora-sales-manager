@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,6 @@ const Pricing = () => {
         "Relatórios básicos",
         "Registro de vendas",
         "Sistema de mensagens",
-        "Marca d'água nos relatórios",
         "Suporte por email",
         "Gratuito para sempre",
       ],
@@ -32,14 +32,12 @@ const Pricing = () => {
     {
       name: "Starter",
       description: "Ideal para pequenos negócios com até 10 vendedores",
-      price: isAnnual ? 1620 : 150, // R$150/mo or R$135/mo annually (R$1620/year)
+      price: isAnnual ? 1620 : 150,
       features: [
         "Até 10 vendedores",
         "Clientes ilimitados",
         "Controle de comissões",
         "Relatórios básicos",
-        "Verificação de CEP",
-        "Modo escuro/claro",
         "Sistema de mensagens",
         "Suporte prioritário",
       ],
@@ -50,38 +48,34 @@ const Pricing = () => {
     {
       name: "Professional",
       description: "Para negócios em crescimento - vendedores ilimitados",
-      price: isAnnual ? 4860 : 450, // R$450/mo or R$405/mo annually (R$4860/year)
+      price: isAnnual ? 4860 : 450,
       features: [
         "Vendedores ilimitados",
         "Clientes ilimitados",
         "Tudo do plano Starter",
         "Relatórios avançados",
-        "Controle de estoque",
         "Análise financeira detalhada",
         "Personalização de comissões",
         "Comunicação com equipe",
       ],
       highlighted: true,
       cta: "Plano recomendado",
-      sellerLimit: null, // Unlimited
+      sellerLimit: null,
     },
     {
       name: "Enterprise",
       description: "Solução completa para grandes operações",
-      price: "custom" as const, // Custom pricing
+      price: "custom" as const,
       features: [
         "Tudo do plano Professional",
-        "API personalizada",
         "Suporte 24/7",
         "Customizações específicas",
-        "Integrações avançadas",
         "Treinamento incluso",
         "Backup diário",
-        "SLA garantido",
       ],
       highlighted: false,
       cta: "Falar com vendas",
-      sellerLimit: null, // Unlimited
+      sellerLimit: null,
     },
   ];
 
@@ -229,7 +223,7 @@ const Pricing = () => {
                 <div className="space-y-2">
                   <p><strong>Free:</strong> Gratuito para sempre</p>
                   <p><strong>Vendedores inclusos:</strong> Free (3), Starter (10)</p>
-                  <p><strong>Limitações:</strong> Free tem marca d'água e limite de clientes</p>
+                  <p><strong>Limitações:</strong> Free tem limite de clientes</p>
                 </div>
               </CardContent>
             </Card>
@@ -246,7 +240,7 @@ const Pricing = () => {
                   <p><strong>Professional:</strong> R$ 450/mês</p>
                   <p><strong>Enterprise:</strong> Preço personalizado</p>
                   <p><strong>Vendedores:</strong> Ilimitados em ambos</p>
-                  <p><strong>Diferenciais:</strong> API, suporte 24/7 no Enterprise</p>
+                  <p><strong>Diferenciais:</strong> Suporte 24/7 no Enterprise</p>
                 </div>
               </CardContent>
             </Card>
@@ -267,7 +261,7 @@ const Pricing = () => {
               </h3>
               <p>
                 Sim! O plano Free não tem limite de tempo e você pode usá-lo indefinidamente. 
-                Ele inclui as funcionalidades básicas com algumas limitações como marca d'água nos relatórios.
+                Ele inclui as funcionalidades básicas com algumas limitações de usuários.
               </p>
             </div>
             <div>
@@ -285,16 +279,7 @@ const Pricing = () => {
               </h3>
               <p>
                 Free: Suporte por email. Starter/Professional: Suporte prioritário. 
-                Enterprise: Suporte 24/7 com SLA garantido.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold mb-2">
-                O que é a marca d'água no plano Free?
-              </h3>
-              <p>
-                É uma pequena identificação "Powered by VendaFlow" que aparece nos relatórios gerados. 
-                Nos planos pagos, os relatórios são totalmente personalizados sem marca d'água.
+                Enterprise: Suporte 24/7.
               </p>
             </div>
           </div>

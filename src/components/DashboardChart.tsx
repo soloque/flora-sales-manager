@@ -36,12 +36,12 @@ export function DashboardChart({ sales }: DashboardChartProps) {
 
   if (salesBySellerData.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Vendas por Vendedor</CardTitle>
+      <Card className="w-full max-w-2xl">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Vendas por Vendedor</CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground">Nenhuma venda registrada este mês</p>
+        <CardContent className="flex items-center justify-center h-48">
+          <p className="text-muted-foreground text-sm">Nenhuma venda registrada este mês</p>
         </CardContent>
       </Card>
     );
@@ -51,12 +51,12 @@ export function DashboardChart({ sales }: DashboardChartProps) {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-background border rounded-lg p-3 shadow-md">
-          <p className="font-medium">{data.name}</p>
-          <p className="text-sm">
+        <div className="bg-background border rounded-lg p-2 shadow-lg text-xs">
+          <p className="font-medium text-sm">{data.name}</p>
+          <p className="text-primary">
             Vendas: R$ {data.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground">
             {data.sales} venda{data.sales !== 1 ? 's' : ''}
           </p>
         </div>
@@ -66,33 +66,37 @@ export function DashboardChart({ sales }: DashboardChartProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Vendas por Vendedor</CardTitle>
+    <Card className="w-full max-w-2xl">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg">Vendas por Vendedor</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={salesBySellerData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" />
+      <CardContent className="pt-2">
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={salesBySellerData} margin={{ top: 10, right: 15, left: 15, bottom: 40 }}>
+            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
             <XAxis 
               dataKey="name" 
               angle={-45}
               textAnchor="end"
-              height={80}
+              height={60}
               interval={0}
+              fontSize={11}
+              tick={{ fontSize: 11 }}
             />
             <YAxis 
               tickFormatter={(value) => 
-                `R$ ${value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
+                `R$ ${(value / 1000).toFixed(0)}k`
               }
+              fontSize={11}
+              tick={{ fontSize: 11 }}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
             <Bar 
               dataKey="value" 
-              fill="#8884d8" 
+              fill="hsl(var(--primary))"
               name="Valor em Vendas"
-              radius={[4, 4, 0, 0]}
+              radius={[3, 3, 0, 0]}
+              maxBarSize={60}
             />
           </BarChart>
         </ResponsiveContainer>

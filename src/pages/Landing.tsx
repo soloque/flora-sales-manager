@@ -46,7 +46,7 @@ const Landing = () => {
       description: "Perfeito para começar",
       features: [
         "Até 3 vendedores",
-        "Até 50 clientes",
+        "Vendas ilimitadas",
         "Relatórios básicos",
         "Registro de vendas",
         "Suporte por email"
@@ -54,43 +54,44 @@ const Landing = () => {
       highlighted: false
     },
     {
-      name: "Starter",
-      price: "R$ 150",
+      name: "Popular",
+      price: "R$ 100",
       period: "/mês",
       description: "Ideal para pequenos negócios",
       features: [
         "Até 10 vendedores",
-        "Clientes ilimitados",
+        "Vendas ilimitadas",
         "Controle de comissões", 
         "Relatórios básicos",
         "Suporte prioritário"
       ],
-      highlighted: false
-    },
-    {
-      name: "Professional",
-      price: "R$ 450",
-      period: "/mês",
-      description: "Para negócios em crescimento",
-      features: [
-        "Vendedores ilimitados",
-        "Clientes ilimitados",
-        "Tudo do plano Starter",
-        "Relatórios avançados", 
-        "Análise financeira detalhada"
-      ],
       highlighted: true
     },
     {
-      name: "Enterprise",
-      price: "Personalizado",
-      period: "",
-      description: "Para grandes operações",
+      name: "Crescimento",
+      price: "R$ 200",
+      period: "/mês",
+      description: "Para equipes em expansão",
       features: [
-        "Tudo do plano Professional",
-        "Suporte 24/7",
-        "Customizações específicas",
-        "Treinamento incluso"
+        "Até 20 vendedores",
+        "Vendas ilimitadas",
+        "Tudo do plano Popular",
+        "Relatórios avançados", 
+        "Análise financeira"
+      ],
+      highlighted: false
+    },
+    {
+      name: "Profissional",
+      price: "R$ 600",
+      period: "/mês",
+      description: "Vendedores ilimitados",
+      features: [
+        "Vendedores ilimitados",
+        "Vendas ilimitadas",
+        "Tudo dos planos anteriores",
+        "Relatórios completos",
+        "Suporte prioritário"
       ],
       highlighted: false
     }
@@ -252,13 +253,22 @@ const Landing = () => {
                       variant={plan.highlighted ? "default" : "outline"}
                     >
                       <Link to="/register">
-                        {plan.name === "Free" ? "Começar Grátis" : plan.name === "Enterprise" ? "Falar com Vendas" : "Iniciar Teste"}
+                        {plan.name === "Free" ? "Começar Grátis" : "Escolher Plano"}
                       </Link>
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             ))}
+          </div>
+          
+          <div className="text-center mt-12 p-6 bg-muted/50 rounded-lg">
+            <p className="text-sm text-muted-foreground">
+              <strong>Vendedores extras:</strong> R$ 100 a cada 10 vendedores adicionais no plano Popular
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              <strong>Ilimitado:</strong> A partir de R$ 600/mês no plano Profissional
+            </p>
           </div>
         </div>
       </section>

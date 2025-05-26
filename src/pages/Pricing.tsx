@@ -18,7 +18,7 @@ const Pricing = () => {
       price: 0,
       features: [
         "Até 3 vendedores",
-        "Até 50 clientes",
+        "Vendas ilimitadas",
         "Relatórios básicos",
         "Registro de vendas",
         "Sistema de mensagens",
@@ -30,51 +30,51 @@ const Pricing = () => {
       sellerLimit: 3,
     },
     {
-      name: "Starter",
-      description: "Ideal para pequenos negócios com até 10 vendedores",
-      price: isAnnual ? 1620 : 150,
+      name: "Popular",
+      description: "Ideal para pequenos negócios",
+      price: isAnnual ? 1080 : 100,
       features: [
         "Até 10 vendedores",
-        "Clientes ilimitados",
+        "Vendas ilimitadas",
         "Controle de comissões",
         "Relatórios básicos",
         "Sistema de mensagens",
         "Suporte prioritário",
       ],
-      highlighted: false,
-      cta: "Começar teste gratuito",
+      highlighted: true,
+      cta: "Plano mais escolhido",
       sellerLimit: 10,
     },
     {
-      name: "Professional",
-      description: "Para negócios em crescimento - vendedores ilimitados",
-      price: isAnnual ? 4860 : 450,
+      name: "Crescimento",
+      description: "Para equipes que estão expandindo",
+      price: isAnnual ? 2160 : 200,
       features: [
-        "Vendedores ilimitados",
-        "Clientes ilimitados",
-        "Tudo do plano Starter",
+        "Até 20 vendedores",
+        "Vendas ilimitadas",
+        "Tudo do plano Popular",
         "Relatórios avançados",
-        "Análise financeira detalhada",
+        "Análise financeira",
         "Personalização de comissões",
-        "Comunicação com equipe",
-      ],
-      highlighted: true,
-      cta: "Plano recomendado",
-      sellerLimit: null,
-    },
-    {
-      name: "Enterprise",
-      description: "Solução completa para grandes operações",
-      price: "custom" as const,
-      features: [
-        "Tudo do plano Professional",
-        "Suporte 24/7",
-        "Customizações específicas",
-        "Treinamento incluso",
-        "Backup diário",
       ],
       highlighted: false,
-      cta: "Falar com vendas",
+      cta: "Expandir equipe",
+      sellerLimit: 20,
+    },
+    {
+      name: "Profissional",
+      description: "Para grandes equipes de vendas",
+      price: isAnnual ? 6480 : 600,
+      features: [
+        "Vendedores ilimitados",
+        "Vendas ilimitadas",
+        "Tudo do plano Crescimento",
+        "Relatórios completos",
+        "Suporte prioritário",
+        "Gestão avançada de equipe",
+      ],
+      highlighted: false,
+      cta: "Ilimitado",
       sellerLimit: null,
     },
   ];
@@ -144,9 +144,7 @@ const Pricing = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  {plan.price === "custom" ? (
-                    <span className="text-2xl font-bold">Personalizado</span>
-                  ) : plan.price === 0 ? (
+                  {plan.price === 0 ? (
                     <span className="text-2xl font-bold">Grátis</span>
                   ) : (
                     <>
@@ -180,7 +178,7 @@ const Pricing = () => {
                   className="w-full"
                   asChild
                 >
-                  <Link to={plan.name === "Enterprise" ? "/contact" : "/register"}>
+                  <Link to="/register">
                     {plan.cta}
                   </Link>
                 </Button>
@@ -189,14 +187,41 @@ const Pricing = () => {
           ))}
         </div>
 
-        <div className="max-w-3xl mx-auto mt-16 text-center">
-          <h2 className="text-2xl font-bold mb-4">
-            Comece gratuitamente, atualize quando precisar
+        {/* Pricing explanation */}
+        <div className="max-w-4xl mx-auto mt-16 text-center">
+          <h2 className="text-2xl font-bold mb-6">
+            Estrutura de Preços Simples e Clara
           </h2>
-          <p className="text-muted-foreground mb-8">
-            O plano Free é permanente e não requer cartão de crédito. 
-            Faça upgrade para planos pagos quando seu negócio crescer.
-          </p>
+          <div className="grid md:grid-cols-2 gap-8 mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Planos Fixos</CardTitle>
+              </CardHeader>
+              <CardContent className="text-left">
+                <div className="space-y-2">
+                  <p><strong>Free:</strong> Até 3 vendedores - Grátis</p>
+                  <p><strong>Popular:</strong> Até 10 vendedores - R$ 100/mês</p>
+                  <p><strong>Crescimento:</strong> Até 20 vendedores - R$ 200/mês</p>
+                  <p><strong>Profissional:</strong> Ilimitados - R$ 600/mês</p>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Opções Personalizadas</CardTitle>
+              </CardHeader>
+              <CardContent className="text-left">
+                <div className="space-y-2">
+                  <p><strong>Entre 10-20 vendedores:</strong></p>
+                  <p>+R$ 100 a cada 10 vendedores extras</p>
+                  <p><strong>Acima de 20 vendedores:</strong></p>
+                  <p>Upgrade para Profissional (ilimitado)</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
           <Button asChild size="lg">
             <Link to="/register">
               Começar gratuitamente
@@ -205,51 +230,8 @@ const Pricing = () => {
         </div>
       </div>
 
-      {/* Pricing Model Explanation */}
-      <div className="bg-muted py-16">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <h2 className="text-3xl font-bold text-center mb-8">
-            Como Funcionam os Planos
-          </h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Planos Free e Starter</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Ideais para começar e pequenos negócios.
-                </p>
-                <div className="space-y-2">
-                  <p><strong>Free:</strong> Gratuito para sempre</p>
-                  <p><strong>Vendedores inclusos:</strong> Free (3), Starter (10)</p>
-                  <p><strong>Limitações:</strong> Free tem limite de clientes</p>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Professional e Enterprise</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Para negócios que precisam escalar sem limitações.
-                </p>
-                <div className="space-y-2">
-                  <p><strong>Professional:</strong> R$ 450/mês</p>
-                  <p><strong>Enterprise:</strong> Preço personalizado</p>
-                  <p><strong>Vendedores:</strong> Ilimitados em ambos</p>
-                  <p><strong>Diferenciais:</strong> Suporte 24/7 no Enterprise</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-
       {/* FAQ */}
-      <div className="bg-background py-16">
+      <div className="bg-muted py-16">
         <div className="container mx-auto px-4 max-w-4xl">
           <h2 className="text-3xl font-bold text-center mb-8">
             Perguntas Frequentes
@@ -260,26 +242,26 @@ const Pricing = () => {
                 O plano Free é realmente gratuito para sempre?
               </h3>
               <p>
-                Sim! O plano Free não tem limite de tempo e você pode usá-lo indefinidamente. 
-                Ele inclui as funcionalidades básicas com algumas limitações de usuários.
+                Sim! O plano Free permite até 3 vendedores e é completamente gratuito, 
+                sem limite de tempo ou necessidade de cartão de crédito.
               </p>
             </div>
             <div>
               <h3 className="text-xl font-semibold mb-2">
-                Posso mudar de plano depois?
+                E se eu tiver entre 10 e 20 vendedores?
               </h3>
               <p>
-                Sim, você pode fazer upgrade ou downgrade do seu plano a qualquer momento. 
-                As mudanças serão aplicadas no próximo ciclo de cobrança.
+                Você pode contratar vendedores extras no plano Popular por +R$ 100 a cada 
+                10 vendedores adicionais, ou fazer upgrade direto para o Crescimento.
               </p>
             </div>
             <div>
               <h3 className="text-xl font-semibold mb-2">
-                Como funciona o suporte nos diferentes planos?
+                Quando vale a pena o plano Profissional?
               </h3>
               <p>
-                Free: Suporte por email. Starter/Professional: Suporte prioritário. 
-                Enterprise: Suporte 24/7.
+                A partir de R$ 600/mês você tem vendedores ilimitados. É ideal para 
+                equipes grandes que precisam escalar sem se preocupar com limites.
               </p>
             </div>
           </div>
@@ -301,7 +283,7 @@ const Pricing = () => {
             </Link>
           </div>
         </div>
-      </footer>
+      </div>
     </div>
   );
 };

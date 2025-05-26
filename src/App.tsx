@@ -40,22 +40,18 @@ function App() {
               <Route path="/pricing" element={<Pricing />} />
               
               {/* Protected routes with Layout */}
-              <Route path="/*" element={
-                <Layout>
-                  <Routes>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/sales" element={<SalesList />} />
-                    <Route path="/sales/new" element={<NewSale />} />
-                    <Route path="/commissions" element={<CommissionDetails />} />
-                    <Route path="/commission-settings" element={<CommissionSettings />} />
-                    <Route path="/sellers" element={<SellerManagement />} />
-                    <Route path="/inventory" element={<Inventory />} />
-                    <Route path="/settings" element={<UserSettings />} />
-                    <Route path="/messages" element={<Messages />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Layout>
-              } />
+              <Route path="/*" element={<Layout />}>
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="sales" element={<SalesList />} />
+                <Route path="sales/new" element={<NewSale />} />
+                <Route path="commissions" element={<CommissionDetails />} />
+                <Route path="commission-settings" element={<CommissionSettings />} />
+                <Route path="sellers" element={<SellerManagement />} />
+                <Route path="inventory" element={<Inventory />} />
+                <Route path="settings" element={<UserSettings />} />
+                <Route path="messages" element={<Messages />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
             </Routes>
           </BrowserRouter>
         </AuthProvider>

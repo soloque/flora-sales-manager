@@ -22,12 +22,12 @@ import PlanStatusBadge from "@/components/PlanStatusBadge";
 import { useStripeSubscription } from "@/hooks/useStripeSubscription";
 
 const Layout = () => {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const { openCustomerPortal } = useStripeSubscription();
 
   const handleSignOut = async () => {
-    await signOut();
+    await logout();
   };
 
   const handleManageSubscription = () => {

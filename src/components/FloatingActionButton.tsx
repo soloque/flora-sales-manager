@@ -6,7 +6,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { Settings, Plus, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export function FloatingActionButton() {
+const FloatingActionButton = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -40,4 +40,6 @@ export function FloatingActionButton() {
       </Button>
     </div>
   );
-}
+};
+
+export default FloatingActionButton;

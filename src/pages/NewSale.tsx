@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -11,10 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/services/notificationService";
-import { AlertCircle, Loader2, XCircle, Users } from "lucide-react";
+import { AlertCircle, Loader2, XCircle, Users, Bot } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { fetchAddressByCep } from "@/services/cepService";
-import { User } from "@/types";
 import { Link } from "react-router-dom";
 
 interface Seller {
@@ -34,9 +34,10 @@ const NewSale = () => {
   const [isOwner, setIsOwner] = useState(false);
   const [hasOwner, setHasOwner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCheckingTeam, setIsCheckingTeam] = useState(true);
+  const [isCheckingTeam, setIsCheckingTeam] = useState(false);
   const [isFetchingAddress, setIsFetchingAddress] = useState(false);
   const [allSellers, setAllSellers] = useState<Seller[]>([]);
+  const [preSelectedSeller, setPreSelectedSeller] = useState<Seller | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -61,6 +62,7 @@ const NewSale = () => {
     setIsOwner(user.role === "owner");
     
     const checkSellerTeam = async () => {
+      setIsCheckingTeam(true);
       try {
         if (user.role === "seller") {
           const { data, error } = await supabase.rpc(
@@ -68,9 +70,12 @@ const NewSale = () => {
             { seller_id_param: user.id }
           );
           
-          if (error) throw error;
-          
-          setHasOwner(data && data.length > 0);
+          if (error) {
+            console.error("Error checking seller team:", error);
+            setHasOwner(false);
+          } else {
+            setHasOwner(data && data.length > 0);
+          }
         } else if (user.role === "owner") {
           setHasOwner(true);
           
@@ -80,21 +85,30 @@ const NewSale = () => {
             { owner_id_param: user.id }
           );
           
-          if (error) throw error;
-          
-          if (data) {
+          if (error) {
+            console.error("Error getting sellers:", error);
+          } else if (data) {
             setAllSellers(data);
+            
+            // Find pre-selected seller
+            if (preSelectedSellerId) {
+              const preSelected = data.find((s: Seller) => s.id === preSelectedSellerId);
+              if (preSelected) {
+                setPreSelectedSeller(preSelected);
+              }
+            }
           }
         }
       } catch (error) {
         console.error("Erro ao verificar o time do vendedor:", error);
+        setHasOwner(false);
       } finally {
         setIsCheckingTeam(false);
       }
     };
     
     checkSellerTeam();
-  }, [user]);
+  }, [user, preSelectedSellerId]);
 
   // Update assignedSellerId when preSelectedSellerId changes
   useEffect(() => {
@@ -157,42 +171,6 @@ const NewSale = () => {
         variant: "destructive",
         title: "Campo obrigatório",
         description: "Telefone do cliente é obrigatório."
-      });
-      return false;
-    }
-    
-    if (!formData.cep.trim() || formData.cep.replace(/\D/g, '').length !== 8) {
-      toast({
-        variant: "destructive",
-        title: "CEP inválido",
-        description: "Digite um CEP válido com 8 dígitos."
-      });
-      return false;
-    }
-    
-    if (!formData.address.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Campo obrigatório",
-        description: "Endereço é obrigatório."
-      });
-      return false;
-    }
-    
-    if (!formData.city.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Campo obrigatório",
-        description: "Cidade é obrigatória."
-      });
-      return false;
-    }
-    
-    if (!formData.state.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Campo obrigatório",
-        description: "Estado é obrigatório."
       });
       return false;
     }
@@ -261,7 +239,7 @@ const NewSale = () => {
     }
 
     // Verificar se pode registrar venda (only for sellers)
-    if (!isOwner) {
+    if (!isOwner && checkCanRegisterSale) {
       const canRegister = await checkCanRegisterSale();
       if (!canRegister) {
         toast({
@@ -271,15 +249,6 @@ const NewSale = () => {
         });
         return;
       }
-    }
-    
-    if (!hasOwner && !isOwner && !subscriptionInfo?.isTeamMember) {
-      toast({
-        variant: "destructive",
-        title: "Sem vínculo com proprietário",
-        description: "Você precisa estar vinculado a um proprietário ou ter um plano pago para registrar vendas."
-      });
-      return;
     }
     
     if (!validateForm()) return;
@@ -403,7 +372,7 @@ const NewSale = () => {
     }
   };
 
-  // Only show loading for sellers, owners can always register sales
+  // Show loading only while checking team
   if (isCheckingTeam || (!isOwner && subscriptionLoading)) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
@@ -461,7 +430,8 @@ const NewSale = () => {
     );
   }
 
-  if (!hasOwner && !isOwner && !subscriptionInfo?.isTeamMember) {
+  // For sellers without owner or subscription - always allow if they're an owner or have a team
+  if (!hasOwner && !isOwner && (!subscriptionInfo || !subscriptionInfo.isTeamMember)) {
     return (
       <Card>
         <CardHeader>
@@ -505,323 +475,318 @@ const NewSale = () => {
   const totalPrice = formData.quantity * formData.unitPrice;
   const commission = totalPrice * 0.2;
 
-  // Get selected seller info for display
-  const selectedSeller = allSellers.find(s => s.id === formData.assignedSellerId);
-  const isPreSelectedVirtualSeller = selectedSeller?.is_virtual;
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-            <path d="M5 12h14"/><path d="M12 5v14"/>
-          </svg>
-          Nova Venda
-          {isOwner && (
-            <span className="text-sm font-normal text-muted-foreground">
-              (Proprietário)
-            </span>
-          )}
-          {isPreSelectedVirtualSeller && (
-            <span className="text-sm font-normal text-blue-600 bg-blue-100 px-2 py-1 rounded">
-              para {selectedSeller?.name} (Virtual)
-            </span>
-          )}
-        </CardTitle>
-        <CardDescription>
-          {isOwner 
-            ? isPreSelectedVirtualSeller 
-              ? `Registrando venda para o vendedor virtual ${selectedSeller?.name}`
-              : "Registre uma nova venda e atribua a um vendedor da sua equipe ou crie um novo vendedor virtual"
-            : "Registre uma nova venda no sistema"
-          }
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-6">
-          {/* Owner assignment section */}
-          {isOwner && (
-            <div className="border rounded-lg p-4 bg-blue-50/50">
-              <div className="flex items-center gap-2 mb-3">
-                <Users className="h-5 w-5 text-blue-600" />
-                <h3 className="font-medium text-blue-800">Atribuição de Venda</h3>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <Label>Atribuir venda para vendedor</Label>
-                  <Select 
-                    value={formData.assignedSellerId} 
-                    onValueChange={(value) => handleInputChange('assignedSellerId', value)}
-                    disabled={!!preSelectedSellerId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um vendedor ou deixe vazio para atribuir a você" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Atribuir a mim (proprietário)</SelectItem>
-                      {allSellers.map((seller) => (
-                        <SelectItem key={seller.id} value={seller.id}>
-                          {seller.name} ({seller.email}) {seller.is_virtual ? '(Virtual)' : '(Real)'}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="new">➕ Criar novo vendedor virtual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {preSelectedSellerId && (
-                    <p className="text-sm text-blue-600 mt-1">
-                      Vendedor pré-selecionado da lista de equipe
+    <div className="container mx-auto p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M5 12h14"/><path d="M12 5v14"/>
+            </svg>
+            Nova Venda
+            {isOwner && (
+              <span className="text-sm font-normal text-muted-foreground">
+                (Proprietário)
+              </span>
+            )}
+            {preSelectedSeller && (
+              <span className="text-sm font-normal text-blue-600 bg-blue-100 px-2 py-1 rounded flex items-center gap-1">
+                <Bot className="h-3 w-3" />
+                para {preSelectedSeller.name} {preSelectedSeller.is_virtual ? '(Virtual)' : ''}
+              </span>
+            )}
+          </CardTitle>
+          <CardDescription>
+            {isOwner 
+              ? preSelectedSeller 
+                ? `Registrando venda para ${preSelectedSeller.is_virtual ? 'o vendedor virtual' : 'o vendedor'} ${preSelectedSeller.name}`
+                : "Registre uma nova venda e atribua a um vendedor da sua equipe ou crie um novo vendedor virtual"
+              : "Registre uma nova venda no sistema"
+            }
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-6">
+            {/* Owner assignment section */}
+            {isOwner && (
+              <div className="border rounded-lg p-4 bg-blue-50/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="h-5 w-5 text-blue-600" />
+                  <h3 className="font-medium text-blue-800">Atribuição de Venda</h3>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Atribuir venda para vendedor</Label>
+                    <Select 
+                      value={formData.assignedSellerId} 
+                      onValueChange={(value) => handleInputChange('assignedSellerId', value)}
+                      disabled={!!preSelectedSellerId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um vendedor ou deixe vazio para atribuir a você" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Atribuir a mim (proprietário)</SelectItem>
+                        {allSellers.map((seller) => (
+                          <SelectItem key={seller.id} value={seller.id}>
+                            {seller.name} ({seller.email}) {seller.is_virtual ? '(Virtual)' : '(Real)'}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="new">➕ Criar novo vendedor virtual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {preSelectedSellerId && (
+                      <p className="text-sm text-blue-600 mt-1">
+                        Vendedor pré-selecionado da lista de equipe
+                      </p>
+                    )}
+                  </div>
+
+                  {/* New seller fields */}
+                  {formData.assignedSellerId === "new" && (
+                    <div className="border rounded-lg p-4 bg-yellow-50/50 space-y-3">
+                      <h4 className="font-medium text-yellow-800">Dados do Novo Vendedor Virtual</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="newSellerName">Nome do Vendedor *</Label>
+                          <Input
+                            id="newSellerName"
+                            value={formData.newSellerName}
+                            onChange={(e) => handleInputChange('newSellerName', e.target.value)}
+                            placeholder="Nome completo"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="newSellerEmail">Email do Vendedor *</Label>
+                          <Input
+                            id="newSellerEmail"
+                            type="email"
+                            value={formData.newSellerEmail}
+                            onChange={(e) => handleInputChange('newSellerEmail', e.target.value)}
+                            placeholder="email@exemplo.com"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <p className="text-sm text-yellow-700">
+                        Este vendedor virtual será criado no sistema. Vendedores virtuais não podem fazer login.
+                      </p>
+                    </div>
+                  )}
+
+                  {allSellers.length === 0 && formData.assignedSellerId !== "new" && (
+                    <p className="text-sm text-muted-foreground">
+                      Você ainda não tem vendedores na sua equipe. 
+                      <Link to="/team" className="text-primary hover:underline ml-1">
+                        Adicione vendedores aqui
+                      </Link>
                     </p>
                   )}
                 </div>
-
-                {/* New seller fields */}
-                {formData.assignedSellerId === "new" && (
-                  <div className="border rounded-lg p-4 bg-yellow-50/50 space-y-3">
-                    <h4 className="font-medium text-yellow-800">Dados do Novo Vendedor Virtual</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="newSellerName">Nome do Vendedor *</Label>
-                        <Input
-                          id="newSellerName"
-                          value={formData.newSellerName}
-                          onChange={(e) => handleInputChange('newSellerName', e.target.value)}
-                          placeholder="Nome completo"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="newSellerEmail">Email do Vendedor *</Label>
-                        <Input
-                          id="newSellerEmail"
-                          type="email"
-                          value={formData.newSellerEmail}
-                          onChange={(e) => handleInputChange('newSellerEmail', e.target.value)}
-                          placeholder="email@exemplo.com"
-                          required
-                        />
-                      </div>
-                    </div>
-                    <p className="text-sm text-yellow-700">
-                      Este vendedor virtual será criado no sistema. Vendedores virtuais não podem fazer login.
-                    </p>
-                  </div>
-                )}
-
-                {allSellers.length === 0 && formData.assignedSellerId !== "new" && (
-                  <p className="text-sm text-muted-foreground">
-                    Você ainda não tem vendedores na sua equipe. 
-                    <Link to="/team" className="text-primary hover:underline ml-1">
-                      Adicione vendedores aqui
-                    </Link>
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Seller subscription info */}
-          {!isOwner && subscriptionInfo && (
-            <div className="border p-4 rounded-md bg-blue-50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-blue-800">
-                    {subscriptionInfo.isTeamMember ? 'Membro de Time' : 'Plano Gratuito'}
-                  </p>
-                  <p className="text-sm text-blue-600">
-                    {subscriptionInfo.isTeamMember 
-                      ? 'Vendas ilimitadas'
-                      : `${subscriptionInfo.salesUsed} de ${subscriptionInfo.salesLimit} vendas utilizadas`
-                    }
-                  </p>
-                </div>
-                {!subscriptionInfo.isTeamMember && subscriptionInfo.salesUsed >= subscriptionInfo.salesLimit * 0.8 && (
-                  <Button asChild size="sm" variant="outline">
-                    <Link to="/pricing">
-                      Upgrade
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {/* Customer information */}
-          <div className="border-t pt-4">
-            <h3 className="font-medium mb-4">Informações do Cliente</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="customerName">Nome do Cliente *</Label>
-                <Input
-                  id="customerName"
-                  value={formData.customerName}
-                  onChange={(e) => handleInputChange('customerName', e.target.value)}
-                  placeholder="Nome completo"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="customerPhone">Telefone *</Label>
-                <Input
-                  id="customerPhone"
-                  value={formData.customerPhone}
-                  onChange={(e) => handleInputChange('customerPhone', e.target.value)}
-                  placeholder="(00) 00000-0000"
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="cep">CEP *</Label>
-              <div className="relative">
-                <Input 
-                  id="cep"
-                  value={formData.cep}
-                  onChange={(e) => handleInputChange('cep', e.target.value)}
-                  placeholder="00000-000" 
-                  onBlur={handleCepBlur}
-                  required
-                />
-                {isFetchingAddress && (
-                  <Loader2 className="h-4 w-4 animate-spin absolute right-3 top-3" />
-                )}
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="address">Endereço *</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  placeholder="Rua, número, complemento"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="city">Cidade *</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => handleInputChange('city', e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div className="space-y-2">
-                <Label htmlFor="state">Estado *</Label>
-                <Input
-                  id="state"
-                  value={formData.state}
-                  onChange={(e) => handleInputChange('state', e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="order">Pedido *</Label>
-                <Input
-                  id="order"
-                  value={formData.order}
-                  onChange={(e) => handleInputChange('order', e.target.value)}
-                  placeholder="Descrição do pedido"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Sale value */}
-          <div className="border-t pt-4">
-            <h3 className="font-medium mb-4">Valor da Venda</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="quantity">Quantidade *</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={formData.quantity}
-                  onChange={(e) => handleInputChange('quantity', parseInt(e.target.value) || 1)}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="unitPrice">Preço Unitário (R$) *</Label>
-                <Input
-                  id="unitPrice"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={formData.unitPrice}
-                  onChange={(e) => handleInputChange('unitPrice', parseFloat(e.target.value) || 0)}
-                  required
-                />
-              </div>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="observations">Observações</Label>
-            <Textarea
-              id="observations"
-              value={formData.observations}
-              onChange={(e) => handleInputChange('observations', e.target.value)}
-              placeholder="Observações adicionais sobre a venda"
-              className="min-h-[100px]"
-            />
-          </div>
-          
-          {/* Summary */}
-          <div className="border p-4 rounded-md bg-muted/30">
-            <div className="flex justify-between items-center">
-              <Label>Valor Total:</Label>
-              <span className="text-xl font-bold">
-                R$ {totalPrice.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center mt-2">
-              <Label>Comissão (20%):</Label>
-              <span>
-                R$ {commission.toFixed(2)}
-              </span>
-            </div>
-            {isOwner && formData.assignedSellerId && (
-              <div className="flex justify-between items-center mt-2 text-sm text-muted-foreground">
-                <span>Vendedor responsável:</span>
-                <span>
-                  {formData.assignedSellerId === "new" 
-                    ? formData.newSellerName || "Novo vendedor virtual"
-                    : allSellers.find(s => s.id === formData.assignedSellerId)?.name || "Você"
-                  }
-                </span>
               </div>
             )}
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-end space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate(-1)}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Registrando..." : "Registrar Venda"}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+
+            {/* Seller subscription info */}
+            {!isOwner && subscriptionInfo && (
+              <div className="border p-4 rounded-md bg-blue-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-blue-800">
+                      {subscriptionInfo.isTeamMember ? 'Membro de Time' : 'Plano Gratuito'}
+                    </p>
+                    <p className="text-sm text-blue-600">
+                      {subscriptionInfo.isTeamMember 
+                        ? 'Vendas ilimitadas'
+                        : `${subscriptionInfo.salesUsed} de ${subscriptionInfo.salesLimit} vendas utilizadas`
+                      }
+                    </p>
+                  </div>
+                  {!subscriptionInfo.isTeamMember && subscriptionInfo.salesUsed >= subscriptionInfo.salesLimit * 0.8 && (
+                    <Button asChild size="sm" variant="outline">
+                      <Link to="/pricing">
+                        Upgrade
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Customer information */}
+            <div className="border-t pt-4">
+              <h3 className="font-medium mb-4">Informações do Cliente</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="customerName">Nome do Cliente *</Label>
+                  <Input
+                    id="customerName"
+                    value={formData.customerName}
+                    onChange={(e) => handleInputChange('customerName', e.target.value)}
+                    placeholder="Nome completo"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="customerPhone">Telefone *</Label>
+                  <Input
+                    id="customerPhone"
+                    value={formData.customerPhone}
+                    onChange={(e) => handleInputChange('customerPhone', e.target.value)}
+                    placeholder="(00) 00000-0000"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-4 space-y-2">
+                <Label htmlFor="cep">CEP</Label>
+                <div className="relative">
+                  <Input 
+                    id="cep"
+                    value={formData.cep}
+                    onChange={(e) => handleInputChange('cep', e.target.value)}
+                    placeholder="00000-000" 
+                    onBlur={handleCepBlur}
+                  />
+                  {isFetchingAddress && (
+                    <Loader2 className="h-4 w-4 animate-spin absolute right-3 top-3" />
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="md:col-span-2 space-y-2">
+                  <Label htmlFor="address">Endereço</Label>
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    placeholder="Rua, número, complemento"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="city">Cidade</Label>
+                  <Input
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="state">Estado</Label>
+                  <Input
+                    id="state"
+                    value={formData.state}
+                    onChange={(e) => handleInputChange('state', e.target.value)}
+                  />
+                </div>
+                
+                <div className="md:col-span-2 space-y-2">
+                  <Label htmlFor="order">Pedido *</Label>
+                  <Input
+                    id="order"
+                    value={formData.order}
+                    onChange={(e) => handleInputChange('order', e.target.value)}
+                    placeholder="Descrição do pedido"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Sale value */}
+            <div className="border-t pt-4">
+              <h3 className="font-medium mb-4">Valor da Venda</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">Quantidade *</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={formData.quantity}
+                    onChange={(e) => handleInputChange('quantity', parseInt(e.target.value) || 1)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="unitPrice">Preço Unitário (R$) *</Label>
+                  <Input
+                    id="unitPrice"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={formData.unitPrice}
+                    onChange={(e) => handleInputChange('unitPrice', parseFloat(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="observations">Observações</Label>
+              <Textarea
+                id="observations"
+                value={formData.observations}
+                onChange={(e) => handleInputChange('observations', e.target.value)}
+                placeholder="Observações adicionais sobre a venda"
+                className="min-h-[100px]"
+              />
+            </div>
+            
+            {/* Summary */}
+            <div className="border p-4 rounded-md bg-muted/30">
+              <div className="flex justify-between items-center">
+                <Label>Valor Total:</Label>
+                <span className="text-xl font-bold">
+                  R$ {totalPrice.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center mt-2">
+                <Label>Comissão (20%):</Label>
+                <span>
+                  R$ {commission.toFixed(2)}
+                </span>
+              </div>
+              {isOwner && formData.assignedSellerId && (
+                <div className="flex justify-between items-center mt-2 text-sm text-muted-foreground">
+                  <span>Vendedor responsável:</span>
+                  <span>
+                    {formData.assignedSellerId === "new" 
+                      ? formData.newSellerName || "Novo vendedor virtual"
+                      : allSellers.find(s => s.id === formData.assignedSellerId)?.name || "Você"
+                    }
+                  </span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(-1)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Registrando..." : "Registrar Venda"}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   );
 };
 

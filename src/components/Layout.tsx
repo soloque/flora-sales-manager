@@ -13,7 +13,8 @@ import {
   FileText,
   CreditCard,
   Crown,
-  Menu
+  Menu,
+  TrendingUp
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -126,15 +127,7 @@ const Layout = () => {
             <Link to="/dashboard" className="flex items-center space-x-2">
               <div className="relative">
                 <div className="bg-gradient-to-br from-primary to-primary/80 p-2 rounded-xl shadow-lg transition-all duration-200">
-                  {/* Triângulo simples sem bordas */}
-                  <div className="h-5 w-5 relative">
-                    <svg viewBox="0 0 100 100" className="h-full w-full text-primary-foreground">
-                      <path 
-                        d="M50 15 L80 75 L20 75 Z" 
-                        fill="currentColor"
-                      />
-                    </svg>
-                  </div>
+                  <TrendingUp className="h-5 w-5 text-primary-foreground" />
                 </div>
               </div>
               <span className="font-bold text-xl">SalesCanvas</span>

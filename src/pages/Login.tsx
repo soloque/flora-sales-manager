@@ -61,14 +61,7 @@ const Login = () => {
           <Link to="/" className="inline-flex items-center space-x-3 text-primary hover:text-primary/80 transition-all duration-200 group mb-8">
             <div className="relative">
               <div className="bg-gradient-to-br from-primary to-primary/80 p-3 rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-200">
-                <div className="h-6 w-6 relative">
-                  <svg viewBox="0 0 100 100" className="h-full w-full text-primary-foreground">
-                    <path 
-                      d="M50 15 L80 75 L20 75 Z" 
-                      fill="currentColor"
-                    />
-                  </svg>
-                </div>
+                <TrendingUp className="h-6 w-6 text-primary-foreground" />
               </div>
             </div>
             <div className="flex flex-col">

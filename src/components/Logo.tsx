@@ -1,5 +1,6 @@
 
 import { Link } from "react-router-dom";
+import { TrendingUp } from "lucide-react";
 
 export function Logo() {
   return (
@@ -9,16 +10,7 @@ export function Logo() {
     >
       <div className="relative">
         <div className="bg-gradient-to-br from-primary to-primary/80 p-2 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-200">
-          {/* Triângulo simples sem bordas */}
-          <div className="h-6 w-6 relative">
-            <svg viewBox="0 0 100 100" className="h-full w-full text-primary-foreground">
-              {/* Triângulo preenchido - simples e clean */}
-              <path 
-                d="M50 15 L80 75 L20 75 Z" 
-                fill="currentColor"
-              />
-            </svg>
-          </div>
+          <TrendingUp className="h-6 w-6 text-primary-foreground" />
         </div>
       </div>
       <div className="flex flex-col">

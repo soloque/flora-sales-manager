@@ -113,15 +113,7 @@ const Landing = () => {
               <div className="flex items-center space-x-3">
                 <div className="relative">
                   <div className="bg-gradient-to-br from-primary to-primary/80 p-3 rounded-2xl shadow-2xl">
-                    {/* Triângulo simples sem bordas */}
-                    <div className="h-8 w-8 relative">
-                      <svg viewBox="0 0 100 100" className="h-full w-full text-primary-foreground">
-                        <path 
-                          d="M50 15 L80 75 L20 75 Z" 
-                          fill="currentColor"
-                        />
-                      </svg>
-                    </div>
+                    <TrendingUp className="h-8 w-8 text-primary-foreground" />
                   </div>
                 </div>
                 <div className="flex flex-col">
@@ -289,14 +281,7 @@ const Landing = () => {
             <div className="flex justify-center">
               <div className="flex items-center space-x-2">
                 <div className="bg-gradient-to-br from-primary to-primary/80 p-2 rounded-lg">
-                  <div className="h-5 w-5 relative">
-                    <svg viewBox="0 0 100 100" className="h-full w-full text-primary-foreground">
-                      <path 
-                        d="M50 15 L80 75 L20 75 Z" 
-                        fill="currentColor"
-                      />
-                    </svg>
-                  </div>
+                  <TrendingUp className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <span className="text-lg font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                   SalesCanvas

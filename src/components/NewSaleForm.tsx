@@ -10,7 +10,8 @@ import { CustomerInfoSection } from "./form-sections/CustomerInfoSection";
 import { SaleValueSection } from "./form-sections/SaleValueSection";
 import { ObservationsSection } from "./form-sections/ObservationsSection";
 import { FormHeader } from "./form-sections/FormHeader";
-import { useNewSaleForm } from "@/hooks/useNewSaleForm";
+import { SellerSelector } from "./SellerSelector";
+import { useNewSaleFormWithSeller } from "@/hooks/useNewSaleFormWithSeller";
 
 export function NewSaleForm() {
   const { user } = useAuth();
@@ -20,9 +21,10 @@ export function NewSaleForm() {
   const {
     formData,
     handleInputChange,
+    handleSellerChange,
     validateForm,
     resetForm
-  } = useNewSaleForm();
+  } = useNewSaleFormWithSeller();
 
   const isOwner = user?.role === "owner";
 
@@ -46,12 +48,29 @@ export function NewSaleForm() {
     }
 
     if (!validateForm()) return;
+
+    // Se é owner e não selecionou vendedor, mostrar erro
+    if (isOwner && !formData.assignedSellerId) {
+      toast({
+        variant: "destructive",
+        title: "Campo obrigatório",
+        description: "Selecione um vendedor para atribuir a venda."
+      });
+      return;
+    }
     
     setIsLoading(true);
     try {
       const totalPrice = formData.quantity * formData.unitPrice;
       const commissionRate = 20;
       const commission = totalPrice * (commissionRate / 100);
+      
+      // Definir quem é o vendedor baseado no tipo de usuário
+      const sellerId = isOwner ? formData.assignedSellerId : user.id;
+      const sellerName = isOwner ? formData.assignedSellerName : user.name;
+      const isVirtualSeller = isOwner ? formData.isVirtualSeller : false;
+      const assignedByOwner = isOwner;
+      const originalSellerId = isOwner ? user.id : null;
       
       const { data: saleData, error } = await supabase
         .from('sales')
@@ -61,8 +80,8 @@ export function NewSaleForm() {
           quantity: formData.quantity,
           unit_price: formData.unitPrice,
           total_price: totalPrice,
-          seller_id: user.id,
-          seller_name: user.name,
+          seller_id: sellerId,
+          seller_name: sellerName,
           commission: commission,
           commission_rate: commissionRate,
           status: "pending",
@@ -74,7 +93,9 @@ export function NewSaleForm() {
           customer_state: formData.state,
           customer_zipcode: formData.cep,
           customer_order: formData.order,
-          is_virtual_seller: false
+          is_virtual_seller: isVirtualSeller,
+          assigned_by_owner: assignedByOwner,
+          original_seller_id: originalSellerId
         })
         .select()
         .single();
@@ -83,7 +104,7 @@ export function NewSaleForm() {
       
       toast({
         title: "Venda registrada com sucesso!",
-        description: `Venda no valor de R$ ${totalPrice.toFixed(2)} foi registrada.`
+        description: `Venda no valor de R$ ${totalPrice.toFixed(2)} foi registrada${isOwner ? ` para ${sellerName}` : ''}.`
       });
       
       navigate("/sales");
@@ -115,6 +136,14 @@ export function NewSaleForm() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6">
+            {isOwner && (
+              <SellerSelector
+                value={formData.assignedSellerId}
+                onChange={handleSellerChange}
+                label="Atribuir venda para"
+              />
+            )}
+            
             <CustomerInfoSection
               formData={formData}
               handleInputChange={handleInputChange}
@@ -143,6 +172,14 @@ export function NewSaleForm() {
                   R$ {commission.toFixed(2)}
                 </span>
               </div>
+              {isOwner && formData.assignedSellerName && (
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-sm text-muted-foreground">Vendedor:</span>
+                  <span className="text-sm font-medium">
+                    {formData.assignedSellerName}
+                  </span>
+                </div>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex justify-end space-x-2">

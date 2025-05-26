@@ -10,6 +10,8 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, PlusCircle } from "lucide-react";
 import { fetchAddressByCep } from "@/services/cepService";
+import { SellerSelector } from "./SellerSelector";
+import { useNewSaleFormWithSeller } from "@/hooks/useNewSaleFormWithSeller";
 
 interface NewSaleModalProps {
   open: boolean;
@@ -22,25 +24,15 @@ export function NewSaleModal({ open, onOpenChange, onSaleCreated }: NewSaleModal
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingAddress, setIsFetchingAddress] = useState(false);
   
-  const [formData, setFormData] = useState({
-    customerName: "",
-    customerPhone: "",
-    cep: "",
-    address: "",
-    city: "",
-    state: "",
-    order: "",
-    observations: "",
-    quantity: 1,
-    unitPrice: 0,
-  });
+  const {
+    formData,
+    handleInputChange,
+    handleSellerChange,
+    validateForm,
+    resetForm
+  } = useNewSaleFormWithSeller();
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  const isOwner = user?.role === "owner";
 
   const handleCepBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     const cep = e.target.value.replace(/\D/g, '');
@@ -52,12 +44,9 @@ export function NewSaleModal({ open, onOpenChange, onSaleCreated }: NewSaleModal
     try {
       const addressData = await fetchAddressByCep(cep);
       
-      setFormData(prev => ({
-        ...prev,
-        address: addressData.logradouro,
-        city: addressData.localidade,
-        state: addressData.uf
-      }));
+      handleInputChange('address', addressData.logradouro);
+      handleInputChange('city', addressData.localidade);
+      handleInputChange('state', addressData.uf);
     } catch (error) {
       if (error instanceof Error) {
         toast({
@@ -69,55 +58,6 @@ export function NewSaleModal({ open, onOpenChange, onSaleCreated }: NewSaleModal
     } finally {
       setIsFetchingAddress(false);
     }
-  };
-
-  const validateForm = () => {
-    if (!formData.customerName.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Campo obrigatório",
-        description: "Nome do cliente é obrigatório."
-      });
-      return false;
-    }
-    
-    if (!formData.customerPhone.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Campo obrigatório",
-        description: "Telefone do cliente é obrigatório."
-      });
-      return false;
-    }
-    
-    if (!formData.order.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Campo obrigatório",
-        description: "Descrição do pedido é obrigatória."
-      });
-      return false;
-    }
-    
-    if (formData.quantity <= 0) {
-      toast({
-        variant: "destructive",
-        title: "Quantidade inválida",
-        description: "Quantidade deve ser maior que zero."
-      });
-      return false;
-    }
-    
-    if (formData.unitPrice <= 0) {
-      toast({
-        variant: "destructive",
-        title: "Preço inválido",
-        description: "Preço unitário deve ser maior que zero."
-      });
-      return false;
-    }
-    
-    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -133,12 +73,29 @@ export function NewSaleModal({ open, onOpenChange, onSaleCreated }: NewSaleModal
     }
 
     if (!validateForm()) return;
+
+    // Se é owner e não selecionou vendedor, mostrar erro
+    if (isOwner && !formData.assignedSellerId) {
+      toast({
+        variant: "destructive",
+        title: "Campo obrigatório",
+        description: "Selecione um vendedor para atribuir a venda."
+      });
+      return;
+    }
     
     setIsLoading(true);
     try {
       const totalPrice = formData.quantity * formData.unitPrice;
       const commissionRate = 20;
       const commission = totalPrice * (commissionRate / 100);
+      
+      // Definir quem é o vendedor baseado no tipo de usuário
+      const sellerId = isOwner ? formData.assignedSellerId : user.id;
+      const sellerName = isOwner ? formData.assignedSellerName : user.name;
+      const isVirtualSeller = isOwner ? formData.isVirtualSeller : false;
+      const assignedByOwner = isOwner;
+      const originalSellerId = isOwner ? user.id : null;
       
       const { data: saleData, error } = await supabase
         .from('sales')
@@ -148,8 +105,8 @@ export function NewSaleModal({ open, onOpenChange, onSaleCreated }: NewSaleModal
           quantity: formData.quantity,
           unit_price: formData.unitPrice,
           total_price: totalPrice,
-          seller_id: user.id,
-          seller_name: user.name,
+          seller_id: sellerId,
+          seller_name: sellerName,
           commission: commission,
           commission_rate: commissionRate,
           status: "pending",
@@ -161,7 +118,9 @@ export function NewSaleModal({ open, onOpenChange, onSaleCreated }: NewSaleModal
           customer_state: formData.state,
           customer_zipcode: formData.cep,
           customer_order: formData.order,
-          is_virtual_seller: false
+          is_virtual_seller: isVirtualSeller,
+          assigned_by_owner: assignedByOwner,
+          original_seller_id: originalSellerId
         })
         .select()
         .single();
@@ -170,22 +129,10 @@ export function NewSaleModal({ open, onOpenChange, onSaleCreated }: NewSaleModal
       
       toast({
         title: "Venda registrada com sucesso!",
-        description: `Venda no valor de R$ ${totalPrice.toFixed(2)} foi registrada.`
+        description: `Venda no valor de R$ ${totalPrice.toFixed(2)} foi registrada${isOwner ? ` para ${sellerName}` : ''}.`
       });
       
-      setFormData({
-        customerName: "",
-        customerPhone: "",
-        cep: "",
-        address: "",
-        city: "",
-        state: "",
-        order: "",
-        observations: "",
-        quantity: 1,
-        unitPrice: 0,
-      });
-
+      resetForm();
       onSaleCreated?.();
       onOpenChange(false);
     } catch (error) {
@@ -217,6 +164,14 @@ export function NewSaleModal({ open, onOpenChange, onSaleCreated }: NewSaleModal
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          {isOwner && (
+            <SellerSelector
+              value={formData.assignedSellerId}
+              onChange={handleSellerChange}
+              label="Atribuir venda para"
+            />
+          )}
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="customerName">Nome do Cliente *</Label>
@@ -348,6 +303,12 @@ export function NewSaleModal({ open, onOpenChange, onSaleCreated }: NewSaleModal
               <span className="text-muted-foreground">Comissão (20%):</span>
               <span>R$ {commission.toFixed(2)}</span>
             </div>
+            {isOwner && formData.assignedSellerName && (
+              <div className="flex justify-between items-center text-sm mt-1">
+                <span className="text-muted-foreground">Vendedor:</span>
+                <span className="font-medium">{formData.assignedSellerName}</span>
+              </div>
+            )}
           </div>
 
           <DialogFooter>

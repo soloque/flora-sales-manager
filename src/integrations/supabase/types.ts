@@ -222,6 +222,7 @@ export type Database = {
       }
       sales: {
         Row: {
+          assigned_by_owner: boolean | null
           commission: number | null
           commission_rate: number | null
           cost_price: number | null
@@ -238,6 +239,7 @@ export type Database = {
           id: string
           is_virtual_seller: boolean | null
           observations: string | null
+          original_seller_id: string | null
           profit: number | null
           quantity: number | null
           seller_id: string | null
@@ -248,6 +250,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_by_owner?: boolean | null
           commission?: number | null
           commission_rate?: number | null
           cost_price?: number | null
@@ -264,6 +267,7 @@ export type Database = {
           id?: string
           is_virtual_seller?: boolean | null
           observations?: string | null
+          original_seller_id?: string | null
           profit?: number | null
           quantity?: number | null
           seller_id?: string | null
@@ -274,6 +278,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_by_owner?: boolean | null
           commission?: number | null
           commission_rate?: number | null
           cost_price?: number | null
@@ -290,6 +295,7 @@ export type Database = {
           id?: string
           is_virtual_seller?: boolean | null
           observations?: string | null
+          original_seller_id?: string | null
           profit?: number | null
           quantity?: number | null
           seller_id?: string | null
@@ -301,8 +307,8 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sales_seller_id_fkey"
-            columns: ["seller_id"]
+            foreignKeyName: "sales_original_seller_id_fkey"
+            columns: ["original_seller_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -606,6 +612,16 @@ export type Database = {
         Returns: undefined
       }
       get_all_sellers_for_owner: {
+        Args: { owner_id_param: string }
+        Returns: {
+          id: string
+          name: string
+          email: string
+          type: string
+          is_virtual: boolean
+        }[]
+      }
+      get_assignable_sellers: {
         Args: { owner_id_param: string }
         Returns: {
           id: string

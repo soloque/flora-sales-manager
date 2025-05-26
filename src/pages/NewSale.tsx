@@ -28,11 +28,9 @@ const NewSale = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preSelectedSellerId = searchParams.get('sellerId');
-  const [isOwner, setIsOwner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingAddress, setIsFetchingAddress] = useState(false);
   const [allSellers, setAllSellers] = useState<Seller[]>([]);
-  const [preSelectedSeller, setPreSelectedSeller] = useState<Seller | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -51,18 +49,22 @@ const NewSale = () => {
     newSellerEmail: "",
   });
 
+  const isOwner = user?.role === "owner";
+
   useEffect(() => {
+    console.log("NewSale component mounted");
+    console.log("User:", user);
+    console.log("PreSelectedSellerId:", preSelectedSellerId);
+
     if (!user) {
+      console.log("No user, redirecting to login");
       navigate("/login");
       return;
     }
     
-    // Simplified permission check
-    const userIsOwner = user.role === "owner";
-    setIsOwner(userIsOwner);
-    
     // Get sellers for owner
-    if (userIsOwner) {
+    if (isOwner) {
+      console.log("User is owner, fetching sellers");
       const getSellers = async () => {
         try {
           const { data, error } = await supabase.rpc(
@@ -70,16 +72,11 @@ const NewSale = () => {
             { owner_id_param: user.id }
           );
           
+          console.log("Sellers data:", data);
+          console.log("Sellers error:", error);
+          
           if (!error && data) {
             setAllSellers(data);
-            
-            // Find pre-selected seller
-            if (preSelectedSellerId) {
-              const preSelected = data.find((s: Seller) => s.id === preSelectedSellerId);
-              if (preSelected) {
-                setPreSelectedSeller(preSelected);
-              }
-            }
           }
         } catch (error) {
           console.error("Error fetching sellers:", error);
@@ -88,7 +85,7 @@ const NewSale = () => {
       
       getSellers();
     }
-  }, [user, preSelectedSellerId]);
+  }, [user, navigate, preSelectedSellerId, isOwner]);
 
   // Update assignedSellerId when preSelectedSellerId changes
   useEffect(() => {
@@ -291,34 +288,6 @@ const NewSale = () => {
         
       if (error) throw error;
       
-      // Send notifications only for real team members (not virtual sellers)
-      if (isOwner && formData.assignedSellerId && formData.assignedSellerId !== user.id && formData.assignedSellerId !== "new" && !isVirtualSeller) {
-        // Owner assigned sale to a real team member, notify the seller
-        await createNotification(
-          formData.assignedSellerId,
-          "Venda atribuída a você",
-          `Uma nova venda no valor de R$ ${totalPrice.toFixed(2)} foi atribuída a você por ${user.name}`,
-          "new_sale",
-          saleData.id
-        );
-      } else if (!isOwner) {
-        // Seller registered sale, notify owner if exists
-        const { data: teamData } = await supabase.rpc(
-          'get_seller_team',
-          { seller_id_param: user.id }
-        );
-        
-        if (teamData && teamData.length > 0) {
-          await createNotification(
-            teamData[0].id,
-            "Nova venda registrada",
-            `${user.name} registrou uma nova venda no valor de R$ ${totalPrice.toFixed(2)}`,
-            "new_sale",
-            saleData.id
-          );
-        }
-      }
-      
       toast({
         title: "Venda registrada com sucesso!",
         description: `Venda no valor de R$ ${totalPrice.toFixed(2)} foi registrada${
@@ -342,6 +311,10 @@ const NewSale = () => {
   const totalPrice = formData.quantity * formData.unitPrice;
   const commission = totalPrice * 0.2;
 
+  console.log("Rendering NewSale component");
+  console.log("IsOwner:", isOwner);
+  console.log("AllSellers:", allSellers);
+
   return (
     <div className="container mx-auto p-6">
       <Card>
@@ -356,20 +329,9 @@ const NewSale = () => {
                 (Proprietário)
               </span>
             )}
-            {preSelectedSeller && (
-              <span className="text-sm font-normal text-blue-600 bg-blue-100 px-2 py-1 rounded flex items-center gap-1">
-                <Bot className="h-3 w-3" />
-                para {preSelectedSeller.name} {preSelectedSeller.is_virtual ? '(Virtual)' : ''}
-              </span>
-            )}
           </CardTitle>
           <CardDescription>
-            {isOwner 
-              ? preSelectedSeller 
-                ? `Registrando venda para ${preSelectedSeller.is_virtual ? 'o vendedor virtual' : 'o vendedor'} ${preSelectedSeller.name}`
-                : "Registre uma nova venda e atribua a um vendedor da sua equipe ou crie um novo vendedor virtual"
-              : "Registre uma nova venda no sistema"
-            }
+            Registre uma nova venda no sistema
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>

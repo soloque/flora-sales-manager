@@ -115,6 +115,48 @@ export type Database = {
         }
         Relationships: []
       }
+      facebook_messages: {
+        Row: {
+          created_at: string | null
+          facebook_message_id: string
+          id: string
+          is_ai_response: boolean | null
+          is_from_customer: boolean
+          message_text: string
+          recipient_id: string
+          sender_id: string
+          status: string | null
+          timestamp: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          facebook_message_id: string
+          id?: string
+          is_ai_response?: boolean | null
+          is_from_customer?: boolean
+          message_text: string
+          recipient_id: string
+          sender_id: string
+          status?: string | null
+          timestamp?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          facebook_message_id?: string
+          id?: string
+          is_ai_response?: boolean | null
+          is_from_customer?: boolean
+          message_text?: string
+          recipient_id?: string
+          sender_id?: string
+          status?: string | null
+          timestamp?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           category: string | null

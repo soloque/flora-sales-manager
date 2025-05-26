@@ -23,6 +23,8 @@ interface FacebookMessage {
   is_from_customer: boolean;
   is_ai_response?: boolean;
   status: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface Conversation {
@@ -76,27 +78,41 @@ export function FacebookMessaging() {
       // Group messages by customer
       const conversationsMap = new Map<string, Conversation>();
       
-      messages?.forEach((message: FacebookMessage) => {
-        const customerId = message.is_from_customer ? message.sender_id : message.recipient_id;
+      (messages || []).forEach((message: any) => {
+        const fbMessage: FacebookMessage = {
+          id: message.id,
+          facebook_message_id: message.facebook_message_id,
+          sender_id: message.sender_id,
+          recipient_id: message.recipient_id,
+          message_text: message.message_text,
+          timestamp: message.timestamp,
+          is_from_customer: message.is_from_customer,
+          is_ai_response: message.is_ai_response,
+          status: message.status,
+          created_at: message.created_at,
+          updated_at: message.updated_at
+        };
+
+        const customerId = fbMessage.is_from_customer ? fbMessage.sender_id : fbMessage.recipient_id;
         
         if (!conversationsMap.has(customerId)) {
           conversationsMap.set(customerId, {
             customer_id: customerId,
             customer_name: `Cliente ${customerId.slice(-4)}`,
-            last_message: message,
+            last_message: fbMessage,
             unread_count: 0,
             messages: []
           });
         }
         
         const conversation = conversationsMap.get(customerId)!;
-        conversation.messages.push(message);
+        conversation.messages.push(fbMessage);
         
-        if (message.is_from_customer && message.timestamp > conversation.last_message.timestamp) {
-          conversation.last_message = message;
+        if (fbMessage.is_from_customer && fbMessage.timestamp > conversation.last_message.timestamp) {
+          conversation.last_message = fbMessage;
         }
         
-        if (message.is_from_customer && message.status === 'received') {
+        if (fbMessage.is_from_customer && fbMessage.status === 'received') {
           conversation.unread_count++;
         }
       });

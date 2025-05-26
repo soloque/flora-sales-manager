@@ -9,6 +9,8 @@ interface SellerLimits {
   maxSellers: number;
   canAddMore: boolean;
   planName: string;
+  realSellers: number;
+  virtualSellers: number;
 }
 
 export function useSellerLimits() {
@@ -50,14 +52,27 @@ export function useSellerLimits() {
         .select('*')
         .eq('owner_id', user.id);
 
-      const totalSellers = (teamData?.length || 0) + (virtualData?.length || 0);
+      const realSellers = teamData?.length || 0;
+      const virtualSellers = virtualData?.length || 0;
+      const totalSellers = realSellers + virtualSellers;
       const canAddMore = maxSellers === -1 || totalSellers < maxSellers;
+
+      console.log('Seller limits check:', {
+        realSellers,
+        virtualSellers,
+        totalSellers,
+        maxSellers,
+        canAddMore,
+        planName
+      });
 
       setLimits({
         totalSellers,
         maxSellers,
         canAddMore,
-        planName
+        planName,
+        realSellers,
+        virtualSellers
       });
     } catch (error) {
       console.error("Erro ao verificar limites:", error);
@@ -77,7 +92,7 @@ export function useSellerLimits() {
       toast({
         variant: "destructive",
         title: "Limite de vendedores atingido",
-        description: `Seu plano ${limits.planName} permite apenas ${limits.maxSellers} vendedores. Você já possui ${limits.totalSellers}. Faça upgrade para adicionar mais vendedores.`
+        description: `Seu plano ${limits.planName} permite apenas ${limits.maxSellers} vendedores. Você já possui ${limits.totalSellers} (${limits.realSellers} reais + ${limits.virtualSellers} virtuais). Faça upgrade para adicionar mais vendedores.`
       });
       return false;
     }

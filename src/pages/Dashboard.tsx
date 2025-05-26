@@ -6,9 +6,15 @@ import SellerPlanBanner from "@/components/SellerPlanBanner";
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const isOwner = user?.role === "owner";
+  const isSeller = user?.role === "seller";
   
   return (
     <div className="space-y-6">
+      {/* Banner Section */}
+      {isOwner && <SubscriptionBanner />}
+      {isSeller && <SellerPlanBanner />}
+
       {/* Discrete Welcome Message */}
       <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-2xl p-6 border border-primary/10">
         <div className="flex items-center space-x-3">
@@ -22,9 +28,6 @@ const Dashboard = () => {
         </p>
       </div>
 
-      {/* Banner Section - mantendo apenas quando necessário */}
-      {user?.role === "seller" && <SellerPlanBanner />}
-      
       {/* Dashboard Content */}
       <DashboardSummary />
     </div>

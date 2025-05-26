@@ -1,11 +1,10 @@
+
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Logo } from "@/components/Logo";
-import SubscriptionBanner from "@/components/SubscriptionBanner";
-import SellerPlanBanner from "@/components/SellerPlanBanner";
 import { 
   LogOut, 
   BarChart3, 
@@ -107,10 +106,6 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Banners */}
-      {isOwner && <SubscriptionBanner />}
-      {isSeller && <SellerPlanBanner />}
-      
       {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
         <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">

@@ -10,6 +10,8 @@ interface DashboardChartProps {
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
 export function DashboardChart({ sales }: DashboardChartProps) {
+  console.log('DashboardChart received sales:', sales);
+
   // Agrupar vendas por vendedor
   const salesBySellerData = sales.reduce((acc, sale) => {
     const sellerName = sale.sellerName || "Sem vendedor";
@@ -28,6 +30,8 @@ export function DashboardChart({ sales }: DashboardChartProps) {
     
     return acc;
   }, [] as Array<{ name: string; value: number; sales: number }>);
+
+  console.log('Processed sales by seller data:', salesBySellerData);
 
   if (salesBySellerData.length === 0) {
     return (

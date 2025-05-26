@@ -1,4 +1,3 @@
-
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,8 @@ import {
   MessageSquare,
   History,
   CreditCard,
-  HelpCircle
+  HelpCircle,
+  Bot
 } from "lucide-react";
 
 const Layout = () => {
@@ -73,6 +73,12 @@ const Layout = () => {
       name: "Mensagens",
       href: "/messages",
       icon: MessageSquare,
+      show: true
+    },
+    {
+      name: "Bot Automático",
+      href: "/autobot",
+      icon: Bot,
       show: true
     },
     {

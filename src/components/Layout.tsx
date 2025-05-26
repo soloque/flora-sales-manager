@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Logo } from "@/components/Logo";
 import { 
   Home, 
   ShoppingCart, 
@@ -153,9 +155,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
             {/* Logo */}
             <div className="flex items-center">
-              <Link to="/dashboard" className="text-xl font-bold text-primary hover:text-primary/80 transition-colors">
-                VendaFlow
-              </Link>
+              <Logo />
             </div>
 
             {/* Desktop Navigation */}
@@ -181,6 +181,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
             {/* Right side items */}
             <div className="flex items-center space-x-3">
+              {/* Theme Toggle */}
+              <ThemeToggle />
+
               {/* Messages Button */}
               <Button
                 variant="outline"

@@ -32,17 +32,25 @@ export const useStripeSubscription = () => {
     if (!user) return;
 
     try {
+      console.log('Checking subscription for user:', user.id);
       const { data, error } = await supabase.functions.invoke('check-subscription');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error checking subscription:', error);
+        throw error;
+      }
 
+      console.log('Subscription data received:', data);
       setSubscription(data);
     } catch (error) {
       console.error('Error checking subscription:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao verificar assinatura",
-        description: "Não foi possível verificar o status da sua assinatura.",
+      // Em caso de erro, definir como plano free
+      setSubscription({
+        subscribed: false,
+        plan: 'free',
+        status: 'active',
+        trial_days_left: 0,
+        is_annual: false
       });
     } finally {
       setLoading(false);

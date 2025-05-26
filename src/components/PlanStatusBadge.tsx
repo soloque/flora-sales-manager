@@ -12,7 +12,17 @@ const PlanStatusBadge = () => {
 
   // Para owners, usar Stripe subscription
   if (user?.role === "owner") {
-    if (stripeLoading || !subscription) {
+    if (stripeLoading) {
+      return (
+        <Badge variant="secondary" className="ml-2">
+          <Clock className="h-3 w-3 mr-1" />
+          Carregando...
+        </Badge>
+      );
+    }
+
+    // Se não tem subscription ainda, mostrar carregando
+    if (!subscription) {
       return (
         <Badge variant="secondary" className="ml-2">
           <Clock className="h-3 w-3 mr-1" />
@@ -60,11 +70,20 @@ const PlanStatusBadge = () => {
   }
 
   // Para sellers, usar seller subscription info
-  if (sellerLoading || !subscriptionInfo) {
+  if (sellerLoading) {
     return (
       <Badge variant="secondary" className="ml-2">
         <Clock className="h-3 w-3 mr-1" />
         Carregando...
+      </Badge>
+    );
+  }
+
+  if (!subscriptionInfo) {
+    return (
+      <Badge variant="outline" className="ml-2">
+        <Users className="h-3 w-3 mr-1" />
+        Sem Plano
       </Badge>
     );
   }

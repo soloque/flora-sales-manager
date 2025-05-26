@@ -96,91 +96,30 @@ const AutoResponseBot = () => {
     setMessages(updated);
   };
 
-  const insertTextAtCursor = (text: string) => {
-    const activeElement = document.activeElement as HTMLInputElement | HTMLTextAreaElement;
-    
-    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-      const start = activeElement.selectionStart || 0;
-      const end = activeElement.selectionEnd || 0;
-      const value = activeElement.value;
-      
-      const newValue = value.substring(0, start) + text + value.substring(end);
-      activeElement.value = newValue;
-      
-      // Disparar evento de input para frameworks que escutam mudanças
-      const event = new Event('input', { bubbles: true });
-      activeElement.dispatchEvent(event);
-      
-      // Reposicionar cursor
-      const newCursorPos = start + text.length;
-      activeElement.setSelectionRange(newCursorPos, newCursorPos);
-      activeElement.focus();
-    } else {
-      // Se não há campo focado, tenta colar no campo mais provável
-      const inputs = document.querySelectorAll('input[type="text"], textarea, [contenteditable="true"]');
-      if (inputs.length > 0) {
-        const lastInput = inputs[inputs.length - 1] as HTMLElement;
-        lastInput.focus();
-        
-        if (lastInput.tagName === 'INPUT' || lastInput.tagName === 'TEXTAREA') {
-          const input = lastInput as HTMLInputElement | HTMLTextAreaElement;
-          input.value += text;
-          const event = new Event('input', { bubbles: true });
-          input.dispatchEvent(event);
-        } else {
-          // Para contenteditable
-          lastInput.innerText += text;
-        }
-      } else {
-        // Fallback: copiar para área de transferência
-        navigator.clipboard.writeText(text).then(() => {
-          toast({
-            title: "Texto copiado!",
-            description: "Cole onde desejar com Ctrl+V",
-            duration: 2000
-          });
-        });
-      }
-    }
-  };
-
   const handleKeyPress = (event: KeyboardEvent) => {
     const pressedKey = event.key;
     const message = messages.find(msg => msg.key === pressedKey);
     
-    if (message) {
+    if (message && message.message) {
       event.preventDefault();
       event.stopPropagation();
       
-      console.log(`Tecla ${pressedKey} pressionada - inserindo texto:`, message.message);
+      console.log(`Tecla ${pressedKey} pressionada - copiando texto:`, message.message);
       setLastUsedKey(message.message);
       
-      // Se a mensagem tem quebras de linha, inserir uma por vez
-      if (message.message.includes('\n')) {
-        const lines = message.message.split('\n');
-        lines.forEach((line, index) => {
-          setTimeout(() => {
-            insertTextAtCursor(line);
-            if (index < lines.length - 1) {
-              // Simular Enter para próxima linha
-              setTimeout(() => {
-                const activeElement = document.activeElement as HTMLInputElement | HTMLTextAreaElement;
-                if (activeElement) {
-                  const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
-                  activeElement.dispatchEvent(enterEvent);
-                }
-              }, 100);
-            }
-          }, index * 500);
+      // Copiar para área de transferência
+      navigator.clipboard.writeText(message.message).then(() => {
+        toast({
+          title: `Tecla ${pressedKey} - Texto copiado!`,
+          description: "Cole com Ctrl+V onde desejar",
+          duration: 2000
         });
-      } else {
-        insertTextAtCursor(message.message);
-      }
-      
-      toast({
-        title: "Texto inserido!",
-        description: `Mensagem da tecla ${pressedKey} foi inserida`,
-        duration: 1500
+      }).catch(() => {
+        toast({
+          title: "Erro ao copiar",
+          description: "Não foi possível copiar o texto",
+          variant: "destructive"
+        });
       });
     }
   };
@@ -198,7 +137,7 @@ const AutoResponseBot = () => {
     const keys = messages.map(m => m.key).filter(k => k).join(', ');
     toast({
       title: "Bot ativado!",
-      description: `Pressione ${keys} para inserir as mensagens automaticamente`,
+      description: `Pressione ${keys} para copiar as mensagens`,
       duration: 4000
     });
   };
@@ -228,7 +167,7 @@ const AutoResponseBot = () => {
 
   const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text.replace(/\\n/g, '\n'));
+      await navigator.clipboard.writeText(text);
       toast({
         title: "Mensagem copiada!",
         description: "A mensagem foi copiada para a área de transferência",
@@ -250,7 +189,7 @@ const AutoResponseBot = () => {
         <div>
           <h1 className="text-3xl font-bold">Bot de Respostas Automáticas</h1>
           <p className="text-muted-foreground">
-            Pressione as teclas configuradas para inserir texto automaticamente
+            Pressione as teclas para copiar o texto automaticamente
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -278,12 +217,12 @@ const AutoResponseBot = () => {
               <CheckCircle className="h-5 w-5" />
               <span className="font-medium">Bot ativo!</span>
               <span className="text-sm">
-                Pressione as teclas configuradas para inserir as mensagens automaticamente.
+                Pressione as teclas para copiar automaticamente. Cole com Ctrl+V.
               </span>
             </div>
             {lastUsedKey && (
               <div className="mt-2 text-xs text-green-600 dark:text-green-400">
-                Última mensagem inserida: "{lastUsedKey.length > 50 ? lastUsedKey.substring(0, 50) + '...' : lastUsedKey}"
+                Última mensagem copiada: "{lastUsedKey.length > 50 ? lastUsedKey.substring(0, 50) + '...' : lastUsedKey}"
               </div>
             )}
           </CardContent>
@@ -311,7 +250,7 @@ const AutoResponseBot = () => {
             <CardHeader>
               <CardTitle>Configurar Mensagens</CardTitle>
               <CardDescription>
-                Configure as teclas e mensagens que serão inseridas automaticamente
+                Configure as teclas e mensagens que serão copiadas automaticamente
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -358,7 +297,7 @@ const AutoResponseBot = () => {
                         rows={3}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Use quebras de linha para múltiplas mensagens
+                        Use quebras de linha para múltiplas linhas
                       </p>
                     </div>
                   </div>
@@ -406,7 +345,7 @@ const AutoResponseBot = () => {
                   <div>
                     <h3 className="font-medium">Inicie o Bot</h3>
                     <p className="text-sm text-muted-foreground">
-                      Clique em "Iniciar Bot" para ativar o sistema de inserção automática.
+                      Clique em "Iniciar Bot" para ativar o sistema de cópia automática.
                     </p>
                   </div>
                 </div>
@@ -418,7 +357,7 @@ const AutoResponseBot = () => {
                   <div>
                     <h3 className="font-medium">Use as Teclas</h3>
                     <p className="text-sm text-muted-foreground">
-                      Pressione as teclas configuradas e o texto será inserido automaticamente onde estiver o cursor.
+                      Pressione as teclas configuradas e o texto será copiado automaticamente. Cole com Ctrl+V onde desejar.
                     </p>
                   </div>
                 </div>
@@ -429,11 +368,11 @@ const AutoResponseBot = () => {
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">💡 Como Funciona</h4>
                 <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                  <li>• O bot insere o texto automaticamente onde estiver o cursor</li>
-                  <li>• Funciona em campos de texto, textarea e campos editáveis</li>
-                  <li>• Mensagens com quebras de linha são inseridas linha por linha</li>
-                  <li>• Se não há campo focado, tenta encontrar o campo mais adequado</li>
-                  <li>• Como último recurso, copia para área de transferência</li>
+                  <li>• Pressione a tecla configurada</li>
+                  <li>• O texto é automaticamente copiado</li>
+                  <li>• Cole com Ctrl+V em qualquer lugar (Facebook, WhatsApp, etc.)</li>
+                  <li>• Funciona em qualquer aplicação ou site</li>
+                  <li>• Simples e direto - sem complicações!</li>
                 </ul>
               </div>
             </CardContent>

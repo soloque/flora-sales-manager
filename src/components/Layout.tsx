@@ -19,7 +19,8 @@ import {
   MessageSquare,
   History,
   CreditCard,
-  HelpCircle
+  HelpCircle,
+  PlusCircle
 } from "lucide-react";
 
 const Layout = () => {
@@ -41,6 +42,12 @@ const Layout = () => {
       href: "/dashboard",
       icon: BarChart3,
       show: true
+    },
+    {
+      name: "Nova Venda",
+      href: "/sales/new",
+      icon: PlusCircle,
+      show: isOwner || isSeller
     },
     {
       name: "Vendas",

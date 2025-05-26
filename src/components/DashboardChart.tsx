@@ -1,5 +1,5 @@
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Sale } from "@/types";
 
@@ -36,7 +36,7 @@ export function DashboardChart({ sales }: DashboardChartProps) {
 
   if (salesBySellerData.length === 0) {
     return (
-      <Card className="w-full max-w-2xl">
+      <Card className="w-full max-w-lg">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Vendas por Vendedor</CardTitle>
         </CardHeader>
@@ -46,6 +46,18 @@ export function DashboardChart({ sales }: DashboardChartProps) {
       </Card>
     );
   }
+
+  // Cores para os segmentos da pizza
+  const COLORS = [
+    'hsl(var(--primary))',
+    'hsl(var(--secondary))',
+    '#8884d8',
+    '#82ca9d',
+    '#ffc658',
+    '#ff7300',
+    '#00ff00',
+    '#ff0000'
+  ];
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -66,39 +78,36 @@ export function DashboardChart({ sales }: DashboardChartProps) {
   };
 
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full max-w-lg">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Vendas por Vendedor</CardTitle>
       </CardHeader>
       <CardContent className="pt-2">
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={salesBySellerData} margin={{ top: 10, right: 15, left: 15, bottom: 40 }}>
-            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-            <XAxis 
-              dataKey="name" 
-              angle={-45}
-              textAnchor="end"
-              height={60}
-              interval={0}
-              fontSize={11}
-              tick={{ fontSize: 11 }}
-            />
-            <YAxis 
-              tickFormatter={(value) => 
-                `R$ ${(value / 1000).toFixed(0)}k`
-              }
-              fontSize={11}
-              tick={{ fontSize: 11 }}
-            />
+        <ResponsiveContainer width="100%" height={250}>
+          <PieChart>
+            <Pie
+              data={salesBySellerData}
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="value"
+              label={false}
+            >
+              {salesBySellerData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
             <Tooltip content={<CustomTooltip />} />
-            <Bar 
-              dataKey="value" 
-              fill="hsl(var(--primary))"
-              name="Valor em Vendas"
-              radius={[3, 3, 0, 0]}
-              maxBarSize={60}
+            <Legend 
+              wrapperStyle={{ fontSize: '12px' }}
+              formatter={(value, entry: any) => (
+                <span style={{ color: entry.color }}>
+                  {value}
+                </span>
+              )}
             />
-          </BarChart>
+          </PieChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>

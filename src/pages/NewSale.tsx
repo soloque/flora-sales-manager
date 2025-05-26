@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/services/notificationService";
-import { AlertCircle, Loader2, XCircle } from "lucide-react";
+import { AlertCircle, Loader2, XCircle, Users } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { fetchAddressByCep } from "@/services/cepService";
 import { User } from "@/types";
@@ -273,7 +273,7 @@ const NewSale = () => {
         .from('sales')
         .insert({
           date: new Date().toISOString(),
-          description: formData.order, // Using order as description
+          description: formData.order,
           quantity: formData.quantity,
           unit_price: formData.unitPrice,
           total_price: totalPrice,
@@ -296,41 +296,39 @@ const NewSale = () => {
         
       if (error) throw error;
       
-      // Find owner to send notification
-      let ownerId = user.id;
-      
-      if (!isOwner) {
+      // Send notifications
+      if (isOwner && formData.assignedSellerId && formData.assignedSellerId !== user.id) {
+        // Owner assigned sale to someone else, notify the seller
+        await createNotification(
+          formData.assignedSellerId,
+          "Venda atribuída a você",
+          `Uma nova venda no valor de R$ ${totalPrice.toFixed(2)} foi atribuída a você por ${user.name}`,
+          "new_sale",
+          saleData.id
+        );
+      } else if (!isOwner) {
+        // Seller registered sale, notify owner if exists
         const { data: teamData } = await supabase.rpc(
           'get_seller_team',
           { seller_id_param: user.id }
         );
         
         if (teamData && teamData.length > 0) {
-          ownerId = teamData[0].id;
-          
-          // Send notification to owner about new sale
           await createNotification(
-            ownerId,
+            teamData[0].id,
             "Nova venda registrada",
             `${user.name} registrou uma nova venda no valor de R$ ${totalPrice.toFixed(2)}`,
             "new_sale",
             saleData.id
           );
         }
-      } else if (formData.assignedSellerId && formData.assignedSellerId !== user.id) {
-        // Owner assigned sale to someone else, notify the seller
-        await createNotification(
-          formData.assignedSellerId,
-          "Venda atribuída a você",
-          `Uma nova venda no valor de R$ ${totalPrice.toFixed(2)} foi atribuída a você`,
-          "new_sale",
-          saleData.id
-        );
       }
       
       toast({
-        title: "Venda registrada",
-        description: "A venda foi registrada com sucesso."
+        title: "Venda registrada com sucesso!",
+        description: `Venda no valor de R$ ${totalPrice.toFixed(2)} foi registrada${
+          isOwner && formData.assignedSellerId ? ` para ${sellerName}` : ''
+        }.`
       });
       
       navigate("/sales");
@@ -392,7 +390,7 @@ const NewSale = () => {
                 </Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link to="/sellers">
+                <Link to="/team">
                   Solicitar Vínculo
                 </Link>
               </Button>
@@ -433,7 +431,7 @@ const NewSale = () => {
                 </Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link to="/sellers">
+                <Link to="/team">
                   Solicitar Vínculo
                 </Link>
               </Button>
@@ -450,12 +448,62 @@ const NewSale = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Nova Venda</CardTitle>
-        <CardDescription>Registre uma nova venda no sistema.</CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <Plus className="h-5 w-5" />
+          Nova Venda
+          {isOwner && (
+            <span className="text-sm font-normal text-muted-foreground">
+              (Proprietário)
+            </span>
+          )}
+        </CardTitle>
+        <CardDescription>
+          {isOwner 
+            ? "Registre uma nova venda e atribua a um vendedor da sua equipe" 
+            : "Registre uma nova venda no sistema"
+          }
+        </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          {/* Mostrar informações do plano se for vendedor */}
+        <CardContent className="space-y-6">
+          {/* Owner assignment section */}
+          {isOwner && (
+            <div className="border rounded-lg p-4 bg-blue-50/50">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="h-5 w-5 text-blue-600" />
+                <h3 className="font-medium text-blue-800">Atribuição de Venda</h3>
+              </div>
+              <div className="space-y-2">
+                <Label>Atribuir venda para vendedor</Label>
+                <Select 
+                  value={formData.assignedSellerId} 
+                  onValueChange={(value) => handleInputChange('assignedSellerId', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um vendedor ou deixe vazio para atribuir a você" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Atribuir a mim (proprietário)</SelectItem>
+                    {teamMembers.map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name} ({member.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {teamMembers.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Você ainda não tem vendedores na sua equipe. 
+                    <Link to="/team" className="text-primary hover:underline ml-1">
+                      Adicione vendedores aqui
+                    </Link>
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Seller subscription info */}
           {!isOwner && subscriptionInfo && (
             <div className="border p-4 rounded-md bg-blue-50">
               <div className="flex items-center justify-between">
@@ -480,29 +528,8 @@ const NewSale = () => {
               </div>
             </div>
           )}
-
-          {isOwner && teamMembers.length > 0 && (
-            <div className="space-y-2">
-              <Label>Atribuir venda para vendedor (opcional)</Label>
-              <Select 
-                value={formData.assignedSellerId} 
-                onValueChange={(value) => handleInputChange('assignedSellerId', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um vendedor ou deixe vazio para atribuir a você" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Atribuir a mim (proprietário)</SelectItem>
-                  {teamMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.name} ({member.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
           
+          {/* Customer information */}
           <div className="border-t pt-4">
             <h3 className="font-medium mb-4">Informações do Cliente</h3>
             
@@ -594,6 +621,7 @@ const NewSale = () => {
             </div>
           </div>
           
+          {/* Sale value */}
           <div className="border-t pt-4">
             <h3 className="font-medium mb-4">Valor da Venda</h3>
             
@@ -637,6 +665,7 @@ const NewSale = () => {
             />
           </div>
           
+          {/* Summary */}
           <div className="border p-4 rounded-md bg-muted/30">
             <div className="flex justify-between items-center">
               <Label>Valor Total:</Label>
@@ -650,6 +679,14 @@ const NewSale = () => {
                 R$ {commission.toFixed(2)}
               </span>
             </div>
+            {isOwner && formData.assignedSellerId && (
+              <div className="flex justify-between items-center mt-2 text-sm text-muted-foreground">
+                <span>Vendedor responsável:</span>
+                <span>
+                  {teamMembers.find(m => m.id === formData.assignedSellerId)?.name || "Você"}
+                </span>
+              </div>
+            )}
           </div>
         </CardContent>
         <CardFooter className="flex justify-end space-x-2">

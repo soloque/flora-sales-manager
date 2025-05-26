@@ -16,6 +16,8 @@ import Inventory from "@/pages/Inventory";
 import UserSettings from "@/pages/UserSettings";
 import Pricing from "@/pages/Pricing";
 import Messages from "@/pages/Messages";
+import SalesHistory from "@/pages/SalesHistory";
+import PlanManagement from "@/pages/PlanManagement";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
@@ -44,12 +46,14 @@ function App() {
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="sales" element={<SalesList />} />
                 <Route path="sales/new" element={<NewSale />} />
+                <Route path="sales-history" element={<SalesHistory />} />
                 <Route path="commissions" element={<CommissionDetails />} />
                 <Route path="commission-settings" element={<CommissionSettings />} />
-                <Route path="sellers" element={<SellerManagement />} />
+                <Route path="team" element={<SellerManagement />} />
                 <Route path="inventory" element={<Inventory />} />
                 <Route path="settings" element={<UserSettings />} />
                 <Route path="messages" element={<Messages />} />
+                <Route path="plan-management" element={<PlanManagement />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>

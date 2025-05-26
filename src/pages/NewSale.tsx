@@ -32,12 +32,12 @@ const NewSale = () => {
   const preSelectedSellerId = searchParams.get('sellerId');
   const { subscriptionInfo, loading: subscriptionLoading, checkCanRegisterSale } = useSellerSubscription();
   const [isOwner, setIsOwner] = useState(false);
-  const [hasOwner, setHasOwner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCheckingTeam, setIsCheckingTeam] = useState(false);
+  const [isCheckingTeam, setIsCheckingTeam] = useState(true);
   const [isFetchingAddress, setIsFetchingAddress] = useState(false);
   const [allSellers, setAllSellers] = useState<Seller[]>([]);
   const [preSelectedSeller, setPreSelectedSeller] = useState<Seller | null>(null);
+  const [canRegisterSale, setCanRegisterSale] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -57,37 +57,28 @@ const NewSale = () => {
   });
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     
-    setIsOwner(user.role === "owner");
-    
-    const checkSellerTeam = async () => {
+    const checkUserPermissions = async () => {
       setIsCheckingTeam(true);
+      const userIsOwner = user.role === "owner";
+      setIsOwner(userIsOwner);
+      
       try {
-        if (user.role === "seller") {
-          const { data, error } = await supabase.rpc(
-            'get_seller_team', 
-            { seller_id_param: user.id }
-          );
+        if (userIsOwner) {
+          // Owner can always register sales
+          setCanRegisterSale(true);
           
-          if (error) {
-            console.error("Error checking seller team:", error);
-            setHasOwner(false);
-          } else {
-            setHasOwner(data && data.length > 0);
-          }
-        } else if (user.role === "owner") {
-          setHasOwner(true);
-          
-          // Get all sellers (real + virtual) for owner
+          // Get all sellers for owner
           const { data, error } = await supabase.rpc(
             'get_all_sellers_for_owner',
             { owner_id_param: user.id }
           );
           
-          if (error) {
-            console.error("Error getting sellers:", error);
-          } else if (data) {
+          if (!error && data) {
             setAllSellers(data);
             
             // Find pre-selected seller
@@ -98,17 +89,32 @@ const NewSale = () => {
               }
             }
           }
+        } else {
+          // For sellers, check if they can register sales
+          if (checkCanRegisterSale) {
+            const canRegister = await checkCanRegisterSale();
+            setCanRegisterSale(canRegister);
+          } else if (subscriptionInfo) {
+            setCanRegisterSale(subscriptionInfo.canRegister || subscriptionInfo.isTeamMember);
+          } else {
+            // Check if seller has owner/team
+            const { data: teamData } = await supabase.rpc(
+              'get_seller_team', 
+              { seller_id_param: user.id }
+            );
+            setCanRegisterSale(teamData && teamData.length > 0);
+          }
         }
       } catch (error) {
-        console.error("Erro ao verificar o time do vendedor:", error);
-        setHasOwner(false);
+        console.error("Error checking permissions:", error);
+        setCanRegisterSale(userIsOwner); // Fallback: owners can always register
       } finally {
         setIsCheckingTeam(false);
       }
     };
     
-    checkSellerTeam();
-  }, [user, preSelectedSellerId]);
+    checkUserPermissions();
+  }, [user, preSelectedSellerId, checkCanRegisterSale, subscriptionInfo]);
 
   // Update assignedSellerId when preSelectedSellerId changes
   useEffect(() => {
@@ -238,19 +244,6 @@ const NewSale = () => {
       return;
     }
 
-    // Verificar se pode registrar venda (only for sellers)
-    if (!isOwner && checkCanRegisterSale) {
-      const canRegister = await checkCanRegisterSale();
-      if (!canRegister) {
-        toast({
-          variant: "destructive",
-          title: "Limite de vendas atingido",
-          description: "Você atingiu o limite de vendas do seu plano. Faça upgrade para continuar."
-        });
-        return;
-      }
-    }
-    
     if (!validateForm()) return;
     
     setIsLoading(true);
@@ -372,8 +365,8 @@ const NewSale = () => {
     }
   };
 
-  // Show loading only while checking team
-  if (isCheckingTeam || (!isOwner && subscriptionLoading)) {
+  // Show loading while checking permissions
+  if (isCheckingTeam) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center">
@@ -384,31 +377,33 @@ const NewSale = () => {
     );
   }
 
-  // Verificar se vendedor pode registrar vendas (não se aplica a proprietários)
-  if (!isOwner && subscriptionInfo && !subscriptionInfo.canRegister) {
+  // Show permission denied if user cannot register sales
+  if (!canRegisterSale) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <XCircle className="h-6 w-6 text-red-500" />
-            <span>Limite de Vendas Atingido</span>
+            <span>Permissão Negada</span>
           </CardTitle>
           <CardDescription>
-            Você atingiu o limite de vendas do seu plano.
+            Você não tem permissão para registrar vendas no momento.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Upgrade Necessário</AlertTitle>
+            <AlertTitle>Limite Atingido ou Sem Permissão</AlertTitle>
             <AlertDescription>
-              Você utilizou {subscriptionInfo.salesUsed} de {subscriptionInfo.salesLimit} vendas gratuitas.
-              Para continuar registrando vendas, faça upgrade para o plano pago ou solicite vínculo a um proprietário.
+              {subscriptionInfo && !subscriptionInfo.canRegister 
+                ? `Você utilizou ${subscriptionInfo.salesUsed} de ${subscriptionInfo.salesLimit} vendas gratuitas.`
+                : "Você precisa estar vinculado a um proprietário ou ter um plano pago para registrar vendas."
+              }
             </AlertDescription>
           </Alert>
           
           <div className="flex flex-col items-center py-6 space-y-4">
-            <div className="text-6xl mb-4">📈</div>
+            <div className="text-6xl mb-4">🔒</div>
             <p className="text-center mb-4">
               Escolha uma das opções abaixo para continuar:
             </p>
@@ -416,48 +411,6 @@ const NewSale = () => {
               <Button asChild>
                 <Link to="/pricing">
                   Upgrade para R$ 200/mês
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to="/team">
-                  Solicitar Vínculo
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // For sellers without owner or subscription - always allow if they're an owner or have a team
-  if (!hasOwner && !isOwner && (!subscriptionInfo || !subscriptionInfo.isTeamMember)) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Registro de Vendas Indisponível</CardTitle>
-          <CardDescription>
-            Você precisa estar vinculado a um proprietário ou ter um plano pago para registrar vendas.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Atenção!</AlertTitle>
-            <AlertDescription>
-              Para registrar vendas, você precisa fazer parte de um time de vendas ou ter um plano pago.
-            </AlertDescription>
-          </Alert>
-          
-          <div className="flex flex-col items-center py-6 space-y-4">
-            <div className="text-6xl mb-4">🔒</div>
-            <p className="text-center mb-4">
-              Escolha uma das opções abaixo:
-            </p>
-            <div className="flex space-x-4">
-              <Button asChild>
-                <Link to="/pricing">
-                  Plano R$ 200/mês
                 </Link>
               </Button>
               <Button variant="outline" asChild>

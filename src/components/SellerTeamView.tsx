@@ -3,8 +3,9 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { User } from "@/types";
-import { MessageSquare, Mail, User as UserIcon, LogOut } from "lucide-react";
+import { MessageSquare, Mail, User as UserIcon, LogOut, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatModal } from "@/components/ChatModal";
 import { formatDistance } from "date-fns";
@@ -21,12 +22,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import TeamInviteModal from "@/components/TeamInviteModal";
 
 const SellerTeamView = () => {
   const { user } = useAuth();
   const [owner, setOwner] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerSearchResults, setOwnerSearchResults] = useState<User[]>([]);
+  const [selectedOwner, setSelectedOwner] = useState<User | null>(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -59,6 +74,8 @@ const SellerTeamView = () => {
           avatar_url: ownerData.avatar_url
         };
         setOwner(ownerUser);
+      } else {
+        setOwner(null);
       }
     } catch (error) {
       console.error("Error fetching owner info:", error);
@@ -87,8 +104,10 @@ const SellerTeamView = () => {
         description: `Você saiu da equipe de ${owner.name} com sucesso.`,
       });
 
-      // Refresh the page to show updated state
+      // Update state to show search options
       setOwner(null);
+      setOwnerSearchResults([]);
+      setOwnerEmail("");
     } catch (error: any) {
       console.error("Error leaving team:", error);
       toast({
@@ -96,6 +115,63 @@ const SellerTeamView = () => {
         title: "Erro ao sair da equipe",
         description: error.message || "Ocorreu um erro ao tentar sair da equipe.",
       });
+    }
+  };
+
+  const handleSearchOwner = async () => {
+    if (!ownerEmail.trim()) {
+      toast({
+        title: "Email em branco",
+        description: "Por favor, informe um email para buscar",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'owner')
+        .ilike('email', `%${ownerEmail}%`);
+        
+      if (error) {
+        toast({
+          title: "Erro ao buscar proprietário",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const formattedOwners = data.map(owner => ({
+          id: owner.id,
+          name: owner.name || "Sem nome",
+          email: owner.email || "Sem email",
+          role: owner.role as "seller" | "inactive" | "owner",
+          createdAt: new Date(owner.created_at),
+          avatar_url: owner.avatar_url
+        }));
+        
+        setOwnerSearchResults(formattedOwners);
+      } else {
+        setOwnerSearchResults([]);
+        toast({
+          title: "Nenhum resultado",
+          description: "Não encontramos proprietários com este email",
+        });
+      }
+    } catch (error) {
+      console.error("Error searching owner:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Ocorreu um erro ao buscar proprietários",
+      });
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -125,7 +201,10 @@ const SellerTeamView = () => {
           <CardHeader>
             <CardTitle>Minha Equipe</CardTitle>
             <CardDescription>
-              Informações sobre o proprietário e sua equipe de vendas
+              {owner 
+                ? "Informações sobre o proprietário e sua equipe de vendas"
+                : "Procure por um proprietário para se juntar a uma equipe"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -195,15 +274,67 @@ const SellerTeamView = () => {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8">
-                <UserIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-muted-foreground mb-2">
-                  Nenhuma equipe encontrada
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Você ainda não está associado a nenhuma equipe de vendas. 
-                  Entre em contato com um proprietário para se juntar a uma equipe.
-                </p>
+              <div className="space-y-6">
+                <div className="text-center py-8">
+                  <UserIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-muted-foreground mb-2">
+                    Nenhuma equipe encontrada
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Você ainda não está associado a nenhuma equipe de vendas. 
+                    Busque por um proprietário pelo email para enviar uma solicitação.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex space-x-2">
+                    <Input 
+                      placeholder="Email do proprietário" 
+                      value={ownerEmail}
+                      onChange={(e) => setOwnerEmail(e.target.value)}
+                      className="flex-1"
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearchOwner()}
+                    />
+                    <Button onClick={handleSearchOwner} disabled={isSearching}>
+                      <Search className="h-4 w-4 mr-2" />
+                      {isSearching ? "Buscando..." : "Buscar"}
+                    </Button>
+                  </div>
+                  
+                  {ownerSearchResults.length > 0 && (
+                    <div className="border rounded-md">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Nome</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead className="text-right">Ações</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {ownerSearchResults.map((owner) => (
+                            <TableRow key={owner.id}>
+                              <TableCell>{owner.name}</TableCell>
+                              <TableCell>{owner.email}</TableCell>
+                              <TableCell className="text-right">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedOwner(owner);
+                                    setShowInviteModal(true);
+                                  }}
+                                >
+                                  Solicitar Integração
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </CardContent>
@@ -214,6 +345,16 @@ const SellerTeamView = () => {
         isOpen={isChatModalOpen}
         onClose={handleCloseChat}
         selectedMember={owner}
+      />
+
+      <TeamInviteModal 
+        isOpen={showInviteModal}
+        onClose={() => {
+          setShowInviteModal(false);
+          setSelectedOwner(null);
+        }}
+        ownerId={selectedOwner?.id}
+        ownerName={selectedOwner?.name}
       />
     </>
   );

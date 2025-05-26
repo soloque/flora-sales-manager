@@ -42,6 +42,7 @@ const TeamInviteModal = ({ isOpen, onClose, teamId, ownerId, ownerName }: TeamIn
       });
         
       if (error) {
+        console.error("Error sending team request:", error);
         toast({
           title: "Erro ao enviar solicitação",
           description: error.message,
@@ -55,6 +56,8 @@ const TeamInviteModal = ({ isOpen, onClose, teamId, ownerId, ownerName }: TeamIn
         description: `Sua solicitação para participar do time de ${ownerName} foi enviada com sucesso!`,
       });
       
+      // Reset form and close modal
+      setMessage("");
       onClose();
     } catch (error: any) {
       console.error("Error sending team request:", error);
@@ -68,8 +71,13 @@ const TeamInviteModal = ({ isOpen, onClose, teamId, ownerId, ownerName }: TeamIn
     }
   };
 
+  const handleClose = () => {
+    setMessage("");
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Solicitar integração ao time</DialogTitle>
@@ -89,7 +97,7 @@ const TeamInviteModal = ({ isOpen, onClose, teamId, ownerId, ownerName }: TeamIn
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button variant="outline" onClick={handleClose}>Cancelar</Button>
           <Button onClick={handleSendRequest} disabled={isSubmitting}>
             {isSubmitting ? "Enviando..." : "Enviar solicitação"}
           </Button>

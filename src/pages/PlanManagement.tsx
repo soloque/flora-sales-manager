@@ -1,10 +1,10 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Crown, Users, Zap, AlertTriangle, Settings } from "lucide-react";
 import { usePlanManagement } from "@/hooks/usePlanManagement";
 import { useStripeSubscription } from "@/hooks/useStripeSubscription";
+import { useNavigate } from "react-router-dom";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const PlanManagement = () => {
+  const navigate = useNavigate();
   const { 
     currentPlan, 
     loading, 
@@ -29,7 +30,6 @@ const PlanManagement = () => {
   
   const { 
     subscription: stripeSubscription, 
-    openCustomerPortal, 
     createCheckoutSession 
   } = useStripeSubscription();
 
@@ -136,12 +136,8 @@ const PlanManagement = () => {
     await upgradePlan(planName);
   };
 
-  const handleManageSubscription = async () => {
-    try {
-      await openCustomerPortal();
-    } catch (error) {
-      console.error('Error opening customer portal:', error);
-    }
+  const handleManageSubscription = () => {
+    navigate("/cancel-plan");
   };
 
   if (loading) {
@@ -218,42 +214,14 @@ const PlanManagement = () => {
                 >
                   {displayPlan.status === 'active' ? 'Ativo' : displayPlan.status}
                 </Badge>
-                {stripeSubscription?.subscribed && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline">
-                        <Settings className="h-4 w-4 mr-2" />
-                        Gerenciar Assinatura
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Gerenciar Assinatura</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Você será redirecionado para o portal do Stripe onde poderá:
-                          <br /><br />
-                          • Ver histórico de pagamentos<br />
-                          • Atualizar método de pagamento<br />
-                          • Baixar faturas<br />
-                          • Cancelar sua assinatura
-                          <br /><br />
-                          <strong>Atenção:</strong> Se cancelar, você perderá acesso aos seguintes benefícios:
-                          <br />
-                          {getCurrentPlanBenefits().map((benefit, index) => (
-                            <span key={index}>• {benefit}<br /></span>
-                          ))}
-                          <br />
-                          Tem certeza que deseja prosseguir?
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleManageSubscription}>
-                          Prosseguir para o Portal
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                {(stripeSubscription?.subscribed || displayPlan.planName !== 'free') && (
+                  <Button 
+                    variant="outline"
+                    onClick={handleManageSubscription}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Gerenciar Assinatura
+                  </Button>
                 )}
               </div>
             </div>

@@ -18,6 +18,7 @@ import Pricing from "@/pages/Pricing";
 import Messages from "@/pages/Messages";
 import SalesHistory from "@/pages/SalesHistory";
 import PlanManagement from "@/pages/PlanManagement";
+import CancelPlan from "@/pages/CancelPlan";
 import Help from "@/pages/Help";
 import ResetPassword from "@/pages/ResetPassword";
 import AutoResponseBot from "@/pages/AutoResponseBot";
@@ -58,6 +59,7 @@ function App() {
                 <Route path="/settings" element={<UserSettings />} />
                 <Route path="/messages" element={<Messages />} />
                 <Route path="/plan-management" element={<PlanManagement />} />
+                <Route path="/cancel-plan" element={<CancelPlan />} />
                 <Route path="/autobot" element={<AutoResponseBot />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="*" element={<NotFound />} />

@@ -19,8 +19,8 @@ const Pricing = () => {
       features: [
         "Até 3 vendedores",
         "Vendas ilimitadas",
-        "Relatórios básicos",
-        "Registro de vendas",
+        "Relatórios completos",
+        "Análise financeira completa",
         "Sistema de mensagens",
         "Suporte por email",
         "Gratuito para sempre",
@@ -36,8 +36,8 @@ const Pricing = () => {
       features: [
         "Até 10 vendedores",
         "Vendas ilimitadas",
-        "Controle de comissões",
-        "Relatórios básicos",
+        "Relatórios completos",
+        "Análise financeira completa",
         "Sistema de mensagens",
         "Suporte prioritário",
       ],
@@ -52,10 +52,10 @@ const Pricing = () => {
       features: [
         "Até 20 vendedores",
         "Vendas ilimitadas",
-        "Tudo do plano Popular",
-        "Relatórios avançados",
-        "Análise financeira",
-        "Personalização de comissões",
+        "Relatórios completos",
+        "Análise financeira completa",
+        "Sistema de mensagens",
+        "Suporte prioritário",
       ],
       highlighted: false,
       cta: "Expandir equipe",
@@ -68,10 +68,10 @@ const Pricing = () => {
       features: [
         "Vendedores ilimitados",
         "Vendas ilimitadas",
-        "Tudo do plano Crescimento",
         "Relatórios completos",
+        "Análise financeira completa",
+        "Sistema de mensagens",
         "Suporte prioritário",
-        "Gestão avançada de equipe",
       ],
       highlighted: false,
       cta: "Ilimitado",
@@ -96,8 +96,8 @@ const Pricing = () => {
             Planos de Assinatura
           </h1>
           <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto">
-            Escolha o plano ideal para o seu negócio de vendas de plantas. 
-            Comece gratuitamente com o plano Free!
+            Escolha o plano ideal para o tamanho da sua equipe de vendas. 
+            Todos os planos incluem recursos completos!
           </p>
           
           <div className="mt-8 flex justify-center items-center space-x-4">
@@ -190,33 +190,34 @@ const Pricing = () => {
         {/* Pricing explanation */}
         <div className="max-w-4xl mx-auto mt-16 text-center">
           <h2 className="text-2xl font-bold mb-6">
-            Estrutura de Preços Simples e Clara
+            Planos Simples Baseados no Tamanho da Equipe
           </h2>
           <div className="grid md:grid-cols-2 gap-8 mb-8">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Planos Fixos</CardTitle>
+                <CardTitle className="text-lg">Todos os Recursos Inclusos</CardTitle>
               </CardHeader>
               <CardContent className="text-left">
                 <div className="space-y-2">
-                  <p><strong>Free:</strong> Até 3 vendedores - Grátis</p>
-                  <p><strong>Popular:</strong> Até 10 vendedores - R$ 100/mês</p>
-                  <p><strong>Crescimento:</strong> Até 20 vendedores - R$ 200/mês</p>
-                  <p><strong>Profissional:</strong> Ilimitados - R$ 600/mês</p>
+                  <p>✅ Vendas ilimitadas</p>
+                  <p>✅ Relatórios completos</p>
+                  <p>✅ Análise financeira completa</p>
+                  <p>✅ Sistema de mensagens</p>
+                  <p>✅ Controle de comissões</p>
                 </div>
               </CardContent>
             </Card>
             
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Opções Personalizadas</CardTitle>
+                <CardTitle className="text-lg">Apenas o Tamanho da Equipe Muda</CardTitle>
               </CardHeader>
               <CardContent className="text-left">
                 <div className="space-y-2">
-                  <p><strong>Entre 10-20 vendedores:</strong></p>
-                  <p>+R$ 100 a cada 10 vendedores extras</p>
-                  <p><strong>Acima de 20 vendedores:</strong></p>
-                  <p>Upgrade para Profissional (ilimitado)</p>
+                  <p><strong>Free:</strong> Até 3 vendedores</p>
+                  <p><strong>Popular:</strong> Até 10 vendedores</p>
+                  <p><strong>Crescimento:</strong> Até 20 vendedores</p>
+                  <p><strong>Profissional:</strong> Vendedores ilimitados</p>
                 </div>
               </CardContent>
             </Card>
@@ -248,20 +249,20 @@ const Pricing = () => {
             </div>
             <div>
               <h3 className="text-xl font-semibold mb-2">
-                E se eu tiver entre 10 e 20 vendedores?
+                Todos os planos têm os mesmos recursos?
               </h3>
               <p>
-                Você pode contratar vendedores extras no plano Popular por +R$ 100 a cada 
-                10 vendedores adicionais, ou fazer upgrade direto para o Crescimento.
+                Sim! A única diferença entre os planos é a quantidade de vendedores permitidos. 
+                Todos incluem vendas ilimitadas, relatórios completos e análise financeira.
               </p>
             </div>
             <div>
               <h3 className="text-xl font-semibold mb-2">
-                Quando vale a pena o plano Profissional?
+                Posso mudar de plano quando quiser?
               </h3>
               <p>
-                A partir de R$ 600/mês você tem vendedores ilimitados. É ideal para 
-                equipes grandes que precisam escalar sem se preocupar com limites.
+                Sim! Você pode fazer upgrade ou downgrade do seu plano a qualquer momento 
+                através das configurações da sua conta.
               </p>
             </div>
           </div>

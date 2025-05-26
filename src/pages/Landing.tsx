@@ -23,8 +23,8 @@ const Landing = () => {
     },
     {
       icon: TrendingUp,
-      title: "Análises Básicas",
-      description: "Gráficos e métricas para otimizar seus resultados"
+      title: "Análises Completas",
+      description: "Gráficos e métricas avançadas para otimizar seus resultados"
     },
     {
       icon: Shield,
@@ -43,12 +43,12 @@ const Landing = () => {
       name: "Free",
       price: "R$ 0",
       period: "/sempre",
-      description: "Perfeito para começar",
+      description: "Até 3 vendedores",
       features: [
-        "Até 3 vendedores",
+        "3 vendedores",
         "Vendas ilimitadas",
-        "Relatórios básicos",
-        "Registro de vendas",
+        "Relatórios completos",
+        "Análise financeira completa",
         "Suporte por email"
       ],
       highlighted: false
@@ -57,12 +57,12 @@ const Landing = () => {
       name: "Popular",
       price: "R$ 100",
       period: "/mês",
-      description: "Ideal para pequenos negócios",
+      description: "Até 10 vendedores",
       features: [
-        "Até 10 vendedores",
+        "10 vendedores",
         "Vendas ilimitadas",
-        "Controle de comissões", 
-        "Relatórios básicos",
+        "Relatórios completos", 
+        "Análise financeira completa",
         "Suporte prioritário"
       ],
       highlighted: true
@@ -71,13 +71,13 @@ const Landing = () => {
       name: "Crescimento",
       price: "R$ 200",
       period: "/mês",
-      description: "Para equipes em expansão",
+      description: "Até 20 vendedores",
       features: [
-        "Até 20 vendedores",
+        "20 vendedores",
         "Vendas ilimitadas",
-        "Tudo do plano Popular",
-        "Relatórios avançados", 
-        "Análise financeira"
+        "Relatórios completos",
+        "Análise financeira completa", 
+        "Suporte prioritário"
       ],
       highlighted: false
     },
@@ -89,8 +89,8 @@ const Landing = () => {
       features: [
         "Vendedores ilimitados",
         "Vendas ilimitadas",
-        "Tudo dos planos anteriores",
         "Relatórios completos",
+        "Análise financeira completa",
         "Suporte prioritário"
       ],
       highlighted: false
@@ -174,7 +174,7 @@ const Landing = () => {
               Tudo que Você Precisa
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Funcionalidades essenciais para otimizar suas vendas e crescer seu negócio
+              Recursos completos para otimizar suas vendas e crescer seu negócio
             </p>
           </div>
           
@@ -204,10 +204,10 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center space-y-4 mb-16">
             <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Planos para Todos os Tamanhos
+              Planos Baseados no Tamanho da Equipe
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Escolha o plano ideal para sua empresa e comece a vender mais hoje mesmo
+              Todos os recursos inclusos. Escolha apenas pelo tamanho da sua equipe.
             </p>
           </div>
           
@@ -260,15 +260,6 @@ const Landing = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
-          
-          <div className="text-center mt-12 p-6 bg-muted/50 rounded-lg">
-            <p className="text-sm text-muted-foreground">
-              <strong>Vendedores extras:</strong> R$ 100 a cada 10 vendedores adicionais no plano Popular
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              <strong>Ilimitado:</strong> A partir de R$ 600/mês no plano Profissional
-            </p>
           </div>
         </div>
       </section>

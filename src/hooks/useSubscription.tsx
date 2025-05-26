@@ -44,7 +44,6 @@ export const useSubscription = () => {
         }
 
         if (data) {
-          // Cast the data to match our Subscription interface
           const subscriptionData: Subscription = {
             ...data,
             status: data.status as 'trial' | 'active' | 'canceled' | 'past_due'
@@ -127,12 +126,12 @@ export const useSubscription = () => {
     switch (subscription.plan_name) {
       case 'free':
         return 'Free';
-      case 'starter':
-        return 'Starter';
-      case 'professional':
-        return 'Professional';
-      case 'enterprise':
-        return 'Enterprise';
+      case 'popular':
+        return 'Popular';
+      case 'crescimento':
+        return 'Crescimento';
+      case 'profissional':
+        return 'Profissional';
       default:
         return subscription.plan_name.charAt(0).toUpperCase() + subscription.plan_name.slice(1);
     }

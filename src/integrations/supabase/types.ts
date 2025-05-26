@@ -603,6 +603,18 @@ export type Database = {
           created_at: string
         }[]
       }
+      get_user_current_plan: {
+        Args: { user_id_param: string }
+        Returns: {
+          plan_name: string
+          max_sellers: number
+          price_per_month: number
+          status: string
+          can_upgrade_to_popular: boolean
+          can_upgrade_to_crescimento: boolean
+          can_upgrade_to_profissional: boolean
+        }[]
+      }
       get_user_messages: {
         Args: { user_id_param: string }
         Returns: {
@@ -639,6 +651,10 @@ export type Database = {
       }
       update_team_request: {
         Args: { request_id_param: string; status_param: string }
+        Returns: undefined
+      }
+      upgrade_user_plan: {
+        Args: { user_id_param: string; new_plan_name_param: string }
         Returns: undefined
       }
     }

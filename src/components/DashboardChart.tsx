@@ -1,13 +1,11 @@
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Sale } from "@/types";
 
 interface DashboardChartProps {
   sales: Sale[];
 }
-
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
 export function DashboardChart({ sales }: DashboardChartProps) {
   console.log('DashboardChart received sales:', sales);
@@ -30,6 +28,9 @@ export function DashboardChart({ sales }: DashboardChartProps) {
     
     return acc;
   }, [] as Array<{ name: string; value: number; sales: number }>);
+
+  // Ordenar por valor (maior primeiro)
+  salesBySellerData.sort((a, b) => b.value - a.value);
 
   console.log('Processed sales by seller data:', salesBySellerData);
 
@@ -71,24 +72,29 @@ export function DashboardChart({ sales }: DashboardChartProps) {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={salesBySellerData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="value"
-            >
-              {salesBySellerData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
+          <BarChart data={salesBySellerData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis 
+              dataKey="name" 
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              interval={0}
+            />
+            <YAxis 
+              tickFormatter={(value) => 
+                `R$ ${value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
+              }
+            />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
-          </PieChart>
+            <Bar 
+              dataKey="value" 
+              fill="#8884d8" 
+              name="Valor em Vendas"
+              radius={[4, 4, 0, 0]}
+            />
+          </BarChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>

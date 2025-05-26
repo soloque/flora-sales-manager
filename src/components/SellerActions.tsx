@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { User } from "@/types";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/services/notificationService";
 
@@ -52,17 +52,17 @@ export function SellerDeleteConfirm({ seller, onDeleteSuccess }: SellerActionsPr
         
       if (error) throw error;
       
-      // Create notification for the seller
+      // Create notification for the seller about being removed
       await createNotification(
         seller.id,
-        "Conta desativada",
-        "Sua conta foi desativada pelo administrador do sistema.",
+        "Removido da equipe",
+        "Você foi removido da equipe pelo proprietário. Suas vendas foram mantidas no sistema.",
         "status_change"
       );
       
       toast({
         title: "Vendedor removido",
-        description: `${seller.name} foi removido do time e inativado com sucesso.`
+        description: `${seller.name} foi removido do time e notificado. As vendas foram mantidas.`
       });
       
       setIsOpen(false);
@@ -96,7 +96,7 @@ export function SellerDeleteConfirm({ seller, onDeleteSuccess }: SellerActionsPr
             <DialogDescription className="pt-2">
               <p className="mb-4">
                 Esta ação removerá <strong>{seller.name}</strong> do time e desativará sua conta.
-                Esta ação não pode ser desfeita.
+                O vendedor será notificado automaticamente. As vendas registradas serão mantidas.
               </p>
               <div className="my-4 p-2 bg-destructive/10 border border-destructive rounded-md">
                 <p className="mb-2 font-medium">ID do vendedor: {seller.id}</p>

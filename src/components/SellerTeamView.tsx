@@ -5,24 +5,13 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { User } from "@/types";
-import { MessageSquare, Mail, User as UserIcon, LogOut, Search, Plus } from "lucide-react";
+import { MessageSquare, Mail, User as UserIcon, Search, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatModal } from "@/components/ChatModal";
 import { formatDistance } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { 
   Table, 
   TableBody, 
@@ -83,51 +72,6 @@ const SellerTeamView = () => {
       setOwner(null);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleLeaveTeam = async () => {
-    if (!user || !owner) return;
-
-    try {
-      console.log('Leaving team - User ID:', user.id, 'Owner ID:', owner.id);
-      
-      const { error } = await supabase
-        .from('team_members')
-        .delete()
-        .eq('seller_id', user.id)
-        .eq('owner_id', owner.id);
-
-      if (error) {
-        console.error("Error leaving team:", error);
-        throw error;
-      }
-
-      console.log('Successfully left team');
-
-      toast({
-        title: "Equipe abandonada",
-        description: `Você saiu da equipe de ${owner.name} com sucesso.`,
-      });
-
-      // Limpar estados e resetar para permitir nova busca
-      setOwner(null);
-      setOwnerSearchResults([]);
-      setOwnerEmail("");
-      setSelectedOwner(null);
-      
-      // Forçar um refresh dos dados para atualizar o badge
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-
-    } catch (error: any) {
-      console.error("Error leaving team:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao sair da equipe",
-        description: error.message || "Ocorreu um erro ao tentar sair da equipe.",
-      });
     }
   };
 
@@ -255,30 +199,6 @@ const SellerTeamView = () => {
                       <MessageSquare className="h-4 w-4 mr-2" />
                       Enviar Mensagem
                     </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive">
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Sair da Equipe
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Sair da Equipe</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tem certeza que deseja sair da equipe de {owner.name}? 
-                            Você não poderá mais registrar vendas através desta equipe 
-                            e precisará solicitar uma nova integração para voltar.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleLeaveTeam}>
-                            Sair da Equipe
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
                   </div>
                 </div>
 
@@ -290,6 +210,10 @@ const SellerTeamView = () => {
                     Você faz parte da equipe de vendas gerenciada por {owner.name}. 
                     Para questões sobre comissões, metas ou outras dúvidas relacionadas à equipe, 
                     entre em contato diretamente através do chat.
+                  </p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mb-4">
+                    Nota: Apenas o proprietário pode remover membros da equipe. 
+                    Você será notificado caso isso aconteça.
                   </p>
                   
                   <div className="flex gap-2">

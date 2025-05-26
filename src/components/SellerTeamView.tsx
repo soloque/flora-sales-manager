@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -52,7 +51,6 @@ const SellerTeamView = () => {
   const fetchOwnerInfo = async () => {
     setIsLoading(true);
     try {
-      // Get the owner information for this seller
       const { data, error } = await supabase.rpc(
         'get_seller_team',
         { seller_id_param: user!.id }
@@ -60,6 +58,7 @@ const SellerTeamView = () => {
 
       if (error) {
         console.error("Error fetching owner info:", error);
+        setOwner(null);
         return;
       }
 
@@ -79,6 +78,7 @@ const SellerTeamView = () => {
       }
     } catch (error) {
       console.error("Error fetching owner info:", error);
+      setOwner(null);
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +88,8 @@ const SellerTeamView = () => {
     if (!user || !owner) return;
 
     try {
-      // Remove seller from team
+      console.log('Leaving team - User ID:', user.id, 'Owner ID:', owner.id);
+      
       const { error } = await supabase
         .from('team_members')
         .delete()
@@ -96,18 +97,28 @@ const SellerTeamView = () => {
         .eq('owner_id', owner.id);
 
       if (error) {
+        console.error("Error leaving team:", error);
         throw error;
       }
+
+      console.log('Successfully left team');
 
       toast({
         title: "Equipe abandonada",
         description: `Você saiu da equipe de ${owner.name} com sucesso.`,
       });
 
-      // Update state to show search options
+      // Limpar estados e resetar para permitir nova busca
       setOwner(null);
       setOwnerSearchResults([]);
       setOwnerEmail("");
+      setSelectedOwner(null);
+      
+      // Forçar um refresh dos dados para atualizar o badge
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+
     } catch (error: any) {
       console.error("Error leaving team:", error);
       toast({
@@ -181,6 +192,13 @@ const SellerTeamView = () => {
 
   const handleCloseChat = () => {
     setIsChatModalOpen(false);
+  };
+
+  const handleInviteModalClose = () => {
+    setShowInviteModal(false);
+    setSelectedOwner(null);
+    // Refresh owner info after sending invite
+    fetchOwnerInfo();
   };
 
   if (isLoading) {
@@ -349,10 +367,7 @@ const SellerTeamView = () => {
 
       <TeamInviteModal 
         isOpen={showInviteModal}
-        onClose={() => {
-          setShowInviteModal(false);
-          setSelectedOwner(null);
-        }}
+        onClose={handleInviteModalClose}
         ownerId={selectedOwner?.id}
         ownerName={selectedOwner?.name}
       />

@@ -1,3 +1,4 @@
+
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -197,7 +198,7 @@ const Layout = () => {
         )}
 
         {/* Mobile Main content */}
-        <main className="w-full min-h-[calc(100vh-3.5rem)]">
+        <main className="w-full min-h-[calc(100vh-3.5rem)] p-4">
           <Outlet />
         </main>
       </div>

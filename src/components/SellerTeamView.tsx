@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -21,9 +20,11 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import TeamInviteModal from "@/components/TeamInviteModal";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const SellerTeamView = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [owner, setOwner] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
@@ -143,7 +144,6 @@ const SellerTeamView = () => {
   const handleInviteModalClose = () => {
     setShowInviteModal(false);
     setSelectedOwner(null);
-    // Refresh owner info after sending invite
     fetchOwnerInfo();
   };
 
@@ -160,28 +160,28 @@ const SellerTeamView = () => {
 
   return (
     <>
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Minha Equipe</CardTitle>
-            <CardDescription>
+      <div className={`space-y-${isMobile ? '4' : '6'} w-full`}>
+        <Card className="w-full">
+          <CardHeader className={isMobile ? 'p-4' : ''}>
+            <CardTitle className={isMobile ? 'text-lg' : ''}>Minha Equipe</CardTitle>
+            <CardDescription className={isMobile ? 'text-sm' : ''}>
               {owner 
                 ? "Informações sobre o proprietário e sua equipe de vendas"
                 : "Procure por um proprietário para se juntar a uma equipe"
               }
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className={isMobile ? 'p-4' : ''}>
             {owner ? (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between p-6 border rounded-lg bg-muted/10">
+              <div className={`space-y-${isMobile ? '4' : '6'}`}>
+                <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'} p-${isMobile ? '4' : '6'} border rounded-lg bg-muted/10 gap-4`}>
                   <div className="flex items-center space-x-4">
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                       <UserIcon className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Proprietário</p>
-                      <p className="text-lg font-semibold">{owner.name}</p>
+                      <p className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold`}>{owner.name}</p>
                       <div className="flex items-center text-sm text-muted-foreground mt-1">
                         <Mail className="h-3 w-3 mr-1" />
                         {owner.email}
@@ -194,36 +194,36 @@ const SellerTeamView = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button onClick={handleOpenChat}>
+                  <div className={`flex gap-2 ${isMobile ? 'w-full' : ''}`}>
+                    <Button onClick={handleOpenChat} className={isMobile ? 'flex-1' : ''} size={isMobile ? 'sm' : 'default'}>
                       <MessageSquare className="h-4 w-4 mr-2" />
-                      Enviar Mensagem
+                      {isMobile ? 'Mensagem' : 'Enviar Mensagem'}
                     </Button>
                   </div>
                 </div>
 
-                <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                  <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                <div className={`p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20`}>
+                  <h3 className={`${isMobile ? 'text-sm' : 'text-sm'} font-semibold text-blue-800 dark:text-blue-200 mb-2`}>
                     Informações da Equipe
                   </h3>
-                  <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
+                  <p className={`${isMobile ? 'text-sm' : 'text-sm'} text-blue-700 dark:text-blue-300 mb-4`}>
                     Você faz parte da equipe de vendas gerenciada por {owner.name}. 
                     Para questões sobre comissões, metas ou outras dúvidas relacionadas à equipe, 
                     entre em contato diretamente através do chat.
                   </p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mb-4">
+                  <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-blue-600 dark:text-blue-400 mb-4`}>
                     Nota: Apenas o proprietário pode remover membros da equipe. 
                     Você será notificado caso isso aconteça.
                   </p>
                   
-                  <div className="flex gap-2">
-                    <Button asChild>
+                  <div className={`flex ${isMobile ? 'flex-col' : ''} gap-2`}>
+                    <Button asChild size={isMobile ? 'sm' : 'default'} className={isMobile ? 'w-full' : ''}>
                       <Link to="/sales/new">
                         <Plus className="h-4 w-4 mr-2" />
                         Registrar Nova Venda
                       </Link>
                     </Button>
-                    <Button variant="outline" asChild>
+                    <Button variant="outline" asChild size={isMobile ? 'sm' : 'default'} className={isMobile ? 'w-full' : ''}>
                       <Link to="/sales">
                         Minhas Vendas
                       </Link>
@@ -232,64 +232,93 @@ const SellerTeamView = () => {
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className={`space-y-${isMobile ? '4' : '6'}`}>
                 <div className="text-center py-8">
                   <UserIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-muted-foreground mb-2">
+                  <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-muted-foreground mb-2`}>
                     Nenhuma equipe encontrada
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-6">
+                  <p className={`${isMobile ? 'text-sm' : 'text-sm'} text-muted-foreground mb-6`}>
                     Você ainda não está associado a nenhuma equipe de vendas. 
                     Busque por um proprietário pelo email para enviar uma solicitação.
                   </p>
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex space-x-2">
+                  <div className={`flex ${isMobile ? 'flex-col' : ''} space-${isMobile ? 'y' : 'x'}-2`}>
                     <Input 
                       placeholder="Email do proprietário" 
                       value={ownerEmail}
                       onChange={(e) => setOwnerEmail(e.target.value)}
-                      className="flex-1"
+                      className={`${isMobile ? 'w-full mb-2' : 'flex-1'}`}
                       onKeyPress={(e) => e.key === 'Enter' && handleSearchOwner()}
                     />
-                    <Button onClick={handleSearchOwner} disabled={isSearching}>
+                    <Button 
+                      onClick={handleSearchOwner} 
+                      disabled={isSearching}
+                      className={isMobile ? 'w-full' : ''}
+                      size={isMobile ? 'sm' : 'default'}
+                    >
                       <Search className="h-4 w-4 mr-2" />
                       {isSearching ? "Buscando..." : "Buscar"}
                     </Button>
                   </div>
                   
                   {ownerSearchResults.length > 0 && (
-                    <div className="border rounded-md">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Nome</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead className="text-right">Ações</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                    <div className="border rounded-md overflow-x-auto">
+                      {isMobile ? (
+                        <div className="space-y-3 p-4">
                           {ownerSearchResults.map((owner) => (
-                            <TableRow key={owner.id}>
-                              <TableCell>{owner.name}</TableCell>
-                              <TableCell>{owner.email}</TableCell>
-                              <TableCell className="text-right">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedOwner(owner);
-                                    setShowInviteModal(true);
-                                  }}
-                                >
-                                  Solicitar Integração
-                                </Button>
-                              </TableCell>
-                            </TableRow>
+                            <div key={owner.id} className="border rounded-lg p-3 space-y-2">
+                              <div>
+                                <p className="font-medium">{owner.name}</p>
+                                <p className="text-sm text-muted-foreground">{owner.email}</p>
+                              </div>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="w-full"
+                                onClick={() => {
+                                  setSelectedOwner(owner);
+                                  setShowInviteModal(true);
+                                }}
+                              >
+                                Solicitar Integração
+                              </Button>
+                            </div>
                           ))}
-                        </TableBody>
-                      </Table>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Nome</TableHead>
+                              <TableHead>Email</TableHead>
+                              <TableHead className="text-right">Ações</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {ownerSearchResults.map((owner) => (
+                              <TableRow key={owner.id}>
+                                <TableCell>{owner.name}</TableCell>
+                                <TableCell>{owner.email}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedOwner(owner);
+                                      setShowInviteModal(true);
+                                    }}
+                                  >
+                                    Solicitar Integração
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
                     </div>
                   )}
                 </div>

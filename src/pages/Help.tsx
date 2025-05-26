@@ -22,9 +22,11 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useExampleData } from "@/hooks/useExampleData";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Help = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [currentStep, setCurrentStep] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { showExamples, dismissExamples } = useExampleData();
@@ -140,11 +142,11 @@ const Help = () => {
   const currentStepData = tutorialSteps[currentStep];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className={`space-y-${isMobile ? '4' : '6'} w-full`}>
+      <div className={`flex ${isMobile ? 'flex-col gap-3' : 'items-center justify-between'}`}>
         <div>
-          <h1 className="text-3xl font-bold">Central de Ajuda</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Central de Ajuda</h1>
+          <p className={`text-muted-foreground mt-2 ${isMobile ? 'text-sm' : ''}`}>
             Precisa de ajuda para usar o SalesCanvas? Estamos aqui para te ajudar!
           </p>
         </div>
@@ -155,23 +157,23 @@ const Help = () => {
 
       {/* Tutorial Interativo */}
       <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className={isMobile ? 'p-4' : ''}>
+          <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-lg' : ''}`}>
             <Play className="h-5 w-5 text-primary" />
             Tutorial Interativo
           </CardTitle>
-          <CardDescription>
+          <CardDescription className={isMobile ? 'text-sm' : ''}>
             Dúvidas na hora de utilizar? Aprenda como usar todas as funcionalidades do sistema com nosso tutorial passo a passo.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex gap-3">
-            <Button onClick={() => setIsDialogOpen(true)} size="lg">
+        <CardContent className={isMobile ? 'p-4' : ''}>
+          <div className={`flex ${isMobile ? 'flex-col' : ''} gap-3`}>
+            <Button onClick={() => setIsDialogOpen(true)} size={isMobile ? "sm" : "lg"} className={isMobile ? 'w-full' : ''}>
               <Play className="h-4 w-4 mr-2" />
               Iniciar Tutorial
             </Button>
             {!showExamples && (
-              <Button onClick={activateExamples} variant="outline" size="lg">
+              <Button onClick={activateExamples} variant="outline" size={isMobile ? "sm" : "lg"} className={isMobile ? 'w-full' : ''}>
                 <Eye className="h-4 w-4 mr-2" />
                 Ver Dados de Exemplo
               </Button>
@@ -182,36 +184,36 @@ const Help = () => {
 
       {/* Guia para Começar */}
       <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-green-800">
+        <CardHeader className={isMobile ? 'p-4' : ''}>
+          <CardTitle className={`flex items-center gap-2 text-green-800 ${isMobile ? 'text-lg' : ''}`}>
             <UserPlus className="h-5 w-5" />
             Como Começar no SalesCanvas
           </CardTitle>
-          <CardDescription className="text-green-700">
+          <CardDescription className={`text-green-700 ${isMobile ? 'text-sm' : ''}`}>
             Passo a passo para configurar sua conta e começar a vender
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className={`space-y-4 ${isMobile ? 'p-4' : ''}`}>
           <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 bg-green-100 rounded-lg">
-              <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</div>
+            <div className={`flex items-center gap-3 p-3 bg-green-100 rounded-lg ${isMobile ? 'flex-col text-center' : ''}`}>
+              <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
               <div>
-                <h4 className="font-semibold text-green-800">Explore os Dados de Exemplo</h4>
-                <p className="text-sm text-green-700">Veja como cada página fica quando preenchida com vendas e vendedores</p>
+                <h4 className={`font-semibold text-green-800 ${isMobile ? 'text-sm' : ''}`}>Explore os Dados de Exemplo</h4>
+                <p className={`text-sm text-green-700 ${isMobile ? 'text-xs' : ''}`}>Veja como cada página fica quando preenchida com vendas e vendedores</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-green-100 rounded-lg">
-              <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</div>
+            <div className={`flex items-center gap-3 p-3 bg-green-100 rounded-lg ${isMobile ? 'flex-col text-center' : ''}`}>
+              <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
               <div>
-                <h4 className="font-semibold text-green-800">Configure sua Equipe</h4>
-                <p className="text-sm text-green-700">Adicione vendedores reais ou crie vendedores virtuais</p>
+                <h4 className={`font-semibold text-green-800 ${isMobile ? 'text-sm' : ''}`}>Configure sua Equipe</h4>
+                <p className={`text-sm text-green-700 ${isMobile ? 'text-xs' : ''}`}>Adicione vendedores reais ou crie vendedores virtuais</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-green-100 rounded-lg">
-              <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</div>
+            <div className={`flex items-center gap-3 p-3 bg-green-100 rounded-lg ${isMobile ? 'flex-col text-center' : ''}`}>
+              <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
               <div>
-                <h4 className="font-semibold text-green-800">Registre sua Primeira Venda</h4>
-                <p className="text-sm text-green-700">Use o botão "Nova Venda" para começar a registrar suas transações</p>
+                <h4 className={`font-semibold text-green-800 ${isMobile ? 'text-sm' : ''}`}>Registre sua Primeira Venda</h4>
+                <p className={`text-sm text-green-700 ${isMobile ? 'text-xs' : ''}`}>Use o botão "Nova Venda" para começar a registrar suas transações</p>
               </div>
             </div>
           </div>
@@ -219,33 +221,33 @@ const Help = () => {
       </Card>
 
       {/* Guias Rápidos */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
+          <CardHeader className={isMobile ? 'p-4' : ''}>
+            <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : 'text-lg'}`}>
               <ShoppingCart className="h-5 w-5" />
               Como Registrar uma Venda
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-sm text-muted-foreground">
+          <CardContent className={`space-y-2 ${isMobile ? 'p-4' : ''}`}>
+            <p className={`text-muted-foreground ${isMobile ? 'text-sm' : 'text-sm'}`}>
               Aprenda o passo a passo para cadastrar uma nova venda no sistema.
             </p>
-            <ul className="text-sm space-y-1">
+            <ul className={`text-sm space-y-1 ${isMobile ? 'text-xs' : ''}`}>
               <li className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3 text-green-500" />
+                <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                 Acesse "Nova Venda"
               </li>
               <li className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3 text-green-500" />
+                <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                 Preencha dados do cliente
               </li>
               <li className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3 text-green-500" />
+                <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                 Adicione produtos e valor
               </li>
               <li className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3 text-green-500" />
+                <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                 Confirme a venda
               </li>
             </ul>
@@ -253,31 +255,31 @@ const Help = () => {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
+          <CardHeader className={isMobile ? 'p-4' : ''}>
+            <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : 'text-lg'}`}>
               <BarChart3 className="h-5 w-5" />
               Acompanhando Resultados
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-sm text-muted-foreground">
+          <CardContent className={`space-y-2 ${isMobile ? 'p-4' : ''}`}>
+            <p className={`text-muted-foreground ${isMobile ? 'text-sm' : 'text-sm'}`}>
               Entenda como interpretar seus dados e métricas de vendas.
             </p>
-            <ul className="text-sm space-y-1">
+            <ul className={`text-sm space-y-1 ${isMobile ? 'text-xs' : ''}`}>
               <li className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3 text-green-500" />
+                <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                 Dashboard principal
               </li>
               <li className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3 text-green-500" />
+                <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                 Filtros por período
               </li>
               <li className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3 text-green-500" />
+                <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                 Relatórios detalhados
               </li>
               <li className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3 text-green-500" />
+                <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                 Exportar dados
               </li>
             </ul>
@@ -286,31 +288,31 @@ const Help = () => {
 
         {user?.role === "owner" && (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
+            <CardHeader className={isMobile ? 'p-4' : ''}>
+              <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : 'text-lg'}`}>
                 <Users className="h-5 w-5" />
                 Gerenciando Equipe
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-sm text-muted-foreground">
+            <CardContent className={`space-y-2 ${isMobile ? 'p-4' : ''}`}>
+              <p className={`text-muted-foreground ${isMobile ? 'text-sm' : 'text-sm'}`}>
                 Saiba como adicionar e gerenciar vendedores na sua equipe.
               </p>
-              <ul className="text-sm space-y-1">
+              <ul className={`text-sm space-y-1 ${isMobile ? 'text-xs' : ''}`}>
                 <li className="flex items-center gap-2">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
+                  <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                   Convidar vendedores
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
+                  <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                   Criar vendedores virtuais
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
+                  <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                   Definir comissões
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
+                  <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                   Acompanhar performance
                 </li>
               </ul>
@@ -321,15 +323,15 @@ const Help = () => {
 
       {/* Tutorial Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className={`${isMobile ? 'max-w-[95vw] h-[90vh] overflow-y-auto' : 'max-w-2xl'}`}>
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <currentStepData.icon className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <DialogTitle className="text-xl">{currentStepData.title}</DialogTitle>
-                <DialogDescription className="text-base">
+                <DialogTitle className={isMobile ? 'text-lg' : 'text-xl'}>{currentStepData.title}</DialogTitle>
+                <DialogDescription className={isMobile ? 'text-sm' : 'text-base'}>
                   {currentStepData.description}
                 </DialogDescription>
               </div>
@@ -337,13 +339,13 @@ const Help = () => {
           </DialogHeader>
           
           <div className="py-6">
-            <p className="text-muted-foreground leading-relaxed">
+            <p className={`text-muted-foreground leading-relaxed ${isMobile ? 'text-sm' : ''}`}>
               {currentStepData.content}
             </p>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className={`flex ${isMobile ? 'flex-col gap-3' : 'items-center justify-between'}`}>
+            <div className={`flex items-center gap-2 ${isMobile ? 'justify-center' : ''}`}>
               <span className="text-sm text-muted-foreground">
                 {currentStep + 1} de {tutorialSteps.length}
               </span>
@@ -359,13 +361,13 @@ const Help = () => {
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div className={`flex gap-2 ${isMobile ? 'w-full' : ''}`}>
               {currentStep > 0 && (
-                <Button variant="outline" onClick={prevStep}>
+                <Button variant="outline" onClick={prevStep} className={isMobile ? 'flex-1' : ''}>
                   Anterior
                 </Button>
               )}
-              <Button onClick={nextStep}>
+              <Button onClick={nextStep} className={isMobile ? 'flex-1' : ''}>
                 {currentStep < tutorialSteps.length - 1 ? (
                   <>
                     Próximo

@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { validateAndCleanDatabase } from '@/utils/databaseValidation';
-import { User } from '@/types';
+import { User, UserRole } from '@/types';
 
 interface AuthContextType {
   user: User | null;
@@ -23,7 +23,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserProfile = async (supabaseUser: SupabaseUser) => {
+  const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<User> => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -38,7 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: supabaseUser.id,
           name: supabaseUser.email || '',
           email: supabaseUser.email || '',
-          role: 'seller' as const,
+          role: 'seller' as UserRole,
           createdAt: new Date(),
         };
       }
@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: profile.id,
         name: profile.name || supabaseUser.email || '',
         email: profile.email || supabaseUser.email || '',
-        role: profile.role || 'seller',
+        role: (profile.role as UserRole) || 'seller',
         createdAt: new Date(profile.created_at),
         avatar_url: profile.avatar_url,
       };
@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: supabaseUser.id,
         name: supabaseUser.email || '',
         email: supabaseUser.email || '',
-        role: 'seller' as const,
+        role: 'seller' as UserRole,
         createdAt: new Date(),
       };
     }

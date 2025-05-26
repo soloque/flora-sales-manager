@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -36,10 +37,7 @@ const DashboardSummary = () => {
         
         let query = supabase
           .from('sales')
-          .select(`
-            *,
-            virtual_sellers!sales_assigned_seller_id_fkey(name)
-          `)
+          .select('*')
           .gte('date', firstDayOfMonth.toISOString())
           .order('date', { ascending: false });
           
@@ -56,9 +54,9 @@ const DashboardSummary = () => {
             // Determine seller name from various sources
             let sellerName = sale.seller_name || "";
             
-            // If assigned to virtual seller, use virtual seller name
-            if (sale.assigned_seller_id && sale.virtual_sellers) {
-              sellerName = sale.virtual_sellers.name || "Vendedor Virtual";
+            // If it's a virtual seller sale, use the seller_name field
+            if (sale.is_virtual_seller) {
+              sellerName = sale.seller_name || "Vendedor Virtual";
             }
             
             return {

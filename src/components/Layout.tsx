@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -6,15 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { NotificationBell } from "@/components/NotificationBell";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { Logo } from "@/components/Logo";
 import { 
   Home, 
   ShoppingCart, 
   Users, 
   Package, 
-  Settings, 
   LogOut, 
   DollarSign,
   MessageSquare,
@@ -101,7 +98,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { name: "Configurar Comissões", href: "/commission-settings", icon: BarChart3, show: isOwner },
     { name: "Gerenciar Vendedores", href: "/sellers", icon: Users, show: isOwner },
     { name: "Estoque", href: "/inventory", icon: Package, show: isOwner },
-    { name: "Configurações", href: "/settings", icon: Settings, show: true },
   ];
 
   // Don't show layout on login/register pages
@@ -159,7 +155,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex space-x-2">
+            <nav className="hidden md:flex space-x-1">
               {navigation.filter(item => item.show).map((item) => {
                 const Icon = item.icon;
                 return (
@@ -173,17 +169,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     }`}
                   >
                     <Icon className="h-4 w-4 mr-2" />
-                    {item.name}
+                    <span className="hidden lg:inline">{item.name}</span>
                   </Link>
                 );
               })}
             </nav>
 
-            {/* Right side items */}
-            <div className="flex items-center space-x-3">
-              {/* Theme Toggle */}
-              <ThemeToggle />
-
+            {/* Right side items - simplified */}
+            <div className="flex items-center space-x-2">
               {/* Messages Button */}
               <Button
                 variant="outline"
@@ -191,7 +184,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 onClick={handleMessagesClick}
                 className="relative h-9"
               >
-                <MessageSquare className="h-4 w-4 mr-2" />
+                <MessageSquare className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Mensagens</span>
                 {unreadCount > 0 && (
                   <Badge 
@@ -202,11 +195,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   </Badge>
                 )}
               </Button>
-
-              <NotificationBell />
               
               {/* User menu */}
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
                 <div className="flex items-center space-x-2">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
@@ -271,6 +262,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {children}
       </main>
+
+      {/* Floating Action Button */}
+      <FloatingActionButton />
     </div>
   );
 };

@@ -19,22 +19,16 @@ import {
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
 import PlanStatusBadge from "@/components/PlanStatusBadge";
-import { useStripeSubscription } from "@/hooks/useStripeSubscription";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 
 const Layout = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const { openCustomerPortal } = useStripeSubscription();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     await logout();
-  };
-
-  const handleManageSubscription = () => {
-    openCustomerPortal();
   };
 
   // Filter navigation based on user role
@@ -56,8 +50,7 @@ const Layout = () => {
       baseNavigation.splice(2, 0, { 
         name: "Nova Venda", 
         href: "/sales/new", 
-        icon: BarChart3, 
-        highlight: true 
+        icon: BarChart3
       });
     }
 
@@ -88,15 +81,10 @@ const Layout = () => {
               onClick={mobile ? () => setIsMobileMenuOpen(false) : undefined}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:text-primary ${
                 isActive ? "bg-muted text-primary" : "text-muted-foreground"
-              } ${item.highlight ? "bg-primary/10 border border-primary/20" : ""}`}
+              }`}
             >
               <Icon className="h-4 w-4" />
               {item.name}
-              {item.highlight && (
-                <span className="ml-auto text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
-                  Novo
-                </span>
-              )}
             </Link>
           </Component>
         );
@@ -143,9 +131,6 @@ const Layout = () => {
                   {user.email}
                 </span>
                 <PlanStatusBadge />
-                <Button variant="ghost" size="sm" onClick={handleManageSubscription}>
-                  Gerenciar
-                </Button>
               </div>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" />

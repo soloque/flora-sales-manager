@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -41,6 +42,8 @@ const NewSale = () => {
     quantity: 1,
     unitPrice: 0,
     assignedSellerId: "",
+    newSellerName: "",
+    newSellerEmail: "",
   });
 
   useEffect(() => {
@@ -209,6 +212,27 @@ const NewSale = () => {
       });
       return false;
     }
+
+    // Validate new seller fields if creating new seller
+    if (isOwner && formData.assignedSellerId === "new") {
+      if (!formData.newSellerName.trim()) {
+        toast({
+          variant: "destructive",
+          title: "Campo obrigatório",
+          description: "Nome do vendedor é obrigatório."
+        });
+        return false;
+      }
+      
+      if (!formData.newSellerEmail.trim()) {
+        toast({
+          variant: "destructive",
+          title: "Campo obrigatório",
+          description: "Email do vendedor é obrigatório."
+        });
+        return false;
+      }
+    }
     
     return true;
   };
@@ -225,15 +249,17 @@ const NewSale = () => {
       return;
     }
 
-    // Verificar se pode registrar venda
-    const canRegister = await checkCanRegisterSale();
-    if (!canRegister) {
-      toast({
-        variant: "destructive",
-        title: "Limite de vendas atingido",
-        description: "Você atingiu o limite de vendas do seu plano. Faça upgrade para continuar."
-      });
-      return;
+    // Verificar se pode registrar venda (only for sellers)
+    if (!isOwner) {
+      const canRegister = await checkCanRegisterSale();
+      if (!canRegister) {
+        toast({
+          variant: "destructive",
+          title: "Limite de vendas atingido",
+          description: "Você atingiu o limite de vendas do seu plano. Faça upgrade para continuar."
+        });
+        return;
+      }
     }
     
     if (!hasOwner && !isOwner && !subscriptionInfo?.isTeamMember) {
@@ -261,11 +287,17 @@ const NewSale = () => {
       let sellerName = user.name;
       
       if (isOwner && formData.assignedSellerId) {
-        // Owner is assigning sale to a team member
-        const assignedSeller = teamMembers.find(member => member.id === formData.assignedSellerId);
-        if (assignedSeller) {
-          sellerId = assignedSeller.id;
-          sellerName = assignedSeller.name;
+        if (formData.assignedSellerId === "new") {
+          // Creating a new seller - use provided name and a temporary ID
+          sellerId = `temp_${Date.now()}`;
+          sellerName = formData.newSellerName;
+        } else {
+          // Owner is assigning sale to an existing team member
+          const assignedSeller = teamMembers.find(member => member.id === formData.assignedSellerId);
+          if (assignedSeller) {
+            sellerId = assignedSeller.id;
+            sellerName = assignedSeller.name;
+          }
         }
       }
       
@@ -297,8 +329,8 @@ const NewSale = () => {
       if (error) throw error;
       
       // Send notifications
-      if (isOwner && formData.assignedSellerId && formData.assignedSellerId !== user.id) {
-        // Owner assigned sale to someone else, notify the seller
+      if (isOwner && formData.assignedSellerId && formData.assignedSellerId !== user.id && formData.assignedSellerId !== "new") {
+        // Owner assigned sale to an existing team member, notify the seller
         await createNotification(
           formData.assignedSellerId,
           "Venda atribuída a você",
@@ -344,7 +376,8 @@ const NewSale = () => {
     }
   };
 
-  if (isCheckingTeam || subscriptionLoading) {
+  // Only show loading for sellers, owners can always register sales
+  if (isCheckingTeam || (!isOwner && subscriptionLoading)) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center">
@@ -355,7 +388,7 @@ const NewSale = () => {
     );
   }
 
-  // Verificar se vendedor pode registrar vendas
+  // Verificar se vendedor pode registrar vendas (não se aplica a proprietários)
   if (!isOwner && subscriptionInfo && !subscriptionInfo.canRegister) {
     return (
       <Card>
@@ -461,7 +494,7 @@ const NewSale = () => {
         </CardTitle>
         <CardDescription>
           {isOwner 
-            ? "Registre uma nova venda e atribua a um vendedor da sua equipe" 
+            ? "Registre uma nova venda e atribua a um vendedor da sua equipe ou crie um novo vendedor" 
             : "Registre uma nova venda no sistema"
           }
         </CardDescription>
@@ -475,25 +508,62 @@ const NewSale = () => {
                 <Users className="h-5 w-5 text-blue-600" />
                 <h3 className="font-medium text-blue-800">Atribuição de Venda</h3>
               </div>
-              <div className="space-y-2">
-                <Label>Atribuir venda para vendedor</Label>
-                <Select 
-                  value={formData.assignedSellerId} 
-                  onValueChange={(value) => handleInputChange('assignedSellerId', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um vendedor ou deixe vazio para atribuir a você" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Atribuir a mim (proprietário)</SelectItem>
-                    {teamMembers.map((member) => (
-                      <SelectItem key={member.id} value={member.id}>
-                        {member.name} ({member.email})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {teamMembers.length === 0 && (
+              <div className="space-y-4">
+                <div>
+                  <Label>Atribuir venda para vendedor</Label>
+                  <Select 
+                    value={formData.assignedSellerId} 
+                    onValueChange={(value) => handleInputChange('assignedSellerId', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um vendedor ou deixe vazio para atribuir a você" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Atribuir a mim (proprietário)</SelectItem>
+                      {teamMembers.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.name} ({member.email})
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="new">➕ Criar novo vendedor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* New seller fields */}
+                {formData.assignedSellerId === "new" && (
+                  <div className="border rounded-lg p-4 bg-yellow-50/50 space-y-3">
+                    <h4 className="font-medium text-yellow-800">Dados do Novo Vendedor</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="newSellerName">Nome do Vendedor *</Label>
+                        <Input
+                          id="newSellerName"
+                          value={formData.newSellerName}
+                          onChange={(e) => handleInputChange('newSellerName', e.target.value)}
+                          placeholder="Nome completo"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="newSellerEmail">Email do Vendedor *</Label>
+                        <Input
+                          id="newSellerEmail"
+                          type="email"
+                          value={formData.newSellerEmail}
+                          onChange={(e) => handleInputChange('newSellerEmail', e.target.value)}
+                          placeholder="email@exemplo.com"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <p className="text-sm text-yellow-700">
+                      Este vendedor será registrado no sistema com esta venda.
+                    </p>
+                  </div>
+                )}
+
+                {teamMembers.length === 0 && formData.assignedSellerId !== "new" && (
                   <p className="text-sm text-muted-foreground">
                     Você ainda não tem vendedores na sua equipe. 
                     <Link to="/team" className="text-primary hover:underline ml-1">
@@ -685,7 +755,10 @@ const NewSale = () => {
               <div className="flex justify-between items-center mt-2 text-sm text-muted-foreground">
                 <span>Vendedor responsável:</span>
                 <span>
-                  {teamMembers.find(m => m.id === formData.assignedSellerId)?.name || "Você"}
+                  {formData.assignedSellerId === "new" 
+                    ? formData.newSellerName || "Novo vendedor"
+                    : teamMembers.find(m => m.id === formData.assignedSellerId)?.name || "Você"
+                  }
                 </span>
               </div>
             )}

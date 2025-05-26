@@ -42,18 +42,18 @@ function App() {
               <Route path="/pricing" element={<Pricing />} />
               
               {/* Protected routes with Layout */}
-              <Route path="/*" element={<Layout />}>
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="sales" element={<SalesList />} />
-                <Route path="sales/new" element={<NewSale />} />
-                <Route path="sales-history" element={<SalesHistory />} />
-                <Route path="commissions" element={<CommissionDetails />} />
-                <Route path="commission-settings" element={<CommissionSettings />} />
-                <Route path="team" element={<SellerManagement />} />
-                <Route path="inventory" element={<Inventory />} />
-                <Route path="settings" element={<UserSettings />} />
-                <Route path="messages" element={<Messages />} />
-                <Route path="plan-management" element={<PlanManagement />} />
+              <Route element={<Layout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/sales" element={<SalesList />} />
+                <Route path="/sales/new" element={<NewSale />} />
+                <Route path="/sales-history" element={<SalesHistory />} />
+                <Route path="/commissions" element={<CommissionDetails />} />
+                <Route path="/commission-settings" element={<CommissionSettings />} />
+                <Route path="/team" element={<SellerManagement />} />
+                <Route path="/inventory" element={<Inventory />} />
+                <Route path="/settings" element={<UserSettings />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/plan-management" element={<PlanManagement />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
